@@ -154,7 +154,9 @@ async function daily() {
 async function monthly() {
   const now = isoToday();
   const current = ethiopianParts(now);
-
+    if (current.day !== 1) {
+    return { ok: true, skipped: true, reason: 'Not Ethiopian month start' };
+  }
   const monthNames = [
     'መስከረም',
     'ጥቅምት',
