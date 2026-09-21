@@ -256,7 +256,7 @@ async function automaticBackup() {
   ) {
     try {
       const caption =
-        `ðŸ—„ï¸ DrPatientLog Automatic Backup\n\n` +
+        `DrPatientLog Automatic Backup\n\n` +
         `Date: ${e.month} ${e.day} ${e.year}\n` +
         `Backup file: ${backup.filename}`;
 
