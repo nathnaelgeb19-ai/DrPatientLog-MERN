@@ -154,31 +154,27 @@ async function daily() {
 async function monthly() {
   const now = isoToday();
   const current = ethiopianParts(now);
-    if (current.day !== 1) {
-    return { ok: true, skipped: true, reason: 'Not Ethiopian month start' };
+
+  const tomorrowDate = new Date(`${now}T00:00:00Z`);
+  tomorrowDate.setUTCDate(tomorrowDate.getUTCDate() + 1);
+
+  const tomorrowIso = tomorrowDate.toISOString().slice(0, 10);
+  const tomorrow = ethiopianParts(tomorrowIso);
+
+  if (
+    tomorrow.year === current.year &&
+    tomorrow.monthIndex === current.monthIndex
+  ) {
+    return {
+      ok: true,
+      skipped: true,
+      reason: 'Not Ethiopian month end'
+    };
   }
-  const monthNames = [
-    'መስከረም',
-    'ጥቅምት',
-    'ኅዳር',
-    'ታኅሣሥ',
-    'ጥር',
-    'የካቲት',
-    'መጋቢት',
-    'ሚያዝያ',
-    'ግንቦት',
-    'ሰኔ',
-    'ሐምሌ',
-    'ነሐሴ',
-    'ጳጉሜ'
-  ];
 
-  const currentIndex = monthNames.indexOf(current.month);
-  const previousIndex = currentIndex > 0 ? currentIndex - 1 : 12;
-  const previousMonth = monthNames[previousIndex];
-  const previousYear = currentIndex > 0 ? current.year : current.year - 1;
-
-  const pattern = '^' + previousMonth + ' \\d{1,2} ' + previousYear + '$';
+  const currentMonth = current.month;
+  const currentYear = current.year;
+  const pattern = '^' + currentMonth + ' \\d{1,2} ' + currentYear + '$';
 
   for (const d of await Doctor.find({
     'telegram.enabled': true
@@ -209,8 +205,8 @@ async function monthly() {
     const pct = income ? weighted / income : 0;
 
     const message = await buildMonthlyMessage(
-      previousMonth,
-      previousYear,
+      currentMonth,
+      currentYear,
       rows.length,
       income,
       doctorEarnings,
@@ -226,8 +222,7 @@ async function monthly() {
       );
     });
   }
-}
-async function automaticBackup() {
+}async function automaticBackup() {
   console.log('[Automatic Backup] starting...');
 
   const backup = await createBackupFile();
@@ -376,5 +371,6 @@ export {
 };
 
 export default r;
+
 
 
