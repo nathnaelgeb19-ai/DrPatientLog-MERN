@@ -1,0 +1,297 @@
+import { Patient, Setting, TelegramOutbox } from '../models/index.js';
+import { ETH_MONTHS } from '../utils/ethiopian.js';
+
+function htmlEscape(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function rule() {
+  return '-'.repeat(22);
+}
+
+async function clinicBranding() {
+  const rows = await Setting.find({
+    key: { $in: ['clinic_name', 'clinic_name_short'] }
+  }).lean();
+
+  const values = Object.fromEntries(rows.map(x => [x.key, x.value]));
+
+  return {
+    name: values.clinic_name || 'Holy Bethel Dental Clinic',
+    short: values.clinic_name_short || 'Holy Bethel'
+  };
+}
+
+async function header(emoji, title, subtitle = null) {
+  const clinic = await clinicBranding();
+
+  const titleLine = subtitle
+    ? `<b>${htmlEscape(title)}</b> · ${htmlEscape(subtitle)}`
+    : `<b>${htmlEscape(title)}</b>`;
+
+  return [
+    `${emoji} <b>${htmlEscape(clinic.name)}</b>`,
+    titleLine,
+    rule()
+  ].join('\n');
+}
+
+async function footer() {
+  const clinic = await clinicBranding();
+  return `${rule()}\n${htmlEscape(clinic.short)}`;
+}
+
+export async function sendTelegram(doctor, text) {
+  if (
+    !doctor?.telegram?.enabled ||
+    !doctor.telegram.botToken ||
+    !doctor.telegram.chatId
+  ) {
+    return {
+      sent: false,
+      reason: 'Telegram is disabled or not configured.'
+    };
+  }
+
+  const url = `https://api.telegram.org/bot${doctor.telegram.botToken}/sendMessage`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      chat_id: doctor.telegram.chatId,
+      text,
+      parse_mode: 'HTML',
+      disable_web_page_preview: true
+    })
+  });
+
+  let data = null;
+
+  try {
+    data = await response.json();
+  } catch {
+    data = null;
+  }
+
+  if (!response.ok || data?.ok !== true) {
+    const description =
+      data?.description ||
+      `Telegram returned HTTP ${response.status}`;
+
+    throw new Error(`Telegram: ${description}`);
+  }
+
+  return {
+    sent: true,
+    messageId: data.result?.message_id ?? null
+  };
+}
+
+export async function sendTelegramDocument(
+  doctor,
+  buffer,
+  filename,
+  caption = ''
+) {
+  if (
+    !doctor?.telegram?.enabled ||
+    !doctor.telegram.botToken ||
+    !doctor.telegram.chatId
+  ) {
+    return {
+      sent: false,
+      reason: 'Telegram is disabled or not configured.'
+    };
+  }
+
+  const form = new FormData();
+
+  form.append('chat_id', doctor.telegram.chatId);
+  form.append('caption', caption);
+  form.append(
+    'document',
+    new Blob([buffer]),
+    filename
+  );
+
+  const response = await fetch(
+    `https://api.telegram.org/bot${doctor.telegram.botToken}/sendDocument`,
+    {
+      method: 'POST',
+      body: form
+    }
+  );
+
+  let data = null;
+
+  try {
+    data = await response.json();
+  } catch {
+    data = null;
+  }
+
+  if (!response.ok || data?.ok !== true) {
+    const description =
+      data?.description ||
+      `Telegram returned HTTP ${response.status}`;
+
+    throw new Error(`Telegram: ${description}`);
+  }
+
+  return {
+    sent: true,
+    messageId: data.result?.message_id ?? null
+  };
+}
+
+export async function queueTelegram(doctorId, text) {
+  return TelegramOutbox.create({
+    doctorId,
+    messageText: text,
+    attempts: 0
+  });
+}
+
+export async function pendingOutbox(limit = 10) {
+  return TelegramOutbox.find({
+    sentAt: null,
+    attempts: { $lt: 12 }
+  })
+    .sort({ createdAt: 1 })
+    .limit(limit)
+    .lean();
+}
+
+export async function markOutboxSent(id) {
+  return TelegramOutbox.updateOne(
+    { _id: id },
+    {
+      $set: {
+        sentAt: new Date(),
+        lastError: ''
+      }
+    }
+  );
+}
+
+export async function markOutboxFail(id, attempts, error) {
+  return TelegramOutbox.updateOne(
+    { _id: id },
+    {
+      $set: {
+        attempts,
+        lastError: String(error || '').slice(0, 500)
+      }
+    }
+  );
+}
+
+async function monthTotals(doctorId, ethDate) {
+  const parts = String(ethDate || '').split(/\s+/);
+  const ethMonth = parts[0] || '';
+  const ethYear = Number(parts[2] || 0);
+
+  const rows = await Patient.find({ doctorId })
+    .select('ethDate totalFee myEarning')
+    .lean();
+
+  let income = 0;
+  let cutSum = 0;
+
+  for (const row of rows) {
+    const parts = String(row.ethDate || '').split(/\s+/);
+
+    if (
+      parts[0] === ethMonth &&
+      Number(parts[2]) === ethYear
+    ) {
+      income += Number(row.totalFee || 0);
+      cutSum += Number(row.myEarning || 0);
+    }
+  }
+
+  let pagumeCarry = 0;
+
+  if (ethMonth === ETH_MONTHS[0] && ethYear) {
+    const previousYear = ethYear - 1;
+
+    for (const row of rows) {
+      const parts = String(row.ethDate || '').split(/\s+/);
+
+      if (
+        parts[0] === ETH_MONTHS[ETH_MONTHS.length - 1] &&
+        Number(parts[2]) === previousYear
+      ) {
+        pagumeCarry += Number(row.myEarning || 0);
+      }
+    }
+  }
+
+  return {
+    label: `${ethMonth} ${ethYear}`.trim(),
+    income,
+    cutSum,
+    pagumeCarry,
+    payable: cutSum + pagumeCarry
+  };
+}
+
+export async function buildEarningMessage(
+  title,
+  eth,
+  ticket,
+  patient,
+  cardNumber,
+  procedure,
+  fee,
+  cut,
+  doctorId
+) {
+  const totals = await monthTotals(doctorId, eth);
+  const head = await header('EARNING', title);
+  const foot = await footer();
+
+  const carryText = totals.pagumeCarry
+    ? `\n- Pagume carryover: ${totals.pagumeCarry.toFixed(2)} Birr`
+    : '';
+
+  return (
+    `${head}\n` +
+    `Date: ${htmlEscape(eth || '-')}\n` +
+    `Ticket: <b>${htmlEscape(ticket || '-')}</b>\n` +
+    `Patient: <b>${htmlEscape(patient || '-')}</b>\n` +
+    `Card Number: <b>${htmlEscape(cardNumber || '-')}</b>\n` +
+    `Procedure: ${htmlEscape(procedure || '-')}\n` +
+    `Fee: <b>${Number(fee || 0).toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })} Birr</b>\n` +
+    `Your cut: <b>${Number(cut || 0).toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })} Birr</b>\n\n` +
+    `Month to date - <b>${htmlEscape(totals.label)}</b>\n` +
+    `- Income: ${totals.income.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })} Birr\n` +
+    `- Your percentage earnings: ${totals.cutSum.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })} Birr` +
+    `${carryText}\n` +
+    `Total percentage earnings payable: <b>${totals.payable.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })} Birr</b>\n` +
+    `${foot}`
+  );
+}

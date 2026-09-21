@@ -1,0 +1,115 @@
+import {Router} from 'express';
+import {Doctor,Patient} from '../models/index.js';
+import {sendTelegram,pendingOutbox,markOutboxSent,markOutboxFail,buildDailyMessage} from '../services/telegram.js';
+import {driveBackup} from '../services/googleDrive.js';
+import {ethiopianParts,isoToday} from '../utils/ethiopian.js';
+
+const r=Router();
+
+function ok(req){
+  return !process.env.CRON_SECRET||
+    req.get('x-cron-secret')===process.env.CRON_SECRET||
+    req.query.secret===process.env.CRON_SECRET
+}
+
+async function processOutbox(){
+  console.log('[Telegram Outbox] checking...');
+
+  const rows=await pendingOutbox(10);
+
+  console.log(`[Telegram Outbox] found ${rows.length} pending message(s)`);
+
+  for(const row of rows){
+    try{
+      console.log(
+        `[Telegram Outbox] processing ${row._id} (attempt ${Number(row.attempts||0)+1})`
+      );
+
+      const doctor=await Doctor.findById(row.doctorId).lean();
+
+      if(!doctor){
+        console.log(`[Telegram Outbox] doctor not found for ${row._id}`);
+
+        await markOutboxFail(
+          row._id,
+          Number(row.attempts||0)+1,
+          'Doctor not found'
+        );
+        continue;
+      }
+
+      const result=await sendTelegram(doctor,row.messageText);
+
+      if(result.sent){
+        console.log(
+          `[Telegram Outbox] sent ${row._id} (message ${result.messageId??'unknown'})`
+        );
+
+        await markOutboxSent(row._id);
+      }else{
+        console.log(
+          `[Telegram Outbox] not sent ${row._id}: ${result.reason||'Telegram was not sent.'}`
+        );
+
+        await markOutboxFail(
+          row._id,
+          Number(row.attempts||0)+1,
+          result.reason||'Telegram was not sent.'
+        );
+      }
+    }catch(e){
+      console.log(
+        `[Telegram Outbox] failed ${row._id}: ${e.message}`
+      );
+
+      await markOutboxFail(
+        row._id,
+        Number(row.attempts||0)+1,
+        e.message
+      );
+    }
+  }
+}
+
+async function daily(){
+  const iso=isoToday(),e=ethiopianParts(iso);
+
+  for(const d of await Doctor.find({'telegram.enabled':true}).lean()){
+    const rows=await Patient.find({
+      doctorId:d._id,
+      gregDate:iso
+    }).lean();
+
+    const income = rows.reduce((a,x)=>a+Number(x.totalFee||0),0);
+    const cut = rows.reduce((a,x)=>a+Number(x.myEarning||0),0);
+    const weighted = income
+      ? rows.reduce((a,x)=>a+(Number(x.totalFee||0)*Number(x.doctorPct||0)),0) / income
+      : 0;
+
+    const message = await buildDailyMessage(
+      `${e.month} ${e.day} ${e.year}`,
+      rows.length,
+      income,
+      cut,
+      weighted
+    );
+
+    await sendTelegram(d,message).catch(()=>{});
+  }
+
+  await driveBackup().catch(()=>{});
+}
+
+r.post('/daily',async(q,s)=>{
+  if(!ok(q))return s.sendStatus(403);
+  await daily();
+  s.json({ok:true});
+});
+
+r.post('/backup',async(q,s)=>{
+  if(!ok(q))return s.sendStatus(403);
+  s.json(await driveBackup());
+});
+
+export {daily,processOutbox};
+export default r;

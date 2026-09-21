@@ -1,0 +1,1 @@
+{"name":"drpatientlog-mern-client","version":"0.1.0","private":true,"scripts":{"dev":"vite","build":"vite build","preview":"vite preview"},"dependencies":{"@vitejs/plugin-react":"^5.0.2","lucide-react":"^0.544.0","react":"^19.1.1","react-dom":"^19.1.1","react-router-dom":"^7.9.1","recharts":"^3.2.1","vite":"^7.1.7"},"devDependencies":{}}
