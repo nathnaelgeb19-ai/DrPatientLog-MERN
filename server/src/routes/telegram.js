@@ -1,4 +1,4 @@
-﻿import {Router} from 'express';
+import {Router} from 'express';
 import {Doctor,Patient} from '../models/index.js';
 import {auth} from '../middleware/auth.js';
 import {
@@ -113,7 +113,7 @@ r.post('/monthly-period',async(q,s)=>{
 
   const rows=await Patient.find({
     doctorId:d._id,
-    ethDate:{$regex:`^${month} \d{1,2} ${year}$`}
+    ethDate:{$regex:`^${month} \\d{1,2} ${year}$`}
   }).lean();
 
   const income=rows.reduce(
