@@ -4,7 +4,7 @@ import {Setting} from '../models/index.js';
 
 const r=Router();
 
-const REDIRECT_URI='http://localhost:5000/api/admin/google-drive/callback';
+const REDIRECT_URI=process.env.GOOGLE_REDIRECT_URI||'http://localhost:5000/api/admin/google-drive/callback';
 
 function oauthClient(){
   const {
