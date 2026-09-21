@@ -1079,7 +1079,7 @@ function Backup(){
     }
   };
   const connectGoogleDrive=()=>{
-    window.location.href='/api/admin/google-drive/start';
+    window.location.href=(import.meta.env.VITE_API_URL||'/api')+'/admin/google-drive/start';
   };
 
   const disconnectGoogleDrive=async()=>{
