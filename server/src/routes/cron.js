@@ -136,7 +136,8 @@ async function daily() {
       rows.length,
       income,
       cut,
-      weighted
+      weighted,
+      rows
     );
 
     await sendTelegram(d, message).catch(() => {});
@@ -194,6 +195,25 @@ async function monthly() {
       0
     );
 
+    let pagumeCarry = 0;
+
+    if (currentMonth === ETH_MONTHS[0] && currentYear) {
+      const previousYear = currentYear - 1;
+      const pagumePattern = '^' + ETH_MONTHS[ETH_MONTHS.length - 1] + ' \\d{1,2} ' + previousYear + '$';
+
+      const pagumeRows = await Patient.find({
+        doctorId: d._id,
+        ethDate: { $regex: pagumePattern }
+      }).lean();
+
+      pagumeCarry = pagumeRows.reduce(
+        (sum, row) => sum + Number(row.myEarning || 0),
+        0
+      );
+    }
+
+    const payableEarnings = doctorEarnings + pagumeCarry;
+
     const weighted = rows.reduce(
       (sum, row) =>
         sum +
@@ -210,7 +230,8 @@ async function monthly() {
       rows.length,
       income,
       doctorEarnings,
-      pct
+      pct,
+      pagumeCarry
     );
 
     await sendTelegram(d, message).catch(error => {
@@ -371,6 +392,5 @@ export {
 };
 
 export default r;
-
 
 

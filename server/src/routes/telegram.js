@@ -46,7 +46,8 @@ r.post('/daily',async(q,s)=>{
       rows.length,
       income,
       cut,
-      weighted
+      weighted,
+      rows
     );
 
     const out=await sendTelegram(d,message);
@@ -83,6 +84,20 @@ r.post('/monthly',async(q,s)=>{
       )/income
     : 0;
 
+  let pagumeCarry=0;
+
+  if(e.month==='መስከረም' && e.year){
+    const pagumeRows=await Patient.find({
+      doctorId:d._id,
+      ethDate:{$regex:`^ጳጉሜ \\d{1,2} ${e.year-1}$`}
+    }).lean();
+
+    pagumeCarry=pagumeRows.reduce(
+      (a,x)=>a+Number(x.myEarning||0),
+      0
+    );
+  }
+
   try{
     const message=await buildMonthlyMessage(
       e.month,
@@ -90,7 +105,8 @@ r.post('/monthly',async(q,s)=>{
       rows.length,
       income,
       cut,
-      weighted
+      weighted,
+      pagumeCarry
     );
 
     s.json(await sendTelegram(d,message));
@@ -134,6 +150,20 @@ r.post('/monthly-period',async(q,s)=>{
       )/income
     : 0;
 
+  let pagumeCarry=0;
+
+  if(month==='መስከረም' && year){
+    const pagumeRows=await Patient.find({
+      doctorId:d._id,
+      ethDate:{$regex:`^ጳጉሜ \\d{1,2} ${year-1}$`}
+    }).lean();
+
+    pagumeCarry=pagumeRows.reduce(
+      (a,x)=>a+Number(x.myEarning||0),
+      0
+    );
+  }
+
   try{
     const message=await buildMonthlyMessage(
       month,
@@ -141,7 +171,8 @@ r.post('/monthly-period',async(q,s)=>{
       rows.length,
       income,
       cut,
-      weighted
+      weighted,
+      pagumeCarry
     );
 
     s.json(await sendTelegram(d,message));
