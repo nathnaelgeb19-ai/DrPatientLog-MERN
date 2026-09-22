@@ -1,4 +1,4 @@
-import React,{useEffect,useState}from'react';import{createRoot}from'react-dom/client';import{BrowserRouter,useNavigate,useLocation,useParams,Routes,Route,Link,Navigate}from'react-router-dom';import{LayoutDashboard,Users,UserRoundCog,CalendarDays,Settings,LogOut,Plus,Search,Menu,X,Stethoscope,ShieldCheck,ArrowUpRight,Trash2,Edit3,CheckCircle2,ReceiptText,ClipboardList,Database,Send,Download,Upload,RefreshCw,KeyRound,UserCog,Palette,Sun,Moon,Monitor,Bell,Clock,ChevronDown,FileText}from'lucide-react';import{api}from'./api';import{ethiopianDate}from'./ethiopian.js';import'./styles.css';
+﻿import React,{useEffect,useState}from'react';import{createRoot}from'react-dom/client';import{BrowserRouter,useNavigate,useLocation,useParams,Routes,Route,Link,Navigate}from'react-router-dom';import{LayoutDashboard,Users,UserRoundCog,CalendarDays,Settings,LogOut,Plus,Search,Menu,X,Stethoscope,ShieldCheck,ArrowUpRight,Trash2,Edit3,CheckCircle2,ReceiptText,ClipboardList,Database,Send,Download,Upload,RefreshCw,KeyRound,UserCog,Palette,Sun,Moon,Monitor,Bell,Clock,ChevronDown,FileText}from'lucide-react';import{api}from'./api';import{ethiopianDate}from'./ethiopian.js';import'./styles.css';
 const money=n=>`${Number(n||0).toFixed(2)} ETB`;
 function PageHead({title,subtitle,action}){return <div className="page-head"><div><p className="eyebrow">DRPATIENTLOG</p><h1>{title}</h1><p>{subtitle}</p></div>{action}</div>}
 function Loading(){return <div className="loading"><div/><div/><div/></div>}
@@ -301,6 +301,7 @@ function PatientTable({rows,onEdit,onDelete}){return <div className="table-wrap"
 function Dashboard(){
   const[d,setD]=useState();
   const[err,setErr]=useState('');
+  const[range,setRange]=useState('eth_month');
 
   useEffect(()=>{
     setErr('');
@@ -311,14 +312,6 @@ function Dashboard(){
 
   if(err)return <div className="error">{err}</div>;
   if(!d)return <Loading/>;
-  const[range,setRange]=useState('eth_month');
-
-  useEffect(()=>{
-    api.get('/dashboard?range='+range).then(setD);
-  },[range]);
-
-  if(!d)return <Loading/>;
-
   const income=Number(d.rangeIncome||0);
   const earnings=Number(d.rangeCut||0);
   const earningPct=income>0?Math.min(100,(earnings/income)*100):0;
@@ -862,12 +855,16 @@ function PatientForm(){
 function Monthly(){
   const[d,setD]=useState();
   const[err,setErr]=useState('');
+  const[loading,setLoading]=useState(true);
 
   const load=()=>{
     setErr('');
+    setLoading(true);
+
     api.get('/dashboard/monthly')
       .then(setD)
-      .catch(e=>setErr(e.message||'Unable to load monthly report.'));
+      .catch(e=>setErr(e.message||'Unable to load monthly report.'))
+      .finally(()=>setLoading(false));
   };
 
   useEffect(()=>{
@@ -875,6 +872,7 @@ function Monthly(){
   },[]);
 
   if(err)return <div className="error">{err}</div>;
+  if(loading&&!d)return <Loading/>;  if(err)return <div className="error">{err}</div>;
   if(!d)return <Loading/>;
 
   const close=async m=>{
@@ -1073,7 +1071,7 @@ function Monthly(){
     </section>
   </>
 }
-function Doctors(){const[rows,setRows]=useState([]),[show,setShow]=useState(false),[f,setF]=useState({name:'',username:'',password:'',email:'',role:'doctor',baseSalary:45000});const load=()=>api.get('/doctors').then(setRows);useEffect(()=>{load()},[]);const add=async e=>{e.preventDefault();try{await api.post('/doctors',f);setShow(false);setF({name:'',username:'',password:'',email:'',role:'doctor',baseSalary:45000});load()}catch(x){alert(x.message)}};const remove=async d=>{const p=prompt(`Enter ${d.name}'s password to delete this account:`);if(p){try{await api.del('/doctors/'+d._id,{password:p});load()}catch(e){alert(e.message)}}};const sw=async d=>{const p=prompt(`Enter ${d.name}'s password to switch to this account:`);if(p)alert((await api.post('/doctors/'+d._id+'/switch',{password:p})).doctor?'Switched. Reload the page to continue.':'Failed')};return <><PageHead title="Doctors" subtitle="Manage accounts, roles and secure account switching." action={<button className="primary" onClick={()=>setShow(!show)}><Plus size={18}/>Add doctor</button>}/>{show&&<form className="card form" onSubmit={add}><div className="form-grid">{[['name','Name'],['username','Username'],['password','Password'],['email','Email'],['baseSalary','Base salary']].map(([k,l])=><label key={k}>{l}<input type={k==='password'?'password':'text'} required={['name','username','password'].includes(k)} value={f[k]} onChange={e=>setF({...f,[k]:e.target.value})}/></label>)}<label>Role<select value={f.role} onChange={e=>setF({...f,role:e.target.value})}><option>doctor</option><option>admin</option></select></label></div><button className="primary">Create doctor</button></form>}<section className="card"><div className="table-wrap"><table><thead><tr><th>Doctor</th><th>Username</th><th>Email</th><th>Role</th><th>Salary</th><th/></tr></thead><tbody>{rows.map(d=><tr key={d._id}><td><b>{d.name}</b></td><td>{d.username}</td><td>{d.email||'—'}</td><td><span className="pill">{d.role}</span></td><td>{money(d.baseSalary)}</td><td className="row-actions"><button className="ghost small" onClick={()=>sw(d)}>Switch</button><button className="icon danger" onClick={()=>remove(d)}><Trash2 size={16}/></button></td></tr>)}</tbody></table></div></section></>}
+function Doctors(){const[rows,setRows]=useState([]),[show,setShow]=useState(false),[f,setF]=useState({name:'',username:'',password:'',email:'',role:'doctor',baseSalary:45000});const load=()=>api.get('/doctors').then(setRows);useEffect(()=>{load()},[]);const add=async e=>{e.preventDefault();try{await api.post('/doctors',f);setShow(false);setF({name:'',username:'',password:'',email:'',role:'doctor',baseSalary:45000});load()}catch(x){alert(x.message)}};const remove=async d=>{const p=prompt(`Enter ${d.name}'s password to delete this account:`);if(p){try{await api.del('/doctors/'+d._id,{password:p});load()}catch(e){alert(e.message)}}};const sw=async d=>{const p=prompt(`Enter ${d.name}'s password to switch to this account:`);if(p)alert((await api.post('/doctors/'+d._id+'/switch',{password:p})).doctor?'Switched. Reload the page to continue.':'Failed')};return <><PageHead title="Doctors" subtitle="Manage accounts, roles and secure account switching." action={<button className="primary" onClick={()=>setShow(!show)}><Plus size={18}/>Add doctor</button>}/>{show&&<form className="card form" onSubmit={add}><div className="form-grid">{[['name','Name'],['username','Username'],['password','Password'],['email','Email'],['baseSalary','Base salary']].map(([k,l])=><label key={k}>{l}<input type={k==='password'?'password':'text'} required={['name','username','password'].includes(k)} value={f[k]} onChange={e=>setF({...f,[k]:e.target.value})}/></label>)}<label>Role<select value={f.role} onChange={e=>setF({...f,role:e.target.value})}><option>doctor</option><option>admin</option></select></label></div><button className="primary">Create doctor</button></form>}<section className="card"><div className="table-wrap"><table><thead><tr><th>Doctor</th><th>Username</th><th>Email</th><th>Role</th><th>Salary</th><th/></tr></thead><tbody>{rows.map(d=><tr key={d._id}><td><b>{d.name}</b></td><td>{d.username}</td><td>{d.email||'â€”'}</td><td><span className="pill">{d.role}</span></td><td>{money(d.baseSalary)}</td><td className="row-actions"><button className="ghost small" onClick={()=>sw(d)}>Switch</button><button className="icon danger" onClick={()=>remove(d)}><Trash2 size={16}/></button></td></tr>)}</tbody></table></div></section></>}
 function Audit(){const[d,setD]=useState([]);useEffect(()=>{api.get('/admin/audit').then(setD)},[]);return <><PageHead title="Audit log" subtitle="Security and activity history."/><section className="card"><div className="table-wrap"><table><thead><tr><th>Time</th><th>Doctor</th><th>Action</th><th>Entity</th><th>Detail</th></tr></thead><tbody>{d.map(x=><tr key={x._id}><td>{new Date(x.createdAt).toLocaleString()}</td><td>{x.doctorName}</td><td>{x.action}</td><td>{x.entity}</td><td>{x.detail}</td></tr>)}</tbody></table></div></section></>}
 function Backup(){
   const [status,setStatus]=useState(null);
@@ -1712,6 +1710,8 @@ window.addEventListener('unhandledrejection', (event) => {
     `;
   }
 });
+
+
 
 
 
