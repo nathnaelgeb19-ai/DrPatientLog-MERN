@@ -1,4 +1,4 @@
-﻿import { Patient, Setting, TelegramOutbox } from '../models/index.js';
+import { Patient, Setting, TelegramOutbox } from '../models/index.js';
 import { ETH_MONTHS } from '../utils/ethiopian.js';
 
 function htmlEscape(value) {
@@ -18,7 +18,7 @@ function money(value) {
 }
 
 function rule() {
-  return '━━━━━━━━━━━━━━━━━━━━';
+  return '????????????????????';
 }
 
 async function clinicBranding() {
@@ -40,7 +40,7 @@ async function header(emoji, title, subtitle = null) {
   const clinic = await clinicBranding();
 
   const titleLine = subtitle
-    ? `<b>${htmlEscape(title)}</b> · ${htmlEscape(subtitle)}`
+    ? `<b>${htmlEscape(title)}</b> � ${htmlEscape(subtitle)}`
     : `<b>${htmlEscape(title)}</b>`;
 
   return [
@@ -55,8 +55,7 @@ async function footer() {
 
   return [
     rule(),
-    `🏥 <b>${htmlEscape(clinic.short)}</b>`,
-    `🤖 Automated clinic notification`
+    `?? <b>${htmlEscape(clinic.short)}</b>`
   ].join('\n');
 }
 
@@ -76,7 +75,7 @@ export async function sendTelegram(doctor, text) {
     `https://api.telegram.org/bot${doctor.telegram.botToken}/sendMessage`;
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 3000);
+  const timeout = setTimeout(() => controller.abort(), 10000);
 
   let response;
 
@@ -289,7 +288,7 @@ export async function buildEarningMessage(
 ) {
   const totals = await monthTotals(doctorId, eth);
   const head = await header(
-    title === 'New patient record' ? '🆕' : '✏️',
+    title === 'New patient record' ? '??' : '??',
     title
   );
   const foot = await footer();
@@ -301,34 +300,34 @@ export async function buildEarningMessage(
     : (feeNumber ? (cutNumber / feeNumber) * 100 : 0);
 
   const carryText = totals.pagumeCarry
-    ? `\n↪️ <b>Pagume carryover:</b> ${money(totals.pagumeCarry)} Birr`
+    ? `\n?? <b>Pagume carryover:</b> ${money(totals.pagumeCarry)} Birr`
     : '';
 
   const status =
     title === 'New patient record'
-      ? '✅ New record registered'
-      : '🔄 Patient record updated';
+      ? '? New record registered'
+      : '?? Patient record updated';
 
   return [
     head,
     '',
-    `👤 <b>PATIENT</b>`,
+    `?? <b>PATIENT</b>`,
     `Name: <b>${htmlEscape(patient || '-')}</b>`,
     `Card No: <b>${htmlEscape(cardNumber || '-')}</b>`,
     `Ticket No: <b>${htmlEscape(ticket || '-')}</b>`,
     '',
-    `🦷 <b>VISIT</b>`,
+    `?? <b>VISIT</b>`,
     `Procedure: ${htmlEscape(procedure || '-')}`,
     `Ethiopian date: ${htmlEscape(eth || '-')}`,
     '',
-    `💳 <b>FINANCIAL</b>`,
+    `?? <b>FINANCIAL</b>`,
     `Service fee: <b>${money(feeNumber)} Birr</b>`,
     '',
-    `📊 <b>DOCTOR SHARE</b>`,
+    `?? <b>DOCTOR SHARE</b>`,
     `Percentage: <b>${percentage.toFixed(2)}%</b>`,
     `Doctor earnings: <b>${money(cutNumber)} Birr</b>`,
     '',
-    `📅 <b>MONTH TO DATE</b>`,
+    `?? <b>MONTH TO DATE</b>`,
     `<b>${htmlEscape(totals.label)}</b>`,
     `Income: ${money(totals.income)} Birr`,
     `Percentage earnings: ${money(totals.cutSum)} Birr`,
@@ -347,40 +346,44 @@ export async function buildDailyMessage(
   patientCount,
   income,
   doctorEarnings,
-  doctorPct = null
+  doctorPct = null,
+  rows = []
 ) {
   const head = await header(
-    '📊',
-    'DAILY CLINIC REPORT',
-    ethDate
+    '??',
+    'Daily report'
   );
   const foot = await footer();
 
-  const pct = Number.isFinite(Number(doctorPct))
-    ? Number(doctorPct)
-    : (Number(income)
-        ? (Number(doctorEarnings) / Number(income)) * 100
-        : 0);
-
-  return [
+  const lines = [
     head,
-    '',
-    `👥 <b>PATIENTS</b>`,
-    `<b>${Number(patientCount || 0)}</b>`,
-    '',
-    `💰 <b>INCOME</b>`,
-    `<b>${money(income)} Birr</b>`,
-    '',
-    `📊 <b>DOCTOR SHARE</b>`,
-    `<b>${pct.toFixed(2)}%</b>`,
-    '',
-    `👨‍⚕️ <b>DOCTOR EARNINGS</b>`,
-    `<b>${money(doctorEarnings)} Birr</b>`,
-    '',
-    `✅ Daily report completed`,
-    '',
+    `?? Ethiopian: ${htmlEscape(ethDate || '-')}`,
+    `?? Patients: ${Number(patientCount || 0)}`,
+    `?? Total income: ${money(income)} Birr`,
+    `?? Doctor percentage earnings: ${money(doctorEarnings)} Birr`,
+    ''
+  ];
+
+  if (rows.length) {
+    lines.push(
+      `?? Today's records � ${rows.length} of ${rows.length}`
+    );
+
+    rows.forEach((row, index) => {
+      lines.push(
+        `${index + 1}. ${htmlEscape(row.patientName || '-')} � Card: ${htmlEscape(row.cardNumber || '-')} � #${htmlEscape(row.ticketNo || '-')}`,
+        `   ${htmlEscape(row.procedure || '-')} � ${money(row.totalFee)} Birr`
+      );
+    });
+  } else {
+    lines.push('?? No patient records today');
+  }
+
+  lines.push(
     foot
-  ].join('\n');
+  );
+
+  return lines.join('\n');
 }
 
 export async function buildMonthlyMessage(
@@ -389,12 +392,13 @@ export async function buildMonthlyMessage(
   patientCount,
   income,
   doctorEarnings,
-  doctorPct = null
+  doctorPct = null,
+  pagumeCarry = 0
 ) {
   const label = `${ethMonth} ${ethYear}`.trim();
 
   const head = await header(
-    '📅',
+    '??',
     'MONTHLY EARNINGS',
     label
   );
@@ -409,25 +413,35 @@ export async function buildMonthlyMessage(
   return [
     head,
     '',
-    `🇪🇹 <b>${htmlEscape(label)}</b>`,
+    `???? <b>${htmlEscape(label)}</b>`,
     '',
-    `👥 <b>PATIENTS</b>`,
+    `?? <b>PATIENTS</b>`,
     `<b>${Number(patientCount || 0)}</b>`,
     '',
-    `💰 <b>INCOME</b>`,
+    `?? <b>INCOME</b>`,
     `<b>${money(income)} Birr</b>`,
     '',
-    `📊 <b>DOCTOR SHARE</b>`,
+    `?? <b>DOCTOR SHARE</b>`,
     `<b>${pct.toFixed(2)}%</b>`,
     '',
-    `👨‍⚕️ <b>DOCTOR EARNINGS</b>`,
+    `????? <b>DOCTOR EARNINGS</b>`,
     `<b>${money(doctorEarnings)} Birr</b>`,
+    ...(Number(pagumeCarry || 0) > 0
+      ? [
+          '',
+          `?? <b>PAGUME CARRYOVER</b>`,
+          `<b>${money(pagumeCarry)} Birr</b>`
+        ]
+      : []),
     '',
-    `📐 <b>CALCULATION</b>`,
-    `${money(income)} × ${pct.toFixed(2)}% ÷ 100`,
+    `?? <b>TOTAL PAYABLE</b>`,
+    `<b>${money(Number(doctorEarnings || 0) + Number(pagumeCarry || 0))} Birr</b>`,
+    '',
+    `?? <b>CALCULATION</b>`,
+    `${money(income)} � ${pct.toFixed(2)}% � 100`,
     `= <b>${money(doctorEarnings)} Birr</b>`,
     '',
-    `📋 Monthly report generated`,
+    `?? Monthly report generated`,
     '',
     foot
   ].join('\n');
@@ -435,7 +449,7 @@ export async function buildMonthlyMessage(
 
 export async function buildTestMessage(ethDate) {
   const head = await header(
-    '🧪',
+    '??',
     'TELEGRAM CONNECTION TEST',
     ethDate
   );
@@ -444,12 +458,12 @@ export async function buildTestMessage(ethDate) {
   return [
     head,
     '',
-    `✅ <b>CONNECTION SUCCESSFUL</b>`,
+    `? <b>CONNECTION SUCCESSFUL</b>`,
     '',
     `Telegram notifications are configured correctly.`,
     `The clinic can send automated reports to this chat.`,
     '',
-    `📅 Ethiopian date: <b>${htmlEscape(ethDate || '-')}</b>`,
+    `?? Ethiopian date: <b>${htmlEscape(ethDate || '-')}</b>`,
     '',
     foot
   ].join('\n');
@@ -457,7 +471,7 @@ export async function buildTestMessage(ethDate) {
 
 export async function buildDeleteMessage(patientName) {
   const head = await header(
-    '🗑️',
+    '???',
     'PATIENT RECORD DELETED'
   );
   const foot = await footer();
@@ -465,12 +479,15 @@ export async function buildDeleteMessage(patientName) {
   return [
     head,
     '',
-    `👤 <b>PATIENT</b>`,
+    `?? <b>PATIENT</b>`,
     `Name: <b>${htmlEscape(patientName || '-')}</b>`,
     '',
-    `🗑️ <b>RECORD REMOVED</b>`,
+    `??? <b>RECORD REMOVED</b>`,
     `The patient record was removed from the clinic database.`,
     '',
     foot
   ].join('\n');
 }
+
+
+
