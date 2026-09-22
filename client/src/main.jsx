@@ -300,6 +300,17 @@ function PatientTable({rows,onEdit,onDelete}){return <div className="table-wrap"
 </tr>):<tr><td colSpan="7" className="empty">No records found.</td></tr>}</tbody></table></div>}
 function Dashboard(){
   const[d,setD]=useState();
+  const[err,setErr]=useState('');
+
+  useEffect(()=>{
+    setErr('');
+    api.get('/dashboard?range='+range)
+      .then(setD)
+      .catch(e=>setErr(e.message||'Unable to load dashboard.'));
+  },[range]);
+
+  if(err)return <div className="error">{err}</div>;
+  if(!d)return <Loading/>;
   const[range,setRange]=useState('eth_month');
 
   useEffect(()=>{
@@ -850,15 +861,20 @@ function PatientForm(){
 }
 function Monthly(){
   const[d,setD]=useState();
+  const[err,setErr]=useState('');
 
   const load=()=>{
-    api.get('/dashboard/monthly').then(setD);
+    setErr('');
+    api.get('/dashboard/monthly')
+      .then(setD)
+      .catch(e=>setErr(e.message||'Unable to load monthly report.'));
   };
 
   useEffect(()=>{
     load();
   },[]);
 
+  if(err)return <div className="error">{err}</div>;
   if(!d)return <Loading/>;
 
   const close=async m=>{
