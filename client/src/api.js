@@ -1,3 +1,4 @@
-const API=import.meta.env.VITE_API_URL||'/api';
-async function request(path,options={}){const r=await fetch(`${API}${path}`,{credentials:'include',headers:{'Content-Type':'application/json',...(options.body instanceof FormData?{}:{}),...(options.headers||{})},...options});const ct=r.headers.get('content-type')||'';const data=ct.includes('application/json')?await r.json():await r.text();if(!r.ok)throw new Error(data?.message||'Request failed');return data}
+﻿const API=import.meta.env.VITE_API_URL||'/api';
+async function request(path,options={}){const r=await fetch(`${API}${path}`,{credentials:'include',cache:'no-store',headers:{'Content-Type':'application/json',...(options.body instanceof FormData?{}:{}),...(options.headers||{})},...options});const ct=r.headers.get('content-type')||'';const data=ct.includes('application/json')?await r.json():await r.text();if(!r.ok)throw new Error(data?.message||'Request failed');return data}
 export const api={get:p=>request(p),post:(p,b)=>request(p,{method:'POST',body:JSON.stringify(b)}),put:(p,b)=>request(p,{method:'PUT',body:JSON.stringify(b)}),del:(p,b)=>request(p,{method:'DELETE',body:JSON.stringify(b)}),download:async p=>{const r=await fetch(`${API}${p}`,{credentials:'include'});if(!r.ok)throw new Error('Download failed');return r.blob()}};
+
