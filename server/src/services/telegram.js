@@ -40,7 +40,7 @@ async function header(emoji, title, subtitle = null) {
   const clinic = await clinicBranding();
 
   const titleLine = subtitle
-    ? `<b>${htmlEscape(title)}</b> · ${htmlEscape(subtitle)}`
+    ? `<b>${htmlEscape(title)}</b> ï¿½ ${htmlEscape(subtitle)}`
     : `<b>${htmlEscape(title)}</b>`;
 
   return [
@@ -288,7 +288,7 @@ export async function buildEarningMessage(
 ) {
   const totals = await monthTotals(doctorId, eth);
   const head = await header(
-    title === 'New patient record' ? '??' : '??',
+    title === 'New patient record' ? '??' : 'ðŸ¦·',
     title
   );
   const foot = await footer();
@@ -350,38 +350,36 @@ export async function buildDailyMessage(
   rows = []
 ) {
   const head = await header(
-    '??',
+    '\u{1F9B7}',
     'Daily report'
   );
   const foot = await footer();
 
   const lines = [
     head,
-    `?? Ethiopian: ${htmlEscape(ethDate || '-')}`,
-    `?? Patients: ${Number(patientCount || 0)}`,
-    `?? Total income: ${money(income)} Birr`,
-    `?? Doctor percentage earnings: ${money(doctorEarnings)} Birr`,
+    `\u{1F4C5} Ethiopian: ${htmlEscape(ethDate || '-')}`,
+    `\u{1F465} Patients: ${Number(patientCount || 0)}`,
+    `\u{1F4B0} Total income: ${money(income)} Birr`,
+    `\u2702\uFE0F Doctor percentage earnings: ${money(doctorEarnings)} Birr`,
     ''
   ];
 
   if (rows.length) {
     lines.push(
-      `?? Today's records · ${rows.length} of ${rows.length}`
+      `\u{1F4CB} Today's records Â· ${rows.length} of ${rows.length}`
     );
 
     rows.forEach((row, index) => {
       lines.push(
-        `${index + 1}. ${htmlEscape(row.patientName || '-')} · Card: ${htmlEscape(row.cardNumber || '-')} · #${htmlEscape(row.ticketNo || '-')}`,
-        `   ${htmlEscape(row.procedure || '-')} · ${money(row.totalFee)} Birr`
+        `${index + 1}. ${htmlEscape(row.patientName || '-')} Â· Card: ${htmlEscape(row.cardNumber || '-')} Â· #${htmlEscape(row.ticketNo || '-')}`,
+        `   ${htmlEscape(row.procedure || '-')} Â· ${money(row.totalFee)} Birr`
       );
     });
   } else {
-    lines.push('?? No patient records today');
+    lines.push('\u{1F4CB} No patient records today');
   }
 
-  lines.push(
-    foot
-  );
+  lines.push(foot);
 
   return lines.join('\n');
 }
@@ -438,7 +436,7 @@ export async function buildMonthlyMessage(
     `<b>${money(Number(doctorEarnings || 0) + Number(pagumeCarry || 0))} Birr</b>`,
     '',
     `?? <b>CALCULATION</b>`,
-    `${money(income)} × ${pct.toFixed(2)}% ÷ 100`,
+    `${money(income)} ï¿½ ${pct.toFixed(2)}% ï¿½ 100`,
     `= <b>${money(doctorEarnings)} Birr</b>`,
     '',
     `?? Monthly report generated`,
