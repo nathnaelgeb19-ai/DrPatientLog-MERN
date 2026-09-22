@@ -194,7 +194,85 @@ function Shell({doctor,onLogout,children}){
 function Login({onLogin}){const[f,setF]=useState({username:'',password:''}),[err,setErr]=useState('');const go=async e=>{e.preventDefault();try{onLogin((await api.post('/auth/login',f)).doctor)}catch(x){setErr(x.message)}};return <div className="auth"><div className="auth-card"><div className="logo big"><Stethoscope/></div><p className="eyebrow">HOLY BETHEL DENTAL CLINIC</p><h1>Welcome back</h1><p className="sub">Sign in to your practice workspace.</p>{err&&<div className="error">{err}</div>}<form onSubmit={go}><label>Username<input autoComplete="username" required value={f.username} onChange={e=>setF({...f,username:e.target.value})}/></label><label>Password<input type="password" autoComplete="current-password" required value={f.password} onChange={e=>setF({...f,password:e.target.value})}/></label><button className="primary full">Sign in <ArrowUpRight size={17}/></button></form><Link className="gate-link" to="/forgot">Forgot password?</Link></div></div>}
 function Setup({onLogin}){const[f,setF]=useState({name:'',username:'',password:'',email:''}),[err,setErr]=useState('');const go=async e=>{e.preventDefault();try{onLogin((await api.post('/auth/setup',f)).doctor)}catch(x){setErr(x.message)}};return <div className="auth"><div className="auth-card"><div className="logo big"><Stethoscope/></div><p className="eyebrow">FIRST-TIME SETUP</p><h1>Create administrator</h1><p className="sub">Set up the first DrPatientLog account.</p>{err&&<div className="error">{err}</div>}<form onSubmit={go}>{[['name','Full name'],['username','Username'],['email','Email'],['password','Password']].map(([k,l])=><label key={k}>{l}<input type={k==='password'?'password':'text'} required={k!=='email'} value={f[k]} onChange={e=>setF({...f,[k]:e.target.value})}/></label>)}<button className="primary full">Create administrator</button></form></div></div>}
 function Forgot(){const[email,setEmail]=useState(''),[msg,setMsg]=useState('');const go=async e=>{e.preventDefault();const x=await api.post('/auth/forgot',{email});setMsg(x.resetToken?`Development reset token: ${x.resetToken}`:'If the account exists, reset instructions have been prepared.');};return <div className="auth"><div className="auth-card"><KeyRound size={30}/><h1>Reset password</h1><p className="sub">Enter the account email.</p>{msg&&<div className="note">{msg}</div>}<form onSubmit={go}><label>Email<input type="email" required value={email} onChange={e=>setEmail(e.target.value)}/></label><button className="primary full">Generate reset</button></form><Link className="gate-link" to="/login">Back to sign in</Link></div></div>}
-function Stat({label,value,meta,icon:I}){return <div className="stat"><div className="stat-icon"><I size={19}/></div><span>{label}</span><strong>{value}</strong><small>{meta}</small></div>}
+function ResetPassword(){
+ const params=new URLSearchParams(window.location.search),
+ token=params.get('token')||'',
+ [password,setPassword]=useState(''),
+ [confirm,setConfirm]=useState(''),
+ [msg,setMsg]=useState(''),
+ [err,setErr]=useState(''),
+ [done,setDone]=useState(false);
+
+ const go=async e=>{
+   e.preventDefault();
+   setErr('');
+   setMsg('');
+
+   if(!token){
+     setErr('This password reset link is missing its token.');
+     return;
+   }
+
+   if(password.length<8){
+     setErr('Password must be at least 8 characters.');
+     return;
+   }
+
+   if(password!==confirm){
+     setErr('Passwords do not match.');
+     return;
+   }
+
+   try{
+     await api.post('/auth/reset',{token,password});
+     setDone(true);
+     setMsg('Your password has been reset successfully.');
+   }catch(e){
+     setErr(e.message||'This reset link is invalid or expired.');
+   }
+ };
+
+ return <div className="auth">
+   <div className="auth-card">
+     <KeyRound size={30}/>
+     <h1>Set new password</h1>
+     <p className="sub">Choose a new password for your DrPatientLog account.</p>
+
+     {err&&<div className="error">{err}</div>}
+     {msg&&<div className="note">{msg}</div>}
+
+     {!done&&<form onSubmit={go}>
+       <label>New password
+         <input
+           type="password"
+           autoComplete="new-password"
+           required
+           minLength="8"
+           value={password}
+           onChange={e=>setPassword(e.target.value)}
+         />
+       </label>
+
+       <label>Confirm new password
+         <input
+           type="password"
+           autoComplete="new-password"
+           required
+           minLength="8"
+           value={confirm}
+           onChange={e=>setConfirm(e.target.value)}
+         />
+       </label>
+
+       <button className="primary full">Reset password</button>
+     </form>}
+
+     <Link className="gate-link" to="/login">
+       {done?'Back to sign in':'Cancel'}
+     </Link>
+   </div>
+ </div>
+}function Stat({label,value,meta,icon:I}){return <div className="stat"><div className="stat-icon"><I size={19}/></div><span>{label}</span><strong>{value}</strong><small>{meta}</small></div>}
 function PatientTable({rows,onEdit,onDelete}){return <div className="table-wrap"><table>
 <thead><tr><th>Patient</th><th>Card</th><th>Ticket</th><th>Procedure</th><th>Fee</th><th>Cut</th><th>Actions</th></tr></thead>
 <tbody>{rows?.length?rows.map(r=><tr key={r._id}>
@@ -1418,20 +1496,145 @@ function NotificationsPage(){
 }
 
 function SettingsPage(){
- const[f,setF]=useState({}),[saved,setSaved]=useState(false);
+ const[doctor,setDoctor]=useState(null),
+ [f,setF]=useState({}),
+ [profile,setProfile]=useState({name:'',birthYear:'',email:''}),
+ [username,setUsername]=useState(''),
+ [password,setPassword]=useState(''),
+ [saved,setSaved]=useState(false),
+ [loginSaved,setLoginSaved]=useState(false);
 
  useEffect(()=>{
-   api.get('/settings').then(setF);
+   Promise.all([
+     api.get('/settings'),
+     api.get('/auth/me')
+   ]).then(([settings,me])=>{
+     setF(settings);
+     setDoctor(me.doctor);
+     setProfile({
+       name:me.doctor.name||'',
+       birthYear:me.doctor.birthYear||'',
+       email:me.doctor.email||''
+     });
+     setUsername(me.doctor.username||'');
+   });
  },[]);
 
+ const saveProfile=async()=>{
+   try{
+     const out=await api.put('/doctors/'+doctor._id,{
+       name:profile.name,
+       birthYear:profile.birthYear,
+       email:profile.email,
+       username:doctor.username
+     });
+     setDoctor(out);
+     setProfile({
+       name:out.name||'',
+       birthYear:out.birthYear||'',
+       email:out.email||''
+     });
+     setUsername(out.username||'');
+     setSaved(true);
+     setTimeout(()=>setSaved(false),1800);
+   }catch(e){
+     alert(e.message);
+   }
+ };
+
+ const saveLogin=async()=>{
+   try{
+     const out=await api.put('/doctors/'+doctor._id,{
+       name:doctor.name,
+       birthYear:doctor.birthYear,
+       email:doctor.email,
+       username,
+       password:password||undefined
+     });
+     setDoctor(out);
+     setUsername(out.username||'');
+     setPassword('');
+     setLoginSaved(true);
+     setTimeout(()=>setLoginSaved(false),1800);
+   }catch(e){
+     alert(e.message);
+   }
+ };
+
  const save=async()=>{
-   await api.put('/settings',f);
-   setSaved(true);
-   setTimeout(()=>setSaved(false),1800);
+   try{
+     await api.put('/settings',f);
+     setSaved(true);
+     setTimeout(()=>setSaved(false),1800);
+   }catch(e){
+     alert(e.message);
+   }
  };
 
  return <>
-   <PageHead title="Settings" subtitle="Clinic branding and appearance."/>
+   <PageHead title="Settings" subtitle="Profile, login, clinic branding, theme, font, and options."/>
+
+   <section className="card form">
+     <h2><UserCog size={19}/>Profile</h2>
+     <p>Personal details used across the clinic.</p>
+
+     <div className="form-grid">
+       <label>Name
+         <input
+           value={profile.name}
+           onChange={e=>setProfile({...profile,name:e.target.value})}
+         />
+       </label>
+
+       <label>Birth year (password recovery)
+         <input
+           type="number"
+           value={profile.birthYear}
+           onChange={e=>setProfile({...profile,birthYear:e.target.value})}
+         />
+       </label>
+
+       <label>Recovery email
+         <input
+           type="email"
+           value={profile.email}
+           onChange={e=>setProfile({...profile,email:e.target.value})}
+         />
+       </label>
+     </div>
+
+     <div className="form-actions">
+       <button className="primary" onClick={saveProfile}>Save profile</button>
+       {saved&&<span className="pill success">Saved</span>}
+     </div>
+   </section>
+
+   <section className="card form">
+     <h2><KeyRound size={19}/>Login credentials</h2>
+     <p>Change username or password for this account.</p>
+
+     <div className="form-grid">
+       <label>Username
+         <input
+           value={username}
+           onChange={e=>setUsername(e.target.value)}
+         />
+       </label>
+
+       <label>New password (leave blank to keep)
+         <input
+           type="password"
+           value={password}
+           onChange={e=>setPassword(e.target.value)}
+         />
+       </label>
+     </div>
+
+     <div className="form-actions">
+       <button className="primary" onClick={saveLogin}>Update login</button>
+       {loginSaved&&<span className="pill success">Updated</span>}
+     </div>
+   </section>
 
    <section className="card form">
      <h2><Palette size={19}/>Appearance & clinic</h2>
@@ -1468,8 +1671,7 @@ function SettingsPage(){
      </div>
    </section>
  </>;
-}
-function App(){const[doctor,setDoctor]=useState(undefined),[setup,setSetup]=useState(false);useEffect(()=>{api.get('/auth/status').then(x=>{if(x.setupRequired)setSetup(true);else api.get('/auth/me').then(x=>setDoctor(x.doctor)).catch(()=>setDoctor(null))}).catch(()=>setDoctor(null))},[]);if(doctor===undefined&&!setup)return <Loading/>;if(setup)return <Setup onLogin={d=>{setSetup(false);setDoctor(d)}}/>;if(!doctor)return <Routes><Route path="/forgot" element={<Forgot/>}/><Route path="*" element={<Login onLogin={setDoctor}/>}/></Routes>;return <Shell doctor={doctor} onLogout={async()=>{await api.post('/auth/logout',{});setDoctor(null)}}><Routes><Route path="/" element={<Dashboard/>}/><Route path="/patients" element={<Patients/>}/><Route path="/patients/new" element={<PatientForm/>}/><Route path="/patients/edit/:id" element={<PatientForm/>}/><Route path="/monthly" element={<Monthly/>}/><Route path="/doctors" element={doctor.role==='admin'?<Doctors/>:<Navigate to="/"/>}/><Route path="/audit" element={<Audit/>}/><Route path="/backup" element={doctor.role==='admin'?<Backup/>:<Navigate to="/"/>}/><Route path="/notifications" element={doctor.role==='admin'?<NotificationsPage/>:<Navigate to="/"/>}/><Route path="/settings" element={doctor.role==='admin'?<SettingsPage/>:<Navigate to="/"/>}/><Route path="*" element={<Navigate to="/"/>}/></Routes></Shell>}
+}function App(){const[doctor,setDoctor]=useState(undefined),[setup,setSetup]=useState(false);useEffect(()=>{api.get('/auth/status').then(x=>{if(x.setupRequired)setSetup(true);else api.get('/auth/me').then(x=>setDoctor(x.doctor)).catch(()=>setDoctor(null))}).catch(()=>setDoctor(null))},[]);if(doctor===undefined&&!setup)return <Loading/>;if(setup)return <Setup onLogin={d=>{setSetup(false);setDoctor(d)}}/>;if(!doctor)return <Routes><Route path="/forgot" element={<Forgot/>}/><Route path="/reset-password" element={<ResetPassword/>}/><Route path="*" element={<Login onLogin={setDoctor}/>}/></Routes>;return <Shell doctor={doctor} onLogout={async()=>{await api.post('/auth/logout',{});setDoctor(null)}}><Routes><Route path="/" element={<Dashboard/>}/><Route path="/patients" element={<Patients/>}/><Route path="/patients/new" element={<PatientForm/>}/><Route path="/patients/edit/:id" element={<PatientForm/>}/><Route path="/monthly" element={<Monthly/>}/><Route path="/doctors" element={doctor.role==='admin'?<Doctors/>:<Navigate to="/"/>}/><Route path="/audit" element={<Audit/>}/><Route path="/backup" element={doctor.role==='admin'?<Backup/>:<Navigate to="/"/>}/><Route path="/notifications" element={doctor.role==='admin'?<NotificationsPage/>:<Navigate to="/"/>}/><Route path="/settings" element={doctor.role==='admin'?<SettingsPage/>:<Navigate to="/"/>}/><Route path="*" element={<Navigate to="/"/>}/></Routes></Shell>}
 createRoot(document.getElementById('root')).render(<BrowserRouter><App/></BrowserRouter>);
 
 
