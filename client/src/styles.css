@@ -4038,3 +4038,43 @@ button{
     padding:36px 40px;
   }
 }
+/* Final mobile date/time layout fix */
+@media (max-width:767px){
+  .form-grid,
+  .patient-form-grid{
+    grid-template-columns:minmax(0,1fr);
+  }
+
+  .form-grid > *,
+  .patient-form-grid > *,
+  .patients-date,
+  .patients-date input{
+    min-width:0;
+    max-width:100%;
+  }
+
+  input[type="date"],
+  input[type="time"]{
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    box-sizing:border-box;
+  }
+}
+
+@media (max-width:767px) and (orientation:landscape){
+  .form-grid,
+  .patient-form-grid{
+    grid-template-columns:minmax(0,1fr);
+  }
+
+  .patients-toolbar{
+    display:grid;
+    grid-template-columns:minmax(0,1fr);
+    gap:10px;
+  }
+
+  .patients-date{
+    width:100%;
+  }
+}
