@@ -4077,4 +4077,52 @@ button{
   .patients-date{
     width:100%;
   }
+} 
+/* Fix tablet-width landscape layouts */
+@media (min-width:768px) and (max-width:1024px) and (orientation:landscape){
+
+  .patients-toolbar{
+    align-items:stretch;
+    flex-direction:column;
+    gap:10px;
+  }
+
+  .patients-search{
+    flex:1 1 auto;
+    width:100%;
+    min-width:0;
+  }
+
+  .patients-date{
+    width:100%;
+    min-width:0;
+  }
+
+  .patients-date input,
+  .patients-filter-button,
+  .patients-clear-button,
+  .patients-export-button{
+    width:100%;
+    max-width:100%;
+    min-width:0;
+    box-sizing:border-box;
+  }
+
+  .form-grid{
+    grid-template-columns:1fr;
+  }
+
+  .form-grid > *{
+    min-width:0;
+    max-width:100%;
+  }
+
+  input[type="date"],
+  input[type="time"]{
+    width:100%;
+    max-width:100%;
+    min-width:0;
+    box-sizing:border-box;
+  }
 }
+
