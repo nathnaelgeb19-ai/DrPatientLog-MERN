@@ -1,9 +1,36 @@
-import dns from 'node:dns';
+﻿import dns from 'node:dns';
 dns.setDefaultResultOrder('ipv4first');
 import 'dotenv/config';import express from 'express';import mongoose from 'mongoose';import cors from 'cors';import cookieParser from 'cookie-parser';import morgan from 'morgan';import path from 'path';import {fileURLToPath} from 'url';import auth from './routes/auth.js';import patients from './routes/patients.js';import dashboard from './routes/dashboard.js';import doctors from './routes/doctors.js';import settings from './routes/settings.js';import admin from './routes/admin.js';import googleDriveAuth from './routes/googleDriveAuth.js';import telegram from './routes/telegram.js';import importExport from './routes/importExport.js';import reports from './routes/reports.js';import cron from './routes/cron.js';import cronJob from 'node-cron';import {daily,processOutbox} from './routes/cron.js';import {ProcedurePreset,Setting} from './models/index.js';
-const app=express();app.use(cors({origin:process.env.CLIENT_ORIGIN||'http://localhost:5173',credentials:true}));app.use(express.json({limit:'15mb'}));app.use(cookieParser());app.use(morgan('tiny'));app.get('/api/health',async(q,s)=>{try{await mongoose.connection.db.admin().ping();s.json({status:'ok',db_ok:true})}catch(e){s.status(503).json({status:'error',db_ok:false,message:e.message})}});app.use('/api/auth',auth);app.use('/api/patients',patients);app.use('/api/dashboard',dashboard);app.use('/api/doctors',doctors);app.use('/api/settings',settings);app.use('/api/admin/google-drive',googleDriveAuth);app.use('/api/admin',admin);app.use('/api/telegram',telegram);app.use('/api/export',importExport);app.use('/api/reports',reports);app.use('/api/cron',cron);
+const app=express();
+
+app.set('etag', false);
+
+app.use((req,res,next)=>{
+  res.set('Cache-Control','no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.set('Pragma','no-cache');
+  res.set('Expires','0');
+  next();
+});
+
+app.use((req,res,next)=>{
+  const watched=[
+    '/api/dashboard',
+    '/api/dashboard/monthly',
+    '/api/settings',
+    '/api/admin/backup/status'
+  ];
+
+  if(watched.some(path=>req.originalUrl.startsWith(path))){
+    res.on('finish',()=>{
+      console.log('[API STATUS]',req.method,req.originalUrl,'->',res.statusCode);
+    });
+  }
+
+  next();
+});app.use(cors({origin:process.env.CLIENT_ORIGIN||'http://localhost:5173',credentials:true}));app.use(express.json({limit:'15mb'}));app.use(cookieParser());app.use(morgan('tiny'));app.get('/api/health',async(q,s)=>{try{await mongoose.connection.db.admin().ping();s.json({status:'ok',db_ok:true})}catch(e){s.status(503).json({status:'error',db_ok:false,message:e.message})}});app.use('/api/auth',auth);app.use('/api/patients',patients);app.use('/api/dashboard',dashboard);app.use('/api/doctors',doctors);app.use('/api/settings',settings);app.use('/api/admin/google-drive',googleDriveAuth);app.use('/api/admin',admin);app.use('/api/telegram',telegram);app.use('/api/export',importExport);app.use('/api/reports',reports);app.use('/api/cron',cron);
 const __dirname=path.dirname(fileURLToPath(import.meta.url)),dist=path.resolve(__dirname,'../../client/dist');if(process.env.NODE_ENV==='production'){app.use(express.static(dist));app.get('/*splat',(q,s)=>s.sendFile(path.join(dist,'index.html')))}
 const port=Number(process.env.PORT||5000);if(!process.env.JWT_SECRET)console.warn('JWT_SECRET is not set.');mongoose.connect(process.env.MONGODB_URI||'mongodb://127.0.0.1:27017/drpatientlog').then(async()=>{const presets={'Scaling & Polishing':1500,'Composite Restoration':2000,'Veneer (E-max)':5000,'Simple Extraction':1000,'Surgical Extraction':3500,'Root Canal Treatment':5000,'Pulpotomy':2500,'Pulpectomy':3000,'Crown Preparation':6000,'Bridge Placement':12000,'Orthodontics':2000,'Fluoride Application':1000,'Pit & Fissure Sealant':1200,'Complete Denture':15000,'RPD (Zirconia)':10000,'RPD (Ceramic 1)':8000,'RPD (Ceramic 2)':8500,'RPD (Chrome Cobalt)':9000,'RPD (Acrylic)':5000,'Dental Radiograph (X-Ray)':500,'Consultation & Examination':500,'Impression & Cast':1500};for(const [procedure,fee] of Object.entries(presets))await ProcedurePreset.updateOne({procedure},{procedure,fee},{upsert:true});for(const [key,value] of Object.entries({clinic_name:'Holy Bethel Dental Clinic',clinic_name_short:'Holy Bethel',ui_language:'en',telegram_daily_report_time:'19:00',telegram_monthly_report_time:'19:00'}))await Setting.updateOne({key},{key,value},{upsert:true});/* cronJob.schedule(process.env.DAILY_CRON||'0 19 * * *',()=>daily().catch(console.error),{timezone:'Africa/Addis_Ababa'}); */cronJob.schedule('*/5 * * * * *',()=>processOutbox().catch(console.error),{timezone:'Africa/Addis_Ababa'});app.listen(port,()=>console.log(`DrPatientLog MERN server on ${port}`))}).catch(e=>{console.error(e);process.exit(1)});
+
 
 
 
