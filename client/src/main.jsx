@@ -1,4 +1,4 @@
-﻿import React,{useEffect,useState}from'react';import{createRoot}from'react-dom/client';import{BrowserRouter,useNavigate,useLocation,useParams,Routes,Route,Link,Navigate}from'react-router-dom';import{LayoutDashboard,Users,UserRoundCog,CalendarDays,Settings,LogOut,Plus,Search,Menu,X,Stethoscope,ShieldCheck,ArrowUpRight,Trash2,Edit3,CheckCircle2,ReceiptText,ClipboardList,Database,Send,Download,Upload,RefreshCw,KeyRound,UserCog,Palette,Sun,Moon,Monitor,Bell,Clock,ChevronDown,FileText}from'lucide-react';import{api}from'./api';import{ethiopianDate}from'./ethiopian.js';import'./styles.css';
+import React,{useEffect,useState,useRef}from'react';import{createRoot}from'react-dom/client';import{BrowserRouter,useNavigate,useLocation,useParams,Routes,Route,Link,Navigate}from'react-router-dom';import{LayoutDashboard,Users,UserRoundCog,CalendarDays,Settings,LogOut,Plus,Search,Menu,X,Stethoscope,ShieldCheck,ArrowUpRight,Trash2,Edit3,CheckCircle2,ReceiptText,ClipboardList,Database,Send,Download,Upload,RefreshCw,KeyRound,UserCog,Palette,Sun,Moon,Monitor,Bell,Clock,ChevronDown,FileText}from'lucide-react';import{api}from'./api';import{ethiopianDate}from'./ethiopian.js';import'./styles.css';
 const money=n=>`${Number(n||0).toFixed(2)} ETB`;
 function PageHead({title,subtitle,action}){return <div className="page-head"><div><p className="eyebrow">DRPATIENTLOG</p><h1>{title}</h1><p>{subtitle}</p></div>{action}</div>}
 function Loading(){return <div className="loading"><div/><div/><div/></div>}
@@ -1071,7 +1071,7 @@ function Monthly(){
     </section>
   </>
 }
-function Doctors(){const[rows,setRows]=useState([]),[show,setShow]=useState(false),[f,setF]=useState({name:'',username:'',password:'',email:'',role:'doctor',baseSalary:45000});const load=()=>api.get('/doctors').then(setRows);useEffect(()=>{load()},[]);const add=async e=>{e.preventDefault();try{await api.post('/doctors',f);setShow(false);setF({name:'',username:'',password:'',email:'',role:'doctor',baseSalary:45000});load()}catch(x){alert(x.message)}};const remove=async d=>{const p=prompt(`Enter ${d.name}'s password to delete this account:`);if(p){try{await api.del('/doctors/'+d._id,{password:p});load()}catch(e){alert(e.message)}}};const sw=async d=>{const p=prompt(`Enter ${d.name}'s password to switch to this account:`);if(p)alert((await api.post('/doctors/'+d._id+'/switch',{password:p})).doctor?'Switched. Reload the page to continue.':'Failed')};return <><PageHead title="Doctors" subtitle="Manage accounts, roles and secure account switching." action={<button className="primary" onClick={()=>setShow(!show)}><Plus size={18}/>Add doctor</button>}/>{show&&<form className="card form" onSubmit={add}><div className="form-grid">{[['name','Name'],['username','Username'],['password','Password'],['email','Email'],['baseSalary','Base salary']].map(([k,l])=><label key={k}>{l}<input type={k==='password'?'password':'text'} required={['name','username','password'].includes(k)} value={f[k]} onChange={e=>setF({...f,[k]:e.target.value})}/></label>)}<label>Role<select value={f.role} onChange={e=>setF({...f,role:e.target.value})}><option>doctor</option><option>admin</option></select></label></div><button className="primary">Create doctor</button></form>}<section className="card"><div className="table-wrap"><table><thead><tr><th>Doctor</th><th>Username</th><th>Email</th><th>Role</th><th>Salary</th><th/></tr></thead><tbody>{rows.map(d=><tr key={d._id}><td><b>{d.name}</b></td><td>{d.username}</td><td>{d.email||'â€”'}</td><td><span className="pill">{d.role}</span></td><td>{money(d.baseSalary)}</td><td className="row-actions"><button className="ghost small" onClick={()=>sw(d)}>Switch</button><button className="icon danger" onClick={()=>remove(d)}><Trash2 size={16}/></button></td></tr>)}</tbody></table></div></section></>}
+function Doctors(){const[rows,setRows]=useState([]),[show,setShow]=useState(false),[f,setF]=useState({name:'',username:'',password:'',email:'',role:'doctor',baseSalary:45000});const load=()=>api.get('/doctors').then(setRows);useEffect(()=>{load()},[]);const add=async e=>{e.preventDefault();try{await api.post('/doctors',f);setShow(false);setF({name:'',username:'',password:'',email:'',role:'doctor',baseSalary:45000});load()}catch(x){alert(x.message)}};const remove=async d=>{const p=prompt(`Enter ${d.name}'s password to delete this account:`);if(p){try{await api.del('/doctors/'+d._id,{password:p});load()}catch(e){alert(e.message)}}};const sw=async d=>{const p=prompt(`Enter ${d.name}'s password to switch to this account:`);if(p)alert((await api.post('/doctors/'+d._id+'/switch',{password:p})).doctor?'Switched. Reload the page to continue.':'Failed')};return <><PageHead title="Doctors" subtitle="Manage accounts, roles and secure account switching." action={<button className="primary" onClick={()=>setShow(!show)}><Plus size={18}/>Add doctor</button>}/>{show&&<form className="card form" onSubmit={add}><div className="form-grid">{[['name','Name'],['username','Username'],['password','Password'],['email','Email'],['baseSalary','Base salary']].map(([k,l])=><label key={k}>{l}<input type={k==='password'?'password':'text'} required={['name','username','password'].includes(k)} value={f[k]} onChange={e=>setF({...f,[k]:e.target.value})}/></label>)}<label>Role<select value={f.role} onChange={e=>setF({...f,role:e.target.value})}><option>doctor</option><option>admin</option></select></label></div><button className="primary">Create doctor</button></form>}<section className="card"><div className="table-wrap"><table><thead><tr><th>Doctor</th><th>Username</th><th>Email</th><th>Role</th><th>Salary</th><th/></tr></thead><tbody>{rows.map(d=><tr key={d._id}><td><b>{d.name}</b></td><td>{d.username}</td><td>{d.email||'—'}</td><td><span className="pill">{d.role}</span></td><td>{money(d.baseSalary)}</td><td className="row-actions"><button className="ghost small" onClick={()=>sw(d)}>Switch</button><button className="icon danger" onClick={()=>remove(d)}><Trash2 size={16}/></button></td></tr>)}</tbody></table></div></section></>}
 function Audit(){const[d,setD]=useState([]);useEffect(()=>{api.get('/admin/audit').then(setD)},[]);return <><PageHead title="Audit log" subtitle="Security and activity history."/><section className="card"><div className="table-wrap"><table><thead><tr><th>Time</th><th>Doctor</th><th>Action</th><th>Entity</th><th>Detail</th></tr></thead><tbody>{d.map(x=><tr key={x._id}><td>{new Date(x.createdAt).toLocaleString()}</td><td>{x.doctorName}</td><td>{x.action}</td><td>{x.entity}</td><td>{x.detail}</td></tr>)}</tbody></table></div></section></>}
 function Backup(){
   const [status,setStatus]=useState(null);
@@ -1685,6 +1685,62 @@ function SettingsPage(){
      </div>
    </section>
  </>;
-}function App(){const[doctor,setDoctor]=useState(undefined),[setup,setSetup]=useState(false);useEffect(()=>{api.get('/auth/status').then(x=>{if(x.setupRequired)setSetup(true);else api.get('/auth/me').then(x=>setDoctor(x.doctor)).catch(()=>setDoctor(null))}).catch(()=>setDoctor(null))},[]);if(doctor===undefined&&!setup)return <Loading/>;if(setup)return <Setup onLogin={d=>{setSetup(false);setDoctor(d)}}/>;if(!doctor)return <Routes><Route path="/forgot" element={<Forgot/>}/><Route path="/reset-password" element={<ResetPassword/>}/><Route path="*" element={<Login onLogin={setDoctor}/>}/></Routes>;return <Shell doctor={doctor} onLogout={async()=>{await api.post('/auth/logout',{});setDoctor(null)}}><Routes><Route path="/" element={<Dashboard/>}/><Route path="/patients" element={<Patients/>}/><Route path="/patients/new" element={<PatientForm/>}/><Route path="/patients/edit/:id" element={<PatientForm/>}/><Route path="/monthly" element={<Monthly/>}/><Route path="/doctors" element={doctor.role==='admin'?<Doctors/>:<Navigate to="/"/>}/><Route path="/audit" element={<Audit/>}/><Route path="/backup" element={doctor.role==='admin'?<Backup/>:<Navigate to="/"/>}/><Route path="/notifications" element={doctor.role==='admin'?<NotificationsPage/>:<Navigate to="/"/>}/><Route path="/settings" element={doctor.role==='admin'?<SettingsPage/>:<Navigate to="/"/>}/><Route path="*" element={<Navigate to="/"/>}/></Routes></Shell>}
+}function App(){
+  const[doctor,setDoctor]=useState(undefined),[setup,setSetup]=useState(false);
+  const lastActivity=useRef(Date.now());
+
+  useEffect(()=>{
+    api.get('/auth/status').then(x=>{
+      if(x.setupRequired)setSetup(true);
+      else api.get('/auth/me').then(x=>setDoctor(x.doctor)).catch(()=>setDoctor(null))
+    }).catch(()=>setDoctor(null))
+  },[]);
+
+  useEffect(()=>{
+    if(!doctor)return;
+
+    const TIMEOUT=10*60*1000;
+    const HEARTBEAT=2*60*1000;
+    let timer;
+
+    const logout=async()=>{
+      try{await api.post('/auth/logout',{})}catch{}
+      setDoctor(null);
+    };
+
+    const resetTimer=()=>{
+      lastActivity.current=Date.now();
+      clearTimeout(timer);
+      timer=setTimeout(logout,TIMEOUT);
+    };
+
+    const events=['mousemove','mousedown','keydown','touchstart','scroll','click'];
+
+    events.forEach(event=>
+      window.addEventListener(event,resetTimer,{passive:true})
+    );
+
+    resetTimer();
+
+    const heartbeat=setInterval(()=>{
+      if(Date.now()-lastActivity.current<HEARTBEAT){
+        api.get('/auth/me').then(x=>{
+          if(x.doctor)setDoctor(x.doctor);
+        }).catch(()=>setDoctor(null));
+      }
+    },HEARTBEAT);
+
+    return()=>{
+      clearTimeout(timer);
+      clearInterval(heartbeat);
+      events.forEach(event=>
+        window.removeEventListener(event,resetTimer)
+      );
+    };
+  },[doctor]);
+if(doctor===undefined&&!setup)return <Loading/>;if(setup)return <Setup onLogin={d=>{setSetup(false);setDoctor(d)}}/>;if(!doctor)return <Routes><Route path="/forgot" element={<Forgot/>}/><Route path="/reset-password" element={<ResetPassword/>}/><Route path="*" element={<Login onLogin={setDoctor}/>}/></Routes>;return <Shell doctor={doctor} onLogout={async()=>{await api.post('/auth/logout',{});setDoctor(null)}}><Routes><Route path="/" element={<Dashboard/>}/><Route path="/patients" element={<Patients/>}/><Route path="/patients/new" element={<PatientForm/>}/><Route path="/patients/edit/:id" element={<PatientForm/>}/><Route path="/monthly" element={<Monthly/>}/><Route path="/doctors" element={doctor.role==='admin'?<Doctors/>:<Navigate to="/"/>}/><Route path="/audit" element={<Audit/>}/><Route path="/backup" element={doctor.role==='admin'?<Backup/>:<Navigate to="/"/>}/><Route path="/notifications" element={doctor.role==='admin'?<NotificationsPage/>:<Navigate to="/"/>}/><Route path="/settings" element={doctor.role==='admin'?<SettingsPage/>:<Navigate to="/"/>}/><Route path="*" element={<Navigate to="/"/>}/></Routes></Shell>}
 createRoot(document.getElementById('root')).render(<BrowserRouter><App/></BrowserRouter>);
+
+
+
 
