@@ -4176,3 +4176,5 @@ input[type=date],input[type=time]{-webkit-min-logical-width:0px !important;min-w
 @media (max-width:767px){input[type=date],input[type=time]{display:flex !important;width:100% !important;min-width:0 !important;max-width:100% !important;box-sizing:border-box !important;}}
 
 @media (max-width:767px){input[type=date],input[type=time]{display:flex !important;width:100% !important;min-width:0 !important;max-width:100% !important;box-sizing:border-box !important;}}
+
+input[type=date]{-webkit-appearance:none !important;appearance:none !important;width:100% !important;max-width:100% !important;min-width:0 !important;box-sizing:border-box !important;border:1px solid var(--line) !important;border-radius:10px !important;background:#fbfdfd !important;padding:11px 12px !important;}
