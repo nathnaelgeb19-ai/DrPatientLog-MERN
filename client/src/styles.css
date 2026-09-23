@@ -4170,3 +4170,5 @@ button{
 .sidebar{overflow-y:auto;-webkit-overflow-scrolling:touch;}
 
 @media (max-width:767px) and (orientation:portrait){.form-grid input[type=date],.form-grid input[type=time],.patient-form-grid input[type=date],.patients-date input[type=date],.monthly-report-label + input[type=time]{width:100% !important;max-width:100% !important;min-width:0 !important;box-sizing:border-box !important;font-size:14px !important;}}
+
+input[type=date],input[type=time]{-webkit-min-logical-width:0px !important;min-width:0 !important;width:100% !important;box-sizing:border-box !important;}
