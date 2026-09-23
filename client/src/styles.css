@@ -4125,4 +4125,43 @@ button{
     box-sizing:border-box;
   }
 }
+/* Fix portrait iPhone date/time input overflow */
+@media (max-width:767px) and (orientation:portrait){
 
+  .card,
+  .form,
+  .form-grid,
+  .form-grid > label,
+  .patient-form-grid,
+  .patient-form-grid > label,
+  .patients-toolbar,
+  .patients-date{
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    box-sizing:border-box;
+  }
+
+  .form-grid,
+  .patient-form-grid{
+    display:grid;
+    grid-template-columns:minmax(0,1fr);
+  }
+
+  .form-grid > label,
+  .patient-form-grid > label{
+    overflow:hidden;
+  }
+
+  .form-grid input[type="date"],
+  .form-grid input[type="time"],
+  .patient-form-grid input[type="date"],
+  .patients-date input[type="date"]{
+    display:block;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    box-sizing:border-box;
+    overflow:hidden;
+  }
+}
