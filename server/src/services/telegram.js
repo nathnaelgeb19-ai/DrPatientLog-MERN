@@ -429,7 +429,7 @@ export async function buildMonthlyMessage(
           htmlEscape(row.patientName || '-') +
           ' \u00B7 Card: ' +
           htmlEscape(row.cardNumber || '-') +
-          ' ? #' +
+          ' \u00B7 #' +
           htmlEscape(row.ticketNo || '-'),
 
         '   ' +
