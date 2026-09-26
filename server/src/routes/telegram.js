@@ -106,7 +106,8 @@ r.post('/monthly',async(q,s)=>{
       income,
       cut,
       weighted,
-      pagumeCarry
+      pagumeCarry,
+      rows
     );
 
     s.json(await sendTelegram(d,message));
@@ -172,7 +173,8 @@ r.post('/monthly-period',async(q,s)=>{
       income,
       cut,
       weighted,
-      pagumeCarry
+      pagumeCarry,
+      rows
     );
 
     s.json(await sendTelegram(d,message));

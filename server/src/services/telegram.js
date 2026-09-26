@@ -378,7 +378,8 @@ export async function buildMonthlyMessage(
   income,
   doctorEarnings,
   doctorPct = null,
-  pagumeCarry = 0
+  pagumeCarry = 0,
+  rows = []
 ) {
   const label =
     String(ethMonth || '') +
@@ -410,6 +411,36 @@ export async function buildMonthlyMessage(
         money(pagumeCarry) +
         ' Birr'
     );
+  }
+
+  if (rows.length) {
+    lines.push(
+      '',
+      '\u{1F4CB} Monthly records \u00B7 ' +
+        rows.length +
+        ' of ' +
+        rows.length
+    );
+
+    rows.forEach((row, index) => {
+      lines.push(
+        (index + 1) +
+          '. ' +
+          htmlEscape(row.patientName || '-') +
+          ' \u00B7 Card: ' +
+          htmlEscape(row.cardNumber || '-') +
+          ' ? #' +
+          htmlEscape(row.ticketNo || '-'),
+
+        '   ' +
+          htmlEscape(row.procedure || '-') +
+          ' \u00B7 ' +
+          money(row.totalFee) +
+          ' Birr'
+      );
+    });
+  } else {
+    lines.push('', '\u{1F4CB} No patient records');
   }
 
   lines.push(
