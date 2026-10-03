@@ -1171,10 +1171,27 @@ function Backup(){
       setTesting(true);
       const result=await api.post('/admin/backup/test',{});
 
-      if(result.ok){
-        alert('Backup completed successfully. Google Drive and Telegram backup finished.');
+      const googleDriveOk = !!result.googleDrive?.uploaded;
+      const telegramOk = Array.isArray(result.telegram)
+        && result.telegram.some(x => x.sent);
+
+      if(googleDriveOk && telegramOk){
+        alert('Backup completed successfully. Google Drive and Telegram backups were sent.');
+      }else if(telegramOk){
+        alert(
+          'Backup completed. Telegram backup was sent successfully. ' +
+          `Google Drive: ${result.googleDrive?.reason || 'not uploaded'}.`
+        );
+      }else if(googleDriveOk){
+        alert(
+          'Backup completed. Google Drive backup was uploaded successfully. ' +
+          'Telegram backup was not sent.'
+        );
       }else{
-        alert(result.googleDrive?.reason||'Backup was not completed.');
+        alert(
+          result.googleDrive?.reason ||
+          'Backup was not completed.'
+        );
       }
 
       await loadStatus();

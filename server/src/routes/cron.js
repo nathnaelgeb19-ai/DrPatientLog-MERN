@@ -252,7 +252,20 @@ async function monthly() {
     `[Automatic Backup] created ${backup.filePath}`
   );
 
-  const backupResult = await driveBackup(backup);
+  let backupResult;
+
+  try {
+    backupResult = await driveBackup(backup);
+  } catch (error) {
+    backupResult = {
+      uploaded: false,
+      reason: error.message || 'Google Drive backup failed'
+    };
+
+    console.log(
+      `[Automatic Backup] Google Drive failed: ${backupResult.reason}`
+    );
+  }
 
   console.log(
     `[Automatic Backup] Google Drive: ${
