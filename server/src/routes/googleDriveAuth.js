@@ -71,37 +71,7 @@ r.get('/callback',async(req,res)=>{
       {upsert:true}
     );
 
-    res.type('html').send(`
-      <!doctype html>
-      <html>
-        <head>
-          <title>Google Drive Connected</title>
-          <style>
-            body{
-              font-family:Arial,sans-serif;
-              max-width:600px;
-              margin:80px auto;
-              padding:20px;
-              text-align:center;
-            }
-            .ok{
-              color:#23734d;
-              font-size:22px;
-              font-weight:700;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="ok">Google Drive connected successfully.</div>
-          <p>You can close this window and return to DrPatientLog.</p>
-          <script>
-            setTimeout(()=>{
-              window.close();
-            },1500);
-          </script>
-        </body>
-      </html>
-    `);
+    res.redirect('/backup');
   }catch(e){
     res.status(500).send(
       `Google OAuth failed: ${e.message||'Unknown error'}`
