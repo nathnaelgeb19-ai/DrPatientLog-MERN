@@ -1843,9 +1843,20 @@ input[type="datetime-local"]::-webkit-datetime-edit {
   color: var(--accent);
   background: var(--accent-soft);
 }
-.monthly-current-row td { background: transparent; }
-.monthly-current-row td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
-.monthly-current-text { color: var(--accent); font-weight: 700; }
+.monthly-current-text { display: inline-flex; align-items: center; gap: 6px; color: var(--faint); font-weight: 600; }
+.monthly-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 0 0 var(--success-soft);
+  animation: livePulse 2s ease-out infinite;
+}
+@keyframes livePulse {
+  0% { box-shadow: 0 0 0 0 var(--success-soft); }
+  70% { box-shadow: 0 0 0 6px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
 .monthly-number { font-weight: 700; color: var(--ink); }
 .monthly-money { color: var(--ink-2); }
 .monthly-percent { color: var(--muted); }
@@ -2004,6 +2015,18 @@ input[type="datetime-local"]::-webkit-datetime-edit {
 @media (max-width: 1100px) {
   .auth { grid-template-columns: 1fr; }
   .auth-visual { display: none; }
+  .auth-visual:has(.auth-art) {
+    display: flex;
+    justify-content: center;
+    padding: 30px 20px 26px;
+    min-height: auto;
+  }
+  .auth-visual:has(.auth-art) .auth-brand,
+  .auth-visual:has(.auth-art) .auth-hero,
+  .auth-visual:has(.auth-art) footer { display: none; }
+  .auth-visual:has(.auth-art) .auth-art { padding: 0; }
+  .auth-visual:has(.auth-art) .auth-art-glyph { width: 138px; height: 138px; }
+  .auth-visual:has(.auth-art) .auth-art-pill { display: none; }
   .patient-form-layout { grid-template-columns: 1fr; }
   .patient-summary { position: static; }
   .dashboard-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -2119,8 +2142,6 @@ input[type="datetime-local"]::-webkit-datetime-edit {
   .patients-table-wrap tbody td.empty::before,
   .monthly-table-wrap tbody td.empty::before { content: none; }
   tbody tr:hover td { background: transparent; }
-.monthly-current-row td { background: transparent; }
-.monthly-current-row td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
   .monthly-action-cell { flex-wrap: wrap; }
   .empty { padding: 20px 0; }
 }

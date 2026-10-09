@@ -1269,6 +1269,7 @@ function Monthly(){
 
                       {m.isCurrent ? (
                         <small className="monthly-current-text">
+                          <span className="monthly-live-dot" aria-hidden="true"/>
                           Current month
                         </small>
                       ) : (
