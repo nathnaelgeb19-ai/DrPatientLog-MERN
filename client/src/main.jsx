@@ -53,8 +53,7 @@ function Shell({doctor,onLogout,children}){
   const main=[
     ['/','Dashboard',LayoutDashboard],
     ['/patients','Patients',Users],
-    ['/monthly','Monthly',CalendarDays],
-    ['/audit','Audit log',ClipboardList]
+    ['/monthly','Monthly',CalendarDays]
   ];
 
   const admin=doctor.role==='admin'
@@ -291,7 +290,7 @@ function Shell({doctor,onLogout,children}){
         )}
         <button
           type="button"
-          className={['/doctors','/backup','/notifications','/settings','/audit'].includes(loc.pathname)?'active':''}
+          className={['/doctors','/backup','/notifications','/settings'].includes(loc.pathname)?'active':''}
           onClick={()=>setOpen(true)}
           aria-label="More options"
         >
@@ -1540,39 +1539,6 @@ function Doctors(){
     </Modal>
   </>
 }
-function Audit(){
-  const[d,setD]=useState([]);
-  useEffect(()=>{api.get('/admin/audit').then(setD)},[]);
-  const IconFor=a=>/auth|login|logout/i.test(a||'')?KeyRound:/delete|remove/i.test(a||'')?Trash2:/create|add/i.test(a||'')?Plus:/update|edit/i.test(a||'')?Edit3:ClipboardList;
-  return <>
-    <PageHead title="Audit log" subtitle="Security and activity history."/>
-    <section className="card">
-      <div className="audit-list">
-        {d.map((x,i)=>{
-          const I=IconFor(x.action);
-          return <Reveal key={x._id} delay={Math.min(i*24,180)}>
-            <div className="audit-item">
-              <span className="audit-dot"><I size={16}/></span>
-              <div style={{minWidth:0}}>
-                <b>{x.action}</b>
-                <span>{x.doctorName}{x.entity?` · ${x.entity}`:''}</span>
-                {x.detail&&<span style={{whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{x.detail}</span>}
-              </div>
-              <time>{new Date(x.createdAt).toLocaleString()}</time>
-            </div>
-          </Reveal>;
-        })}
-      </div>
-      {d.length===0&&(
-        <div className="empty-state">
-          <div className="empty-illustration"><ShieldCheck size={26}/></div>
-          <b>No audit entries</b>
-          <p>Security events will appear here as they happen.</p>
-        </div>
-      )}
-    </section>
-  </>
-}
 function Backup(){
   const [status,setStatus]=useState(null);
   const [loading,setLoading]=useState(true);
@@ -2332,7 +2298,7 @@ function SettingsPage(){
       );
     };
   },[doctor]);
-if(doctor===undefined&&!setup)return <Loading/>;if(setup)return <Setup clinic={clinic} onLogin={d=>{setSetup(false);setDoctor(d)}}/>;if(!doctor)return <Routes><Route path="/forgot" element={<Forgot clinic={clinic}/>}/><Route path="/reset-password" element={<ResetPassword clinic={clinic}/>}/><Route path="*" element={<Login onLogin={setDoctor} clinic={clinic}/>}/></Routes>;return <Shell doctor={doctor} onLogout={async()=>{await api.post('/auth/logout',{});setDoctor(null)}}><Routes><Route path="/" element={<Dashboard clinic={clinic}/>}/><Route path="/patients" element={<Patients/>}/><Route path="/patients/new" element={<PatientForm/>}/><Route path="/patients/edit/:id" element={<PatientForm/>}/><Route path="/monthly" element={<Monthly/>}/><Route path="/doctors" element={doctor.role==='admin'?<Doctors/>:<Navigate to="/"/>}/><Route path="/audit" element={<Audit/>}/><Route path="/backup" element={doctor.role==='admin'?<Backup/>:<Navigate to="/"/>}/><Route path="/notifications" element={doctor.role==='admin'?<NotificationsPage/>:<Navigate to="/"/>}/><Route path="/settings" element={doctor.role==='admin'?<SettingsPage/>:<Navigate to="/"/>}/><Route path="*" element={<Navigate to="/"/>}/></Routes></Shell>}
+if(doctor===undefined&&!setup)return <Loading/>;if(setup)return <Setup clinic={clinic} onLogin={d=>{setSetup(false);setDoctor(d)}}/>;if(!doctor)return <Routes><Route path="/forgot" element={<Forgot clinic={clinic}/>}/><Route path="/reset-password" element={<ResetPassword clinic={clinic}/>}/><Route path="*" element={<Login onLogin={setDoctor} clinic={clinic}/>}/></Routes>;return <Shell doctor={doctor} onLogout={async()=>{await api.post('/auth/logout',{});setDoctor(null)}}><Routes><Route path="/" element={<Dashboard clinic={clinic}/>}/><Route path="/patients" element={<Patients/>}/><Route path="/patients/new" element={<PatientForm/>}/><Route path="/patients/edit/:id" element={<PatientForm/>}/><Route path="/monthly" element={<Monthly/>}/><Route path="/doctors" element={doctor.role==='admin'?<Doctors/>:<Navigate to="/"/>}/><Route path="/backup" element={doctor.role==='admin'?<Backup/>:<Navigate to="/"/>}/><Route path="/notifications" element={doctor.role==='admin'?<NotificationsPage/>:<Navigate to="/"/>}/><Route path="/settings" element={doctor.role==='admin'?<SettingsPage/>:<Navigate to="/"/>}/><Route path="*" element={<Navigate to="/"/>}/></Routes></Shell>}
 createRoot(document.getElementById('root')).render(<BrowserRouter><ToastProvider><App/></ToastProvider></BrowserRouter>);
 
 

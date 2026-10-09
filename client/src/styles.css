@@ -1978,30 +1978,6 @@ input[type="datetime-local"]::-webkit-datetime-edit {
 .status-hero .status-hero-meta small { display: block; font-size: 11px; color: var(--faint); }
 .status-hero .status-hero-meta b { font-size: 14px; font-family: var(--font); font-weight: 700; }
 
-.audit-list { display: grid; gap: 10px; }
-.audit-item {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 14px 16px;
-  border-radius: 14px;
-  border: 1px solid var(--line-2);
-  background: var(--surface-2);
-}
-.audit-item .audit-dot {
-  flex: none;
-  width: 34px;
-  height: 34px;
-  border-radius: 11px;
-  display: grid;
-  place-items: center;
-  color: var(--accent);
-  background: var(--accent-soft);
-}
-.audit-item b { display: block; font-size: 13.5px; }
-.audit-item span { display: block; font-size: 12px; color: var(--muted); }
-.audit-item time { margin-left: auto; font-size: 12px; color: var(--faint); white-space: nowrap; }
-
 /* Modal / sheet */
 .modal-overlay {
   position: fixed;
