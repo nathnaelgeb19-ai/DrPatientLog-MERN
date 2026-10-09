@@ -17,6 +17,16 @@ const sign = (d) =>
 r.get("/status", async (q, s) =>
   s.json({ setupRequired: (await Doctor.countDocuments()) === 0 }),
 );
+r.get("/clinic", async (q, s) => {
+  const rows = await Setting.find({
+    key: { $in: ["clinic_name", "clinic_name_short"] },
+  }).lean();
+  const values = Object.fromEntries(rows.map((x) => [x.key, x.value]));
+  s.json({
+    name: values.clinic_name || "Holy Bethel Dental Clinic",
+    short: values.clinic_name_short || "Holy Bethel",
+  });
+});
 r.get("/me", auth, (q, s) => s.json({ doctor: q.doctor }));
 r.post("/setup", async (q, s) => {
   if (await Doctor.countDocuments())

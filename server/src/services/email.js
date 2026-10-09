@@ -1,4 +1,5 @@
 import {Resend} from 'resend';
+import {Setting} from '../models/index.js';
 
 const resend=new Resend(process.env.RESEND_API_KEY);
 
@@ -10,7 +11,10 @@ export async function sendPasswordResetEmail({to,name,token}){
     throw new Error('RESEND_API_KEY is not configured.');
   }
 
-  const from=process.env.EMAIL_FROM||'Holy Bethel Dental Clinic <onboarding@resend.dev>';
+  const clinicSetting = await Setting.findOne({ key: 'clinic_name' }).lean();
+  const clinicName = clinicSetting?.value || 'Holy Bethel Dental Clinic';
+
+  const from=process.env.EMAIL_FROM||`${clinicName} <onboarding@resend.dev>`;
 
   await resend.emails.send({
     from,
@@ -18,7 +22,7 @@ export async function sendPasswordResetEmail({to,name,token}){
     subject:'Reset your DrPatientLog password',
     html:`
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:24px">
-        <h2>Holy Bethel Dental Clinic</h2>
+        <h2>${clinicName}</h2>
         <p>Hello ${String(name||'there').replace(/[<>&"]/g,'')}</p>
         <p>We received a request to reset your DrPatientLog password.</p>
         <p>

@@ -1,4 +1,4 @@
-import React,{useEffect,useState,useRef,useCallback}from'react';import{createRoot}from'react-dom/client';import{BrowserRouter,useNavigate,useLocation,Routes,Route,Link,Navigate}from'react-router-dom';import{LayoutDashboard,Users,UserRoundCog,CalendarDays,Settings,LogOut,Plus,Search,Menu,X,Stethoscope,ShieldCheck,ArrowUpRight,Trash2,Edit3,CheckCircle2,ReceiptText,ClipboardList,Database,Send,Download,Upload,RefreshCw,KeyRound,UserCog,Palette,Sun,Moon,Monitor,Bell,Clock,ChevronDown,FileText,Eye,EyeOff,Command,CornerDownLeft,Sparkles,TrendingUp,Wallet,Activity,ChevronRight,MoreHorizontal,PlusCircle,CircleDollarSign,ArrowRight,BarChart3,Info,Check,Lock,Star,UserPlus}from'lucide-react';import{AreaChart,Area,XAxis,YAxis,CartesianGrid,Tooltip,ResponsiveContainer}from'recharts';import{api}from'./api';import{ethiopianDate}from'./ethiopian.js';import'./styles.css';
+import React,{useEffect,useState,useRef,useCallback}from'react';import{createRoot}from'react-dom/client';import{BrowserRouter,useNavigate,useLocation,Routes,Route,Link,Navigate}from'react-router-dom';import{LayoutDashboard,Users,UserRoundCog,CalendarDays,Settings,LogOut,Plus,Search,Menu,X,Stethoscope,ShieldCheck,ArrowUpRight,Trash2,Edit3,CheckCircle2,ReceiptText,ClipboardList,Database,Send,Download,Upload,RefreshCw,KeyRound,UserCog,Palette,Sun,Moon,Monitor,Bell,Clock,ChevronDown,FileText,Eye,EyeOff,Command,CornerDownLeft,Sparkles,TrendingUp,Wallet,Activity,ChevronRight,MoreHorizontal,PlusCircle,CircleDollarSign,ArrowRight,BarChart3,Info,Check,Lock,Star,UserPlus}from'lucide-react';import{AreaChart,Area,XAxis,YAxis,CartesianGrid,Tooltip,ResponsiveContainer}from'recharts';import{api}from'./api';import{ethiopianDate}from'./ethiopian.js';import'./styles.css';import doctorLogo from './assets/aa-logo.svg';
 const money=n=>`${Number(n||0).toFixed(2)} ETB`;
 function PageHead({title,subtitle,action}){return <div className="page-head"><div><p className="eyebrow">DRPATIENTLOG</p><h1>{title}</h1><p>{subtitle}</p></div>{action}</div>}
 function Loading(){return <div className="loading"><div/><div/><div/></div>}
@@ -305,11 +305,11 @@ function Shell({doctor,onLogout,children}){
 
   </div>
 }
-function AuthLayout({title,subtitle,points,children}){return <div className="auth">
+function AuthLayout({title,subtitle,points,clinic,children}){return <div className="auth">
   <aside className="auth-visual">
     <div className="auth-brand">
       <div className="logo"><Stethoscope size={20}/></div>
-      <div><b>DrPatientLog</b><span>Holy Bethel Dental Clinic</span></div>
+      <div><b>DrPatientLog</b>{clinic?.name&&<span>{clinic.name}</span>}</div>
     </div>
     {title?(
       <div className="auth-hero">
@@ -328,16 +328,16 @@ function AuthLayout({title,subtitle,points,children}){return <div className="aut
     ):(
       <div className="auth-art">
         <div className="auth-art-glyph">
-          <svg width="86" height="86" viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-label="Dental clinic">
-            <path d="M24 7c-3 0-5 4-8 5-4 1-7 4-8 9-1 4-1 10 0 14l2 6c1 3 4 5 6 3 2-2 3-8 4-11 1-4 4-4 4-4s3 0 4 4c1 3 2 9 4 11 2 2 5 0 6-3l2-6c1-4 1-10 0-14-1-5-4-8-8-9-3-1-5-5-8-5Z"/>
-            <circle cx="14" cy="14" r="2" fill="currentColor" stroke="none"/>
-          </svg>
-          <span className="auth-art-ring"/>
+          <img className="auth-art-img" src={doctorLogo} alt="Clinic doctor logo"/>
         </div>
+        <span className="auth-spark s1"/>
+        <span className="auth-spark s2"/>
+        <span className="auth-spark s3"/>
+        <span className="auth-spark s4"/>
         <span className="auth-art-chip c1"><Activity size={18}/></span>
         <span className="auth-art-chip c2"><CalendarDays size={18}/></span>
         <span className="auth-art-chip c3"><Users size={18}/></span>
-        <span className="auth-art-pill"><Stethoscope size={18}/>Holy Bethel Dental Clinic</span>
+        {clinic?.name&&<span className="auth-art-pill"><Stethoscope size={18}/>{clinic.name}</span>}
       </div>
     )}
     <footer>© {new Date().getFullYear()} DrPatientLog · Secure clinical records</footer>
@@ -346,10 +346,10 @@ function AuthLayout({title,subtitle,points,children}){return <div className="aut
     <div className="auth-card">{children}</div>
   </main>
 </div>}
-function Login({onLogin}){const[f,setF]=useState({username:'',password:''}),[err,setErr]=useState(''),[busy,setBusy]=useState(false),[show,setShow]=useState(false);const go=async e=>{e.preventDefault();setBusy(true);try{onLogin((await api.post('/auth/login',f)).doctor)}catch(x){setErr(x.message)}finally{setBusy(false)}};return <AuthLayout><p className="eyebrow">HOLY BETHEL DENTAL CLINIC</p><h1>Welcome back</h1><p className="sub">Sign in to your practice workspace.</p>{err&&<div className="error">{err}</div>}<form onSubmit={go}><label>Username<input autoComplete="username" required value={f.username} onChange={e=>setF({...f,username:e.target.value})}/></label><label>Password<span className="password-field"><input type={show?'text':'password'} autoComplete="current-password" required value={f.password} onChange={e=>setF({...f,password:e.target.value})}/><button type="button" className="password-toggle" title={show?'Hide password':'Show password'} aria-label={show?'Hide password':'Show password'} onClick={()=>setShow(!show)}>{show?<EyeOff size={16}/>:<Eye size={16}/>}</button></span></label><Btn className="primary full" loading={busy} loadingText="Signing in…">Sign in <ArrowUpRight size={17}/></Btn></form><p className="auth-foot"><Link to="/forgot">Forgot password?</Link></p></AuthLayout>}
-function Setup({onLogin}){const[f,setF]=useState({name:'',username:'',password:'',email:''}),[err,setErr]=useState(''),[busy,setBusy]=useState(false);const go=async e=>{e.preventDefault();setBusy(true);try{onLogin((await api.post('/auth/setup',f)).doctor)}catch(x){setErr(x.message)}finally{setBusy(false)}};return <AuthLayout title="Set up your clinic workspace." subtitle="Create the first administrator account to get started." points={[[Sparkles,'One-time setup','Takes less than a minute.'],[ShieldCheck,'Secure from the start','Your data never leaves your server.'],[Users,'Ready for your team','Add doctors once you are in.']]}><p className="eyebrow">FIRST-TIME SETUP</p><h1>Create administrator</h1><p className="sub">Set up the first DrPatientLog account.</p>{err&&<div className="error">{err}</div>}<form onSubmit={go}>{[['name','Full name'],['username','Username'],['email','Email'],['password','Password']].map(([k,l])=><label key={k}>{l}<input type={k==='password'?'password':'text'} required={k!=='email'} value={f[k]} onChange={e=>setF({...f,[k]:e.target.value})}/></label>)}<Btn className="primary full" loading={busy} loadingText="Creating account…">Create administrator</Btn></form></AuthLayout>}
-function Forgot(){const[email,setEmail]=useState(''),[msg,setMsg]=useState(''),[busy,setBusy]=useState(false);const go=async e=>{e.preventDefault();setBusy(true);try{const x=await api.post('/auth/forgot',{email});setMsg(x.resetToken?`Development reset token: ${x.resetToken}`:'If the account exists, reset instructions have been prepared.');}finally{setBusy(false)}};return <AuthLayout title="Locked out? We'll get you back in." subtitle="Enter your account email and we'll prepare reset instructions." points={[[KeyRound,'Secure reset','Reset links expire quickly.'],[ShieldCheck,'No data exposed','We never reveal whether an email exists.'],[Clock,'Quick recovery','Back to your records in moments.']]}><KeyRound size={30}/><h1>Reset password</h1><p className="sub">Enter the account email.</p>{msg&&<div className="note">{msg}</div>}<form onSubmit={go}><label>Email<input type="email" required value={email} onChange={e=>setEmail(e.target.value)}/></label><Btn className="primary full" loading={busy} loadingText="Generating…">Generate reset</Btn></form><p className="auth-foot"><Link to="/login">Back to sign in</Link></p></AuthLayout>}
-function ResetPassword(){
+function Login({onLogin,clinic}){const[f,setF]=useState({username:'',password:''}),[err,setErr]=useState(''),[busy,setBusy]=useState(false),[show,setShow]=useState(false);const go=async e=>{e.preventDefault();setBusy(true);try{onLogin((await api.post('/auth/login',f)).doctor)}catch(x){setErr(x.message)}finally{setBusy(false)}};return <AuthLayout clinic={clinic}>{(clinic?.short||clinic?.name)&&<p className="eyebrow brand">{clinic?.short||clinic?.name}</p>}<h1>Welcome back</h1><p className="sub">Sign in to your practice workspace.</p>{err&&<div className="error">{err}</div>}<form onSubmit={go}><label>Username<input autoComplete="username" required value={f.username} onChange={e=>setF({...f,username:e.target.value})}/></label><label>Password<span className="password-field"><input type={show?'text':'password'} autoComplete="current-password" required value={f.password} onChange={e=>setF({...f,password:e.target.value})}/><button type="button" className="password-toggle" title={show?'Hide password':'Show password'} aria-label={show?'Hide password':'Show password'} onClick={()=>setShow(!show)}>{show?<EyeOff size={16}/>:<Eye size={16}/>}</button></span></label><Btn className="primary full" loading={busy} loadingText="Signing in…">Sign in <ArrowUpRight size={17}/></Btn></form><p className="auth-foot"><Link className="ghost full" to="/forgot">Forgot password?</Link></p></AuthLayout>}
+function Setup({onLogin,clinic}){const[f,setF]=useState({name:'',username:'',password:'',email:''}),[err,setErr]=useState(''),[busy,setBusy]=useState(false);const go=async e=>{e.preventDefault();setBusy(true);try{onLogin((await api.post('/auth/setup',f)).doctor)}catch(x){setErr(x.message)}finally{setBusy(false)}};return <AuthLayout clinic={clinic} title="Set up your clinic workspace." subtitle="Create the first administrator account to get started." points={[[Sparkles,'One-time setup','Takes less than a minute.'],[ShieldCheck,'Secure from the start','Your data never leaves your server.'],[Users,'Ready for your team','Add doctors once you are in.']]}><p className="eyebrow">FIRST-TIME SETUP</p><h1>Create administrator</h1><p className="sub">Set up the first DrPatientLog account.</p>{err&&<div className="error">{err}</div>}<form onSubmit={go}>{[['name','Full name'],['username','Username'],['email','Email'],['password','Password']].map(([k,l])=><label key={k}>{l}<input type={k==='password'?'password':'text'} required={k!=='email'} value={f[k]} onChange={e=>setF({...f,[k]:e.target.value})}/></label>)}<Btn className="primary full" loading={busy} loadingText="Creating account…">Create administrator</Btn></form></AuthLayout>}
+function Forgot({clinic}){const[email,setEmail]=useState(''),[msg,setMsg]=useState(''),[busy,setBusy]=useState(false);const go=async e=>{e.preventDefault();setBusy(true);try{const x=await api.post('/auth/forgot',{email});setMsg(x.resetToken?`Development reset token: ${x.resetToken}`:'If the account exists, reset instructions have been prepared.');}finally{setBusy(false)}};return <AuthLayout clinic={clinic} title="Locked out? We'll get you back in." subtitle="Enter your account email and we'll prepare reset instructions." points={[[KeyRound,'Secure reset','Reset links expire quickly.'],[ShieldCheck,'No data exposed','We never reveal whether an email exists.'],[Clock,'Quick recovery','Back to your records in moments.']]}><KeyRound size={30}/><h1>Reset password</h1><p className="sub">Enter the account email.</p>{msg&&<div className="note">{msg}</div>}<form onSubmit={go}><label>Email<input type="email" required value={email} onChange={e=>setEmail(e.target.value)}/></label><Btn className="primary full" loading={busy} loadingText="Generating…">Generate reset</Btn></form><p className="auth-foot"><Link to="/login">Back to sign in</Link></p></AuthLayout>}
+function ResetPassword({clinic}){
  const params=new URLSearchParams(window.location.search),
  token=params.get('token')||'',
  [password,setPassword]=useState(''),
@@ -391,7 +391,7 @@ function ResetPassword(){
    }
  };
 
- return <AuthLayout title="Choose a strong new password." subtitle="Your reset link is valid for a single use." points={[[Lock,'Strong passwords','At least 8 characters.'],[ShieldCheck,'Encrypted','Stored securely on your server.'],[CheckCircle2,'Back to work','Sign in again right after.']]}>
+ return <AuthLayout clinic={clinic} title="Choose a strong new password." subtitle="Your reset link is valid for a single use." points={[[Lock,'Strong passwords','At least 8 characters.'],[ShieldCheck,'Encrypted','Stored securely on your server.'],[CheckCircle2,'Back to work','Sign in again right after.']]}>
      <KeyRound size={30}/>
      <h1>Set new password</h1>
      <p className="sub">Choose a new password for your DrPatientLog account.</p>
@@ -455,7 +455,7 @@ function PatientTable({rows,onEdit,onDelete}){const[deleting,setDeleting]=useSta
   </span>
 </td>}
 </tr>):<tr><td colSpan={hasActions?7:6} className="empty">No records found.</td></tr>}</tbody></table></div>}
-function Dashboard(){
+function Dashboard({clinic}){
   const[d,setD]=useState();
   const[err,setErr]=useState('');
   const[range,setRange]=useState('eth_month');
@@ -478,7 +478,7 @@ function Dashboard(){
       <section className="hero">
         <div className="hero-row">
           <div>
-            <p className="eyebrow">HOLY BETHEL DENTAL CLINIC</p>
+            {(clinic?.short||clinic?.name)&&<p className="eyebrow brand">{clinic?.short||clinic?.name}</p>}
             <h1>{d.ethToday.month} {d.ethToday.day}, {d.ethToday.year}</h1>
             <p>Welcome back. Here is what's happening across your practice.</p>
           </div>
@@ -2275,8 +2275,12 @@ function SettingsPage(){
    )}
  </>;
 }function App(){
-  const[doctor,setDoctor]=useState(undefined),[setup,setSetup]=useState(false);
+  const[doctor,setDoctor]=useState(undefined),[setup,setSetup]=useState(false),[clinic,setClinic]=useState({});
   const lastActivity=useRef(Date.now());
+
+  useEffect(()=>{
+    api.get('/auth/clinic').then(setClinic).catch(()=>{});
+  },[]);
 
   useEffect(()=>{
     api.get('/auth/status').then(x=>{
@@ -2327,7 +2331,7 @@ function SettingsPage(){
       );
     };
   },[doctor]);
-if(doctor===undefined&&!setup)return <Loading/>;if(setup)return <Setup onLogin={d=>{setSetup(false);setDoctor(d)}}/>;if(!doctor)return <Routes><Route path="/forgot" element={<Forgot/>}/><Route path="/reset-password" element={<ResetPassword/>}/><Route path="*" element={<Login onLogin={setDoctor}/>}/></Routes>;return <Shell doctor={doctor} onLogout={async()=>{await api.post('/auth/logout',{});setDoctor(null)}}><Routes><Route path="/" element={<Dashboard/>}/><Route path="/patients" element={<Patients/>}/><Route path="/patients/new" element={<PatientForm/>}/><Route path="/patients/edit/:id" element={<PatientForm/>}/><Route path="/monthly" element={<Monthly/>}/><Route path="/doctors" element={doctor.role==='admin'?<Doctors/>:<Navigate to="/"/>}/><Route path="/audit" element={<Audit/>}/><Route path="/backup" element={doctor.role==='admin'?<Backup/>:<Navigate to="/"/>}/><Route path="/notifications" element={doctor.role==='admin'?<NotificationsPage/>:<Navigate to="/"/>}/><Route path="/settings" element={doctor.role==='admin'?<SettingsPage/>:<Navigate to="/"/>}/><Route path="*" element={<Navigate to="/"/>}/></Routes></Shell>}
+if(doctor===undefined&&!setup)return <Loading/>;if(setup)return <Setup clinic={clinic} onLogin={d=>{setSetup(false);setDoctor(d)}}/>;if(!doctor)return <Routes><Route path="/forgot" element={<Forgot clinic={clinic}/>}/><Route path="/reset-password" element={<ResetPassword clinic={clinic}/>}/><Route path="*" element={<Login onLogin={setDoctor} clinic={clinic}/>}/></Routes>;return <Shell doctor={doctor} onLogout={async()=>{await api.post('/auth/logout',{});setDoctor(null)}}><Routes><Route path="/" element={<Dashboard clinic={clinic}/>}/><Route path="/patients" element={<Patients/>}/><Route path="/patients/new" element={<PatientForm/>}/><Route path="/patients/edit/:id" element={<PatientForm/>}/><Route path="/monthly" element={<Monthly/>}/><Route path="/doctors" element={doctor.role==='admin'?<Doctors/>:<Navigate to="/"/>}/><Route path="/audit" element={<Audit/>}/><Route path="/backup" element={doctor.role==='admin'?<Backup/>:<Navigate to="/"/>}/><Route path="/notifications" element={doctor.role==='admin'?<NotificationsPage/>:<Navigate to="/"/>}/><Route path="/settings" element={doctor.role==='admin'?<SettingsPage/>:<Navigate to="/"/>}/><Route path="*" element={<Navigate to="/"/>}/></Routes></Shell>}
 createRoot(document.getElementById('root')).render(<BrowserRouter><ToastProvider><App/></ToastProvider></BrowserRouter>);
 
 
