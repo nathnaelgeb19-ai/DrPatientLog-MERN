@@ -1843,7 +1843,8 @@ input[type="datetime-local"]::-webkit-datetime-edit {
   color: var(--accent);
   background: var(--accent-soft);
 }
-.monthly-current-row td { background: var(--accent-soft-2); }
+.monthly-current-row td { background: transparent; }
+.monthly-current-row td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 .monthly-current-text { color: var(--accent); font-weight: 700; }
 .monthly-number { font-weight: 700; color: var(--ink); }
 .monthly-money { color: var(--ink-2); }
@@ -2062,6 +2063,8 @@ input[type="datetime-local"]::-webkit-datetime-edit {
 }
 
 @media (max-width: 720px) {
+  .patients-summary { flex-wrap: wrap; gap: 10px 20px; }
+  .patients-summary-note { flex-basis: 100%; }
   .patients-table-wrap table,
   .monthly-table-wrap table { min-width: 0; }
   .patients-table-wrap thead,
@@ -2116,7 +2119,8 @@ input[type="datetime-local"]::-webkit-datetime-edit {
   .patients-table-wrap tbody td.empty::before,
   .monthly-table-wrap tbody td.empty::before { content: none; }
   tbody tr:hover td { background: transparent; }
-  .monthly-current-row td { background: var(--accent-soft-2); }
+.monthly-current-row td { background: transparent; }
+.monthly-current-row td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
   .monthly-action-cell { flex-wrap: wrap; }
   .empty { padding: 20px 0; }
 }
