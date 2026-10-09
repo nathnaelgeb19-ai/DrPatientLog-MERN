@@ -2,9 +2,12 @@ import React,{useEffect,useState,useRef}from'react';import{createRoot}from'react
 const money=n=>`${Number(n||0).toFixed(2)} ETB`;
 function PageHead({title,subtitle,action}){return <div className="page-head"><div><p className="eyebrow">DRPATIENTLOG</p><h1>{title}</h1><p>{subtitle}</p></div>{action}</div>}
 function Loading(){return <div className="loading"><div/><div/><div/></div>}
+function Spinner(){return <span className="spinner" aria-hidden="true"/>}
+function Btn({className='',loading=false,loadingText,children,disabled=false,...rest}){return <button className={loading?className+' is-loading':className} disabled={loading||disabled} aria-busy={loading?'true':undefined} {...rest}>{loading?<><Spinner/>{loadingText??children}</>:children}</button>}
 function Shell({doctor,onLogout,children}){
   const loc=useLocation();
   const[open,setOpen]=useState(false);
+  const[loggingOut,setLoggingOut]=useState(false);
   const[theme,setTheme]=useState(()=>localStorage.getItem('drpatientlog-theme')||'system');
 
   const applyTheme=value=>{
@@ -94,12 +97,24 @@ function Shell({doctor,onLogout,children}){
         )}
       </nav>
 
-      <button className="logout" onClick={onLogout}>
+      <Btn
+        className="logout"
+        loading={loggingOut}
+        loadingText="Signing out…"
+        onClick={async()=>{
+          setLoggingOut(true);
+          try{
+            await onLogout();
+          }finally{
+            setLoggingOut(false);
+          }
+        }}
+      >
         <span className="nav-icon">
           <LogOut size={18}/>
         </span>
         <span>Sign out</span>
-      </button>
+      </Btn>
 
     </aside>
 
@@ -191,9 +206,9 @@ function Shell({doctor,onLogout,children}){
 
   </div>
 }
-function Login({onLogin}){const[f,setF]=useState({username:'',password:''}),[err,setErr]=useState('');const go=async e=>{e.preventDefault();try{onLogin((await api.post('/auth/login',f)).doctor)}catch(x){setErr(x.message)}};return <div className="auth"><div className="auth-card"><div className="logo big"><Stethoscope/></div><p className="eyebrow">HOLY BETHEL DENTAL CLINIC</p><h1>Welcome back</h1><p className="sub">Sign in to your practice workspace.</p>{err&&<div className="error">{err}</div>}<form onSubmit={go}><label>Username<input autoComplete="username" required value={f.username} onChange={e=>setF({...f,username:e.target.value})}/></label><label>Password<input type="password" autoComplete="current-password" required value={f.password} onChange={e=>setF({...f,password:e.target.value})}/></label><button className="primary full">Sign in <ArrowUpRight size={17}/></button></form><Link className="gate-link" to="/forgot">Forgot password?</Link></div></div>}
-function Setup({onLogin}){const[f,setF]=useState({name:'',username:'',password:'',email:''}),[err,setErr]=useState('');const go=async e=>{e.preventDefault();try{onLogin((await api.post('/auth/setup',f)).doctor)}catch(x){setErr(x.message)}};return <div className="auth"><div className="auth-card"><div className="logo big"><Stethoscope/></div><p className="eyebrow">FIRST-TIME SETUP</p><h1>Create administrator</h1><p className="sub">Set up the first DrPatientLog account.</p>{err&&<div className="error">{err}</div>}<form onSubmit={go}>{[['name','Full name'],['username','Username'],['email','Email'],['password','Password']].map(([k,l])=><label key={k}>{l}<input type={k==='password'?'password':'text'} required={k!=='email'} value={f[k]} onChange={e=>setF({...f,[k]:e.target.value})}/></label>)}<button className="primary full">Create administrator</button></form></div></div>}
-function Forgot(){const[email,setEmail]=useState(''),[msg,setMsg]=useState('');const go=async e=>{e.preventDefault();const x=await api.post('/auth/forgot',{email});setMsg(x.resetToken?`Development reset token: ${x.resetToken}`:'If the account exists, reset instructions have been prepared.');};return <div className="auth"><div className="auth-card"><KeyRound size={30}/><h1>Reset password</h1><p className="sub">Enter the account email.</p>{msg&&<div className="note">{msg}</div>}<form onSubmit={go}><label>Email<input type="email" required value={email} onChange={e=>setEmail(e.target.value)}/></label><button className="primary full">Generate reset</button></form><Link className="gate-link" to="/login">Back to sign in</Link></div></div>}
+function Login({onLogin}){const[f,setF]=useState({username:'',password:''}),[err,setErr]=useState(''),[busy,setBusy]=useState(false);const go=async e=>{e.preventDefault();setBusy(true);try{onLogin((await api.post('/auth/login',f)).doctor)}catch(x){setErr(x.message)}finally{setBusy(false)}};return <div className="auth"><div className="auth-card"><div className="logo big"><Stethoscope/></div><p className="eyebrow">HOLY BETHEL DENTAL CLINIC</p><h1>Welcome back</h1><p className="sub">Sign in to your practice workspace.</p>{err&&<div className="error">{err}</div>}<form onSubmit={go}><label>Username<input autoComplete="username" required value={f.username} onChange={e=>setF({...f,username:e.target.value})}/></label><label>Password<input type="password" autoComplete="current-password" required value={f.password} onChange={e=>setF({...f,password:e.target.value})}/></label><Btn className="primary full" loading={busy} loadingText="Signing in…">Sign in <ArrowUpRight size={17}/></Btn></form><Link className="gate-link" to="/forgot">Forgot password?</Link></div></div>}
+function Setup({onLogin}){const[f,setF]=useState({name:'',username:'',password:'',email:''}),[err,setErr]=useState(''),[busy,setBusy]=useState(false);const go=async e=>{e.preventDefault();setBusy(true);try{onLogin((await api.post('/auth/setup',f)).doctor)}catch(x){setErr(x.message)}finally{setBusy(false)}};return <div className="auth"><div className="auth-card"><div className="logo big"><Stethoscope/></div><p className="eyebrow">FIRST-TIME SETUP</p><h1>Create administrator</h1><p className="sub">Set up the first DrPatientLog account.</p>{err&&<div className="error">{err}</div>}<form onSubmit={go}>{[['name','Full name'],['username','Username'],['email','Email'],['password','Password']].map(([k,l])=><label key={k}>{l}<input type={k==='password'?'password':'text'} required={k!=='email'} value={f[k]} onChange={e=>setF({...f,[k]:e.target.value})}/></label>)}<Btn className="primary full" loading={busy} loadingText="Creating account…">Create administrator</Btn></form></div></div>}
+function Forgot(){const[email,setEmail]=useState(''),[msg,setMsg]=useState(''),[busy,setBusy]=useState(false);const go=async e=>{e.preventDefault();setBusy(true);try{const x=await api.post('/auth/forgot',{email});setMsg(x.resetToken?`Development reset token: ${x.resetToken}`:'If the account exists, reset instructions have been prepared.');}finally{setBusy(false)}};return <div className="auth"><div className="auth-card"><KeyRound size={30}/><h1>Reset password</h1><p className="sub">Enter the account email.</p>{msg&&<div className="note">{msg}</div>}<form onSubmit={go}><label>Email<input type="email" required value={email} onChange={e=>setEmail(e.target.value)}/></label><Btn className="primary full" loading={busy} loadingText="Generating…">Generate reset</Btn></form><Link className="gate-link" to="/login">Back to sign in</Link></div></div>}
 function ResetPassword(){
  const params=new URLSearchParams(window.location.search),
  token=params.get('token')||'',
@@ -201,7 +216,8 @@ function ResetPassword(){
  [confirm,setConfirm]=useState(''),
  [msg,setMsg]=useState(''),
  [err,setErr]=useState(''),
- [done,setDone]=useState(false);
+ [done,setDone]=useState(false),
+ [busy,setBusy]=useState(false);
 
  const go=async e=>{
    e.preventDefault();
@@ -223,12 +239,15 @@ function ResetPassword(){
      return;
    }
 
+   setBusy(true);
    try{
      await api.post('/auth/reset',{token,password});
      setDone(true);
      setMsg('Your password has been reset successfully.');
    }catch(e){
      setErr(e.message||'This reset link is invalid or expired.');
+   }finally{
+     setBusy(false);
    }
  };
 
@@ -264,7 +283,7 @@ function ResetPassword(){
          />
        </label>
 
-       <button className="primary full">Reset password</button>
+       <Btn className="primary full" loading={busy} loadingText="Resetting…">Reset password</Btn>
      </form>}
 
      <Link className="gate-link" to="/login">
@@ -273,8 +292,8 @@ function ResetPassword(){
    </div>
  </div>
 }function Stat({label,value,meta,icon:I}){return <div className="stat"><div className="stat-icon"><I size={19}/></div><span>{label}</span><strong>{value}</strong><small>{meta}</small></div>}
-function PatientTable({rows,onEdit,onDelete}){return <div className="table-wrap"><table>
-<thead><tr><th>Patient</th><th>Card</th><th>Ticket</th><th>Procedure</th><th>Fee</th><th>Cut</th><th>Actions</th></tr></thead>
+function PatientTable({rows,onEdit,onDelete}){const[deleting,setDeleting]=useState(null);return <div className="table-wrap"><table>
+<thead><tr><th scope="col">Patient</th><th scope="col">Card</th><th scope="col">Ticket</th><th scope="col">Procedure</th><th scope="col">Fee</th><th scope="col">Cut</th><th scope="col">Actions</th></tr></thead>
 <tbody>{rows?.length?rows.map(r=><tr key={r._id}>
 <td>
   <b>{r.patientName}</b>
@@ -287,15 +306,17 @@ function PatientTable({rows,onEdit,onDelete}){return <div className="table-wrap"
 <td>{money(r.totalFee)}</td>
 <td><b>{money(r.myEarning)}</b></td>
 <td className="row-actions">
+  <span className="row-actions-inner">
   {onEdit&&<button className="icon patient-row-action-edit" title="Edit patient" onClick={()=>onEdit(r)}>
     <Edit3 size={15}/>
     <span>Edit</span>
   </button>}
   
-  {onDelete&&<button className="icon danger patient-row-action-delete" title="Delete patient" onClick={()=>onDelete(r)}>
-    <Trash2 size={15}/>
+  {onDelete&&<button className={'icon danger patient-row-action-delete'+(deleting===r._id?' is-loading':'')} title="Delete patient" disabled={deleting===r._id} onClick={async()=>{setDeleting(r._id);try{await onDelete(r)}finally{setDeleting(null)}}}>
+    {deleting===r._id?<Spinner/>:<Trash2 size={15}/>}
     <span>Del</span>
   </button>}
+  </span>
 </td>
 </tr>):<tr><td colSpan="7" className="empty">No records found.</td></tr>}</tbody></table></div>}
 function Dashboard(){
@@ -505,9 +526,11 @@ function Patients(){
   const[q,setQ]=useState('');
   const[from,setFrom]=useState('');
   const[to,setTo]=useState('');
+  const[busy,setBusy]=useState('');
 
   const load=()=>{
-    api.get(`/patients?q=${encodeURIComponent(q)}&from=${from}&to=${to}`).then(setRows);
+    setBusy('search');
+    return api.get(`/patients?q=${encodeURIComponent(q)}&from=${from}&to=${to}`).then(setRows).finally(()=>setBusy(''));
   };
 
   useEffect(()=>{
@@ -518,7 +541,8 @@ function Patients(){
     setQ('');
     setFrom('');
     setTo('');
-    api.get('/patients?q=&from=&to=').then(setRows);
+    setBusy('clear');
+    api.get('/patients?q=&from=&to=').then(setRows).finally(()=>setBusy(''));
   };
 
   const del=async r=>{
@@ -572,14 +596,14 @@ function Patients(){
           />
         </div>
 
-        <button className="patients-filter-button" onClick={load}>
+        <Btn className="patients-filter-button" loading={busy==='search'} loadingText="Searching…" onClick={load}>
           <Search size={16}/>
           Search
-        </button>
+        </Btn>
 
-        <button className="patients-clear-button" onClick={clearFilters}>
+        <Btn className="patients-clear-button" loading={busy==='clear'} loadingText="Clearing…" onClick={clearFilters}>
           Clear
-        </button>
+        </Btn>
 
         <a className="patients-export-button" href="/api/export/patients.csv">
           <Download size={16}/>
@@ -629,6 +653,8 @@ function PatientForm(){
 
   const[presets,setPresets]=useState([]);
   const[err,setErr]=useState('');
+  const[busy,setBusy]=useState(false);
+  const[sugBusy,setSugBusy]=useState(false);
 
   useEffect(()=>{
     api.get('/patients/presets/list').then(setPresets);
@@ -650,24 +676,32 @@ function PatientForm(){
 
   const save=async e=>{
     e.preventDefault();
+    setBusy(true);
 
     try{
       await(editing?api.put('/patients/'+id,f):api.post('/patients',f));
       nav('/patients');
     }catch(x){
       setErr(x.message);
+    }finally{
+      setBusy(false);
     }
   };
 
   const suggest=async()=>{
-    const x=await api.get(
-      '/patients/suggest-fee?procedure='+encodeURIComponent(f.procedure)
-    );
+    setSugBusy(true);
+    try{
+      const x=await api.get(
+        '/patients/suggest-fee?procedure='+encodeURIComponent(f.procedure)
+      );
 
-    if(x.fee!=null){
-      set('totalFee',x.fee);
-    }else{
-      alert('No preset fee for this procedure');
+      if(x.fee!=null){
+        set('totalFee',x.fee);
+      }else{
+        alert('No preset fee for this procedure');
+      }
+    }finally{
+      setSugBusy(false);
     }
   };
 
@@ -789,13 +823,15 @@ function PatientForm(){
                 value={f.totalFee??''}
                 onChange={e=>set('totalFee',e.target.value)}
               />
-              <button
+              <Btn
                 type="button"
                 className="patient-suggest-button"
+                loading={sugBusy}
+                loadingText="…"
                 onClick={suggest}
               >
                 Suggest
-              </button>
+              </Btn>
             </div>
           </label>
 
@@ -842,10 +878,10 @@ function PatientForm(){
           Cancel
         </button>
 
-        <button className="primary patient-save-button">
+        <Btn className="primary patient-save-button" loading={busy} loadingText={editing?'Updating…':'Saving…'} disabled={busy}>
           <CheckCircle2 size={18}/>
           {editing?'Update record':'Save patient record'}
-        </button>
+        </Btn>
 
       </div>
 
@@ -856,6 +892,7 @@ function Monthly(){
   const[d,setD]=useState();
   const[err,setErr]=useState('');
   const[loading,setLoading]=useState(true);
+  const[busy,setBusy]=useState('');
 
   const load=()=>{
     setErr('');
@@ -877,6 +914,7 @@ function Monthly(){
 
   const close=async m=>{
     if(confirm(`Mark ${m._id.month} ${m._id.year} as paid and closed?`)){
+      setBusy('close:'+m._id.month+m._id.year);
       try{
         await api.post('/dashboard/monthly/close',{
           month:m._id.month,
@@ -885,6 +923,8 @@ function Monthly(){
         load();
       }catch(e){
         alert(e.message);
+      }finally{
+        setBusy('');
       }
     }
   };
@@ -906,17 +946,25 @@ function Monthly(){
 
         <div style={{display:'flex',gap:'10px',flexWrap:'wrap',justifyContent:'flex-end'}}>
 
-          <button
+          <Btn
             className="ghost monthly-telegram-button"
-            onClick={()=>
-              api.post('/telegram/monthly',{})
-                .then(()=>alert('Monthly report sent'))
-                .catch(e=>alert(e.message))
-            }
+            loading={busy==='header'}
+            loadingText="Sending…"
+            onClick={async()=>{
+              setBusy('header');
+              try{
+                await api.post('/telegram/monthly',{});
+                alert('Monthly report sent');
+              }catch(e){
+                alert(e.message);
+              }finally{
+                setBusy('');
+              }
+            }}
           >
             <Send size={16}/>
             Send Telegram
-          </button>
+          </Btn>
         </div>
       </div>
 
@@ -925,12 +973,12 @@ function Monthly(){
 
           <thead>
             <tr>
-              <th>Ethiopian month</th>
-              <th>Patients</th>
-              <th>Income</th>
-              <th>Doctor %</th>
-              <th>Doctor earnings</th>
-              <th>Status / action</th>
+              <th scope="col">Ethiopian month</th>
+              <th scope="col">Patients</th>
+              <th scope="col">Income</th>
+              <th scope="col">Doctor %</th>
+              <th scope="col">Doctor earnings</th>
+              <th scope="col">Status / action</th>
             </tr>
           </thead>
 
@@ -1007,13 +1055,15 @@ function Monthly(){
     <div style={{display:'flex',gap:'8px',flexWrap:'wrap',alignItems:'center'}}>
 
       {m.canClose && !m.closed ? (
-        <button
+        <Btn
           className="primary small monthly-close-button"
+          loading={busy==='close:'+m._id.month+m._id.year}
+          loadingText="Closing…"
           onClick={()=>close(m)}
         >
           <CheckCircle2 size={15}/>
           Paid & Close Month
-        </button>
+        </Btn>
       ) : m.closed ? (
         <span className="pill success monthly-status-pill">
           <CheckCircle2 size={14}/>
@@ -1041,20 +1091,28 @@ function Monthly(){
   HTML Report
 </button>
 
-<button
+<Btn
   className="ghost small"
-  onClick={()=>{
-    api.post('/telegram/monthly-period',{
-      month:m._id.month,
-      year:m._id.year
-    })
-      .then(()=>alert('Monthly report sent'))
-      .catch(e=>alert(e.message))
+  loading={busy==='tg:'+m._id.month+m._id.year}
+  loadingText="Sending…"
+  onClick={async()=>{
+    setBusy('tg:'+m._id.month+m._id.year);
+    try{
+      await api.post('/telegram/monthly-period',{
+        month:m._id.month,
+        year:m._id.year
+      });
+      alert('Monthly report sent');
+    }catch(e){
+      alert(e.message);
+    }finally{
+      setBusy('');
+    }
   }}
 >
   <Send size={14}/>
   Send Telegram
-</button>
+</Btn>
 
     </div>
 
@@ -1071,12 +1129,17 @@ function Monthly(){
     </section>
   </>
 }
-function Doctors(){const[rows,setRows]=useState([]),[show,setShow]=useState(false),[f,setF]=useState({name:'',username:'',password:'',email:'',role:'doctor',baseSalary:45000});const load=()=>api.get('/doctors').then(setRows);useEffect(()=>{load()},[]);const add=async e=>{e.preventDefault();try{await api.post('/doctors',f);setShow(false);setF({name:'',username:'',password:'',email:'',role:'doctor',baseSalary:45000});load()}catch(x){alert(x.message)}};const remove=async d=>{const p=prompt(`Enter ${d.name}'s password to delete this account:`);if(p){try{await api.del('/doctors/'+d._id,{password:p});load()}catch(e){alert(e.message)}}};const sw=async d=>{const p=prompt(`Enter ${d.name}'s password to switch to this account:`);if(p)alert((await api.post('/doctors/'+d._id+'/switch',{password:p})).doctor?'Switched. Reload the page to continue.':'Failed')};return <><PageHead title="Doctors" subtitle="Manage accounts, roles and secure account switching." action={<button className="primary" onClick={()=>setShow(!show)}><Plus size={18}/>Add doctor</button>}/>{show&&<form className="card form" onSubmit={add}><div className="form-grid">{[['name','Name'],['username','Username'],['password','Password'],['email','Email'],['baseSalary','Base salary']].map(([k,l])=><label key={k}>{l}<input type={k==='password'?'password':'text'} required={['name','username','password'].includes(k)} value={f[k]} onChange={e=>setF({...f,[k]:e.target.value})}/></label>)}<label>Role<select value={f.role} onChange={e=>setF({...f,role:e.target.value})}><option>doctor</option><option>admin</option></select></label></div><button className="primary">Create doctor</button></form>}<section className="card"><div className="table-wrap"><table><thead><tr><th>Doctor</th><th>Username</th><th>Email</th><th>Role</th><th>Salary</th><th/></tr></thead><tbody>{rows.map(d=><tr key={d._id}><td><b>{d.name}</b></td><td>{d.username}</td><td>{d.email||'—'}</td><td><span className="pill">{d.role}</span></td><td>{money(d.baseSalary)}</td><td className="row-actions"><button className="ghost small" onClick={()=>sw(d)}>Switch</button><button className="icon danger" onClick={()=>remove(d)}><Trash2 size={16}/></button></td></tr>)}</tbody></table></div></section></>}
-function Audit(){const[d,setD]=useState([]);useEffect(()=>{api.get('/admin/audit').then(setD)},[]);return <><PageHead title="Audit log" subtitle="Security and activity history."/><section className="card"><div className="table-wrap"><table><thead><tr><th>Time</th><th>Doctor</th><th>Action</th><th>Entity</th><th>Detail</th></tr></thead><tbody>{d.map(x=><tr key={x._id}><td>{new Date(x.createdAt).toLocaleString()}</td><td>{x.doctorName}</td><td>{x.action}</td><td>{x.entity}</td><td>{x.detail}</td></tr>)}</tbody></table></div></section></>}
+function Doctors(){const[rows,setRows]=useState([]),[show,setShow]=useState(false),[f,setF]=useState({name:'',username:'',password:'',email:'',role:'doctor',baseSalary:45000}),[busy,setBusy]=useState(false),[rowBusy,setRowBusy]=useState('');const load=()=>api.get('/doctors').then(setRows);useEffect(()=>{load()},[]);const add=async e=>{e.preventDefault();setBusy(true);try{await api.post('/doctors',f);setShow(false);setF({name:'',username:'',password:'',email:'',role:'doctor',baseSalary:45000});load()}catch(x){alert(x.message)}finally{setBusy(false)}};const remove=async d=>{const p=prompt(`Enter ${d.name}'s password to delete this account:`);if(p){setRowBusy('del:'+d._id);try{await api.del('/doctors/'+d._id,{password:p});load()}catch(e){alert(e.message)}finally{setRowBusy('')}}};const sw=async d=>{const p=prompt(`Enter ${d.name}'s password to switch to this account:`);if(p){setRowBusy('sw:'+d._id);try{alert((await api.post('/doctors/'+d._id+'/switch',{password:p})).doctor?'Switched. Reload the page to continue.':'Failed')}finally{setRowBusy('')}}};return <><PageHead title="Doctors" subtitle="Manage accounts, roles and secure account switching." action={<button className="primary" onClick={()=>setShow(!show)}><Plus size={18}/>Add doctor</button>}/>{show&&<form className="card form" onSubmit={add}><div className="form-grid">{[['name','Name'],['username','Username'],['password','Password'],['email','Email'],['baseSalary','Base salary']].map(([k,l])=><label key={k}>{l}<input type={k==='password'?'password':'text'} required={['name','username','password'].includes(k)} value={f[k]} onChange={e=>setF({...f,[k]:e.target.value})}/></label>)}<label>Role<select value={f.role} onChange={e=>setF({...f,role:e.target.value})}><option>doctor</option><option>admin</option></select></label></div><Btn className="primary" loading={busy} loadingText="Creating…">Create doctor</Btn></form>}<section className="card"><div className="table-wrap"><table><thead><tr><th scope="col">Doctor</th><th scope="col">Username</th><th scope="col">Email</th><th scope="col">Role</th><th scope="col">Salary</th><th scope="col"/></tr></thead><tbody>{rows.map(d=><tr key={d._id}><td><b>{d.name}</b></td><td>{d.username}</td><td>{d.email||'—'}</td><td><span className="pill">{d.role}</span></td><td>{money(d.baseSalary)}</td><td className="row-actions"><span className="row-actions-inner"><Btn className="ghost small" loading={rowBusy==='sw:'+d._id} loadingText="Switching…" onClick={()=>sw(d)}>Switch</Btn><button className="icon danger" disabled={rowBusy==='del:'+d._id} onClick={()=>remove(d)}>{rowBusy==='del:'+d._id?<Spinner/>:<Trash2 size={16}/>}</button></span></td></tr>)}</tbody></table></div></section></>}
+function Audit(){const[d,setD]=useState([]);useEffect(()=>{api.get('/admin/audit').then(setD)},[]);return <><PageHead title="Audit log" subtitle="Security and activity history."/><section className="card"><div className="table-wrap"><table><thead><tr><th scope="col">Time</th><th scope="col">Doctor</th><th scope="col">Action</th><th scope="col">Entity</th><th scope="col">Detail</th></tr></thead><tbody>{d.map(x=><tr key={x._id}><td>{new Date(x.createdAt).toLocaleString()}</td><td>{x.doctorName}</td><td>{x.action}</td><td>{x.entity}</td><td>{x.detail}</td></tr>)}</tbody></table></div></section></>}
 function Backup(){
   const [status,setStatus]=useState(null);
   const [loading,setLoading]=useState(true);
   const [testing,setTesting]=useState(false);
+  const [downloading,setDownloading]=useState(false);
+  const [uploading,setUploading]=useState(false);
+  const [disconnecting,setDisconnecting]=useState(false);
+  const [importing,setImporting]=useState(false);
+  const [restoring,setRestoring]=useState(false);
 
   const loadStatus=async()=>{
     try{
@@ -1094,6 +1157,7 @@ function Backup(){
   },[]);
 
   const download=async()=>{
+    setDownloading(true);
     try{
       const b=await api.download('/admin/backup');
       const a=document.createElement('a');
@@ -1105,6 +1169,8 @@ function Backup(){
       URL.revokeObjectURL(a.href);
     }catch(e){
       alert(e.message);
+    }finally{
+      setDownloading(false);
     }
   };
 
@@ -1117,6 +1183,7 @@ function Backup(){
       return;
     }
 
+    setRestoring(true);
     const r=new FileReader();
 
     r.onload=async()=>{
@@ -1128,6 +1195,7 @@ function Backup(){
         alert(x.message);
       }finally{
         e.target.value='';
+        setRestoring(false);
       }
     };
 
@@ -1137,6 +1205,7 @@ function Backup(){
   const importCsv=async e=>{
     const file=e.target.files?.[0];
     if(!file)return;
+    setImporting(true);
     try{
       const form=new FormData();
       form.append('file',file);
@@ -1146,12 +1215,13 @@ function Backup(){
       alert(err.message);
     }finally{
       e.target.value='';
+      setImporting(false);
     }
   };
 
   const uploadGoogleDrive=async()=>{
     try{
-      setTesting(true);
+      setUploading(true);
       const result=await api.post('/admin/google-drive/upload',{});
       if(result.ok){
         alert('Backup uploaded successfully to Google Drive.');
@@ -1162,7 +1232,7 @@ function Backup(){
     }catch(e){
       alert(e.message);
     }finally{
-      setTesting(false);
+      setUploading(false);
     }
   };
 
@@ -1208,12 +1278,15 @@ function Backup(){
   const disconnectGoogleDrive=async()=>{
     if(!window.confirm('Disconnect Google Drive from DrPatientLog?'))return;
 
+    setDisconnecting(true);
     try{
       await api.post('/admin/google-drive/disconnect',{});
       alert('Google Drive disconnected.');
       await loadStatus();
     }catch(e){
       alert(e.message);
+    }finally{
+      setDisconnecting(false);
     }
   };
   const statusReady=!loading && status?.backupDirReady;
@@ -1238,8 +1311,8 @@ function Backup(){
         <a className="ghost" href="/api/export/patients.csv" style={{display:'inline-flex'}}>
           <Download size={16}/> Export Patient CSV
         </a>
-        <label className="ghost" style={{display:'inline-flex',cursor:'pointer'}}>
-          Choose CSV File
+        <label className={'ghost'+(importing?' is-loading':'')} style={{display:'inline-flex',cursor:'pointer'}}>
+          {importing?<><Spinner/>Importing…</>:'Choose CSV File'}
           <input type="file" accept=".csv,text/csv" onChange={importCsv} style={{display:'none'}}/>
         </label>
       </div>
@@ -1255,9 +1328,9 @@ function Backup(){
         <p style={{margin:'0 0 20px',fontSize:'14px',lineHeight:'1.55',color:'var(--muted)'}}>
           Save a complete copy of your clinic database to your computer.
         </p>
-        <button className="primary" onClick={download}>
+        <Btn className="primary" loading={downloading} loadingText="Downloading…" onClick={download}>
           <Download size={16}/>Download Backup
-        </button>
+        </Btn>
       </section>
 
       <section className="card">
@@ -1295,14 +1368,14 @@ function Backup(){
         </p>
                 {!loading && googleConfigured ? (
           <div style={{display:'flex',gap:'10px',flexWrap:'wrap'}}>
-            <button className="primary" onClick={uploadGoogleDrive} disabled={testing}>
+            <Btn className="primary" loading={uploading} loadingText="Uploading…" onClick={uploadGoogleDrive}>
               <Upload size={16}/>
-              {testing?'Uploading...':'Upload Backup'}
-            </button>
+              Upload Backup
+            </Btn>
 
-            <button className="ghost" onClick={disconnectGoogleDrive}>
+            <Btn className="ghost" loading={disconnecting} loadingText="Disconnecting…" onClick={disconnectGoogleDrive}>
               Disconnect
-            </button>
+            </Btn>
           </div>
         ) : (
           <button className="primary" onClick={connectGoogleDrive} disabled={loading}>
@@ -1323,8 +1396,8 @@ function Backup(){
         <p style={{margin:'0 0 20px',fontSize:'14px',lineHeight:'1.55',color:'var(--muted)'}}>
           Restore your clinic data from a backup file.
         </p>
-        <label className="primary">
-          <Upload size={16}/>Choose Backup
+        <label className={'primary'+(restoring?' is-loading':'')}>
+          {restoring?<><Spinner/>Restoring…</>:<><Upload size={16}/>Choose Backup</>}
           <input hidden type="file" accept="application/json,.json" onChange={restore}/>
         </label>
         <p style={{margin:'12px 0 0',fontSize:'12px',lineHeight:'1.45',color:'var(--muted)'}}>
@@ -1340,9 +1413,9 @@ function Backup(){
           <p>Production automatic backups are triggered by cron-job.org. You can also run a backup manually below.</p>
         </div>
 
-        <button className="ghost" onClick={loadStatus}>
+        <Btn className="ghost" loading={loading} loadingText="Refreshing…" onClick={loadStatus}>
           <RefreshCw size={15}/>Refresh
-        </button>
+        </Btn>
       </div>
 
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'16px',marginTop:'16px'}}>
@@ -1366,15 +1439,15 @@ function Backup(){
       </div>
 
       <div className="form-actions">
-        <button className="primary" onClick={testBackup} disabled={testing}>
+        <Btn className="primary" loading={testing} loadingText="Running backup…" onClick={testBackup}>
           <RefreshCw size={16}/>
-          {testing?'Running backup...':'Run Backup Now'}
-        </button>
+          Run Backup Now
+        </Btn>
       </div>
 
       <div style={{marginTop:'15px',fontSize:'13px',lineHeight:'1.5',color:'var(--muted)'}}>
         {statusReady
-          ? '? Backup location is ready.'
+          ? 'Backup location is ready.'
           : loading
             ? 'Checking backup location...'
             : 'Backup location is not ready.'}
@@ -1388,7 +1461,8 @@ function NotificationsPage(){
  const[tg,setTg]=useState({botToken:'',chatId:'',enabled:false}),
  [f,setF]=useState({telegram_daily_report_time:'19:00',telegram_monthly_report_time:'19:00'}),
  [saved,setSaved]=useState(false),
- [busy,setBusy]=useState(false);
+ [busy,setBusy]=useState(false),
+ [savingTg,setSavingTg]=useState(false);
 
  useEffect(()=>{
    Promise.all([
@@ -1408,6 +1482,7 @@ function NotificationsPage(){
  },[]);
 
  const saveTelegram=async()=>{
+   setSavingTg(true);
    try{
      const me=await api.get('/auth/me');
      await api.post('/doctors/'+me.doctor._id+'/telegram',tg);
@@ -1419,6 +1494,8 @@ function NotificationsPage(){
      setTimeout(()=>setSaved(false),1800);
    }catch(e){
      alert(e.message);
+   }finally{
+     setSavingTg(false);
    }
  };
 
@@ -1502,9 +1579,9 @@ function NotificationsPage(){
      </div>
 
      <div className="form-actions">
-       <button className="primary" onClick={saveTelegram}>
+       <Btn className="primary" loading={savingTg} loadingText="Saving…" onClick={saveTelegram}>
          Save notification settings
-       </button>
+       </Btn>
        {saved&&<span className="pill success">Saved</span>}
      </div>
    </section>
@@ -1514,13 +1591,13 @@ function NotificationsPage(){
      <p>Send a report immediately without waiting for the scheduled time.</p>
 
      <div className="form-actions">
-       <button className="ghost" disabled={busy} onClick={test}>
+       <Btn className="ghost" loading={busy} loadingText="Sending…" onClick={test}>
          <Send size={16}/>Send Telegram test
-       </button>
+       </Btn>
 
-       <button className="ghost" disabled={busy} onClick={sendDaily}>
+       <Btn className="ghost" loading={busy} loadingText="Sending…" onClick={sendDaily}>
          <FileText size={16}/>Send today's daily report
-       </button>
+       </Btn>
      </div>
    </section>
  </>;
@@ -1533,7 +1610,10 @@ function SettingsPage(){
  [username,setUsername]=useState(''),
  [password,setPassword]=useState(''),
  [saved,setSaved]=useState(false),
- [loginSaved,setLoginSaved]=useState(false);
+ [loginSaved,setLoginSaved]=useState(false),
+ [savingProfile,setSavingProfile]=useState(false),
+ [savingLogin,setSavingLogin]=useState(false),
+ [savingSettings,setSavingSettings]=useState(false);
 
  useEffect(()=>{
    Promise.all([
@@ -1552,6 +1632,7 @@ function SettingsPage(){
  },[]);
 
  const saveProfile=async()=>{
+   setSavingProfile(true);
    try{
      const out=await api.put('/doctors/'+doctor._id,{
        name:profile.name,
@@ -1570,10 +1651,13 @@ function SettingsPage(){
      setTimeout(()=>setSaved(false),1800);
    }catch(e){
      alert(e.message);
+   }finally{
+     setSavingProfile(false);
    }
  };
 
  const saveLogin=async()=>{
+   setSavingLogin(true);
    try{
      const out=await api.put('/doctors/'+doctor._id,{
        name:doctor.name,
@@ -1589,16 +1673,21 @@ function SettingsPage(){
      setTimeout(()=>setLoginSaved(false),1800);
    }catch(e){
      alert(e.message);
+   }finally{
+     setSavingLogin(false);
    }
  };
 
  const save=async()=>{
+   setSavingSettings(true);
    try{
      await api.put('/settings',f);
      setSaved(true);
      setTimeout(()=>setSaved(false),1800);
    }catch(e){
      alert(e.message);
+   }finally{
+     setSavingSettings(false);
    }
  };
 
@@ -1635,7 +1724,7 @@ function SettingsPage(){
      </div>
 
      <div className="form-actions">
-       <button className="primary" onClick={saveProfile}>Save profile</button>
+       <Btn className="primary" loading={savingProfile} loadingText="Saving…" onClick={saveProfile}>Save profile</Btn>
        {saved&&<span className="pill success">Saved</span>}
      </div>
    </section>
@@ -1662,7 +1751,7 @@ function SettingsPage(){
      </div>
 
      <div className="form-actions">
-       <button className="primary" onClick={saveLogin}>Update login</button>
+       <Btn className="primary" loading={savingLogin} loadingText="Updating…" onClick={saveLogin}>Update login</Btn>
        {loginSaved&&<span className="pill success">Updated</span>}
      </div>
    </section>
@@ -1697,7 +1786,7 @@ function SettingsPage(){
      </div>
 
      <div className="form-actions">
-       <button className="primary" onClick={save}>Save settings</button>
+       <Btn className="primary" loading={savingSettings} loadingText="Saving…" onClick={save}>Save settings</Btn>
        {saved&&<span className="pill success">Saved</span>}
      </div>
    </section>
