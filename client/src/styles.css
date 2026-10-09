@@ -387,6 +387,7 @@ nav a.active { background: var(--accent-soft); color: var(--accent); }
   max-width: 1200px;
   margin: 0 auto;
   padding: 30px 32px 64px;
+  overflow-x: clip;
 }
 
 /* --------------------------------------------------------------------------
@@ -599,6 +600,8 @@ td small { display: block; font-size: 11px; color: var(--faint); margin-top: 3px
 
 label {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
   gap: 7px;
   font-size: 12px;
   font-weight: 700;
@@ -608,6 +611,7 @@ label em { font-style: normal; font-weight: 600; color: var(--faint); }
 
 input, select {
   width: 100%;
+  min-width: 0;
   padding: 12px 13px;
   border: 1px solid var(--line);
   border-radius: 11px;
@@ -623,6 +627,56 @@ input:focus-visible, select:focus-visible {
   background: var(--surface);
 }
 input[readonly] { color: var(--muted); cursor: default; }
+
+/* WebKit (iPhone Safari) gives date/time fields their native intrinsic width
+   instead of honoring width:100%, so they slide past the right edge of the
+   screen. Force them to behave like regular inputs. */
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"] {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+input[type="date"]::-webkit-datetime-edit,
+input[type="time"]::-webkit-datetime-edit,
+input[type="datetime-local"]::-webkit-datetime-edit {
+  display: block;
+  padding: 0;
+  min-width: 0;
+}
+@media (hover: none) and (pointer: coarse) {
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"] {
+    -webkit-appearance: textfield;
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+}
+
+.password-field { position: relative; display: block; }
+.password-field input { padding-right: 42px; }
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color .16s ease, background .16s ease;
+}
+.password-toggle:hover { color: var(--ink); background: var(--surface-2); }
+.password-toggle:focus-visible { outline: none; box-shadow: var(--ring); color: var(--accent); }
 
 .form-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 22px; }
 .split { display: flex; align-items: stretch; gap: 8px; }
@@ -860,7 +914,7 @@ input[readonly] { color: var(--muted); cursor: default; }
 .patients-search input { flex: 1; height: auto; padding: 0; border: 0; background: transparent; }
 .patients-search input:focus-visible { box-shadow: none; }
 
-.patients-date { display: grid; gap: 6px; }
+.patients-date { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; gap: 6px; }
 .patients-date label { font-size: 11px; font-weight: 700; color: var(--muted); }
 .patients-date input { height: 44px; }
 

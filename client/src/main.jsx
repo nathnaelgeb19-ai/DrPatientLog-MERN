@@ -1,4 +1,4 @@
-import React,{useEffect,useState,useRef}from'react';import{createRoot}from'react-dom/client';import{BrowserRouter,useNavigate,useLocation,useParams,Routes,Route,Link,Navigate}from'react-router-dom';import{LayoutDashboard,Users,UserRoundCog,CalendarDays,Settings,LogOut,Plus,Search,Menu,X,Stethoscope,ShieldCheck,ArrowUpRight,Trash2,Edit3,CheckCircle2,ReceiptText,ClipboardList,Database,Send,Download,Upload,RefreshCw,KeyRound,UserCog,Palette,Sun,Moon,Monitor,Bell,Clock,ChevronDown,FileText}from'lucide-react';import{api}from'./api';import{ethiopianDate}from'./ethiopian.js';import'./styles.css';
+import React,{useEffect,useState,useRef}from'react';import{createRoot}from'react-dom/client';import{BrowserRouter,useNavigate,useLocation,useParams,Routes,Route,Link,Navigate}from'react-router-dom';import{LayoutDashboard,Users,UserRoundCog,CalendarDays,Settings,LogOut,Plus,Search,Menu,X,Stethoscope,ShieldCheck,ArrowUpRight,Trash2,Edit3,CheckCircle2,ReceiptText,ClipboardList,Database,Send,Download,Upload,RefreshCw,KeyRound,UserCog,Palette,Sun,Moon,Monitor,Bell,Clock,ChevronDown,FileText,Eye,EyeOff}from'lucide-react';import{api}from'./api';import{ethiopianDate}from'./ethiopian.js';import'./styles.css';
 const money=n=>`${Number(n||0).toFixed(2)} ETB`;
 function PageHead({title,subtitle,action}){return <div className="page-head"><div><p className="eyebrow">DRPATIENTLOG</p><h1>{title}</h1><p>{subtitle}</p></div>{action}</div>}
 function Loading(){return <div className="loading"><div/><div/><div/></div>}
@@ -206,7 +206,7 @@ function Shell({doctor,onLogout,children}){
 
   </div>
 }
-function Login({onLogin}){const[f,setF]=useState({username:'',password:''}),[err,setErr]=useState(''),[busy,setBusy]=useState(false);const go=async e=>{e.preventDefault();setBusy(true);try{onLogin((await api.post('/auth/login',f)).doctor)}catch(x){setErr(x.message)}finally{setBusy(false)}};return <div className="auth"><div className="auth-card"><div className="logo big"><Stethoscope/></div><p className="eyebrow">HOLY BETHEL DENTAL CLINIC</p><h1>Welcome back</h1><p className="sub">Sign in to your practice workspace.</p>{err&&<div className="error">{err}</div>}<form onSubmit={go}><label>Username<input autoComplete="username" required value={f.username} onChange={e=>setF({...f,username:e.target.value})}/></label><label>Password<input type="password" autoComplete="current-password" required value={f.password} onChange={e=>setF({...f,password:e.target.value})}/></label><Btn className="primary full" loading={busy} loadingText="Signing in…">Sign in <ArrowUpRight size={17}/></Btn></form><Link className="gate-link" to="/forgot">Forgot password?</Link></div></div>}
+function Login({onLogin}){const[f,setF]=useState({username:'',password:''}),[err,setErr]=useState(''),[busy,setBusy]=useState(false),[show,setShow]=useState(false);const go=async e=>{e.preventDefault();setBusy(true);try{onLogin((await api.post('/auth/login',f)).doctor)}catch(x){setErr(x.message)}finally{setBusy(false)}};return <div className="auth"><div className="auth-card"><div className="logo big"><Stethoscope/></div><p className="eyebrow">HOLY BETHEL DENTAL CLINIC</p><h1>Welcome back</h1><p className="sub">Sign in to your practice workspace.</p>{err&&<div className="error">{err}</div>}<form onSubmit={go}><label>Username<input autoComplete="username" required value={f.username} onChange={e=>setF({...f,username:e.target.value})}/></label><label>Password<span className="password-field"><input type={show?'text':'password'} autoComplete="current-password" required value={f.password} onChange={e=>setF({...f,password:e.target.value})}/><button type="button" className="password-toggle" title={show?'Hide password':'Show password'} aria-label={show?'Hide password':'Show password'} onClick={()=>setShow(!show)}>{show?<EyeOff size={16}/>:<Eye size={16}/>}</button></span></label><Btn className="primary full" loading={busy} loadingText="Signing in…">Sign in <ArrowUpRight size={17}/></Btn></form><Link className="gate-link" to="/forgot">Forgot password?</Link></div></div>}
 function Setup({onLogin}){const[f,setF]=useState({name:'',username:'',password:'',email:''}),[err,setErr]=useState(''),[busy,setBusy]=useState(false);const go=async e=>{e.preventDefault();setBusy(true);try{onLogin((await api.post('/auth/setup',f)).doctor)}catch(x){setErr(x.message)}finally{setBusy(false)}};return <div className="auth"><div className="auth-card"><div className="logo big"><Stethoscope/></div><p className="eyebrow">FIRST-TIME SETUP</p><h1>Create administrator</h1><p className="sub">Set up the first DrPatientLog account.</p>{err&&<div className="error">{err}</div>}<form onSubmit={go}>{[['name','Full name'],['username','Username'],['email','Email'],['password','Password']].map(([k,l])=><label key={k}>{l}<input type={k==='password'?'password':'text'} required={k!=='email'} value={f[k]} onChange={e=>setF({...f,[k]:e.target.value})}/></label>)}<Btn className="primary full" loading={busy} loadingText="Creating account…">Create administrator</Btn></form></div></div>}
 function Forgot(){const[email,setEmail]=useState(''),[msg,setMsg]=useState(''),[busy,setBusy]=useState(false);const go=async e=>{e.preventDefault();setBusy(true);try{const x=await api.post('/auth/forgot',{email});setMsg(x.resetToken?`Development reset token: ${x.resetToken}`:'If the account exists, reset instructions have been prepared.');}finally{setBusy(false)}};return <div className="auth"><div className="auth-card"><KeyRound size={30}/><h1>Reset password</h1><p className="sub">Enter the account email.</p>{msg&&<div className="note">{msg}</div>}<form onSubmit={go}><label>Email<input type="email" required value={email} onChange={e=>setEmail(e.target.value)}/></label><Btn className="primary full" loading={busy} loadingText="Generating…">Generate reset</Btn></form><Link className="gate-link" to="/login">Back to sign in</Link></div></div>}
 function ResetPassword(){
@@ -292,8 +292,8 @@ function ResetPassword(){
    </div>
  </div>
 }function Stat({label,value,meta,icon:I}){return <div className="stat"><div className="stat-icon"><I size={19}/></div><span>{label}</span><strong>{value}</strong><small>{meta}</small></div>}
-function PatientTable({rows,onEdit,onDelete}){const[deleting,setDeleting]=useState(null);return <div className="table-wrap"><table>
-<thead><tr><th scope="col">Patient</th><th scope="col">Card</th><th scope="col">Ticket</th><th scope="col">Procedure</th><th scope="col">Fee</th><th scope="col">Cut</th><th scope="col">Actions</th></tr></thead>
+function PatientTable({rows,onEdit,onDelete}){const[deleting,setDeleting]=useState(null);const hasActions=!!(onEdit||onDelete);return <div className="table-wrap"><table>
+<thead><tr><th scope="col">Patient</th><th scope="col">Card</th><th scope="col">Ticket</th><th scope="col">Procedure</th><th scope="col">Fee</th><th scope="col">Cut</th>{hasActions&&<th scope="col">Actions</th>}</tr></thead>
 <tbody>{rows?.length?rows.map(r=><tr key={r._id}>
 <td>
   <b>{r.patientName}</b>
@@ -305,7 +305,7 @@ function PatientTable({rows,onEdit,onDelete}){const[deleting,setDeleting]=useSta
 <td>{r.procedure}</td>
 <td>{money(r.totalFee)}</td>
 <td><b>{money(r.myEarning)}</b></td>
-<td className="row-actions">
+{hasActions&&<td className="row-actions">
   <span className="row-actions-inner">
   {onEdit&&<button className="icon patient-row-action-edit" title="Edit patient" onClick={()=>onEdit(r)}>
     <Edit3 size={15}/>
@@ -317,8 +317,8 @@ function PatientTable({rows,onEdit,onDelete}){const[deleting,setDeleting]=useSta
     <span>Del</span>
   </button>}
   </span>
-</td>
-</tr>):<tr><td colSpan="7" className="empty">No records found.</td></tr>}</tbody></table></div>}
+</td>}
+</tr>):<tr><td colSpan={hasActions?7:6} className="empty">No records found.</td></tr>}</tbody></table></div>}
 function Dashboard(){
   const[d,setD]=useState();
   const[err,setErr]=useState('');
