@@ -3,9 +3,11 @@ import {Doctor,Patient} from '../models/index.js';
 import {auth} from '../middleware/auth.js';
 import {
   sendTelegram,
+  sendTelegramDocument,
   buildDailyMessage,
   buildMonthlyMessage
 } from '../services/telegram.js';
+import {buildMonthlyHtml} from './reports.js';
 import {ethiopianParts,isoToday} from '../utils/ethiopian.js';
 
 const r=Router();
@@ -63,7 +65,7 @@ r.post('/monthly',async(q,s)=>{
 
   const rows=await Patient.find({
     doctorId:d._id,
-    ethDate:{$regex:` ${e.year}$`}
+    ethDate:{$regex:`^${e.month.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')} \\d{1,2} ${e.year}$`}
   }).lean();
 
   const income=rows.reduce(
@@ -106,11 +108,31 @@ r.post('/monthly',async(q,s)=>{
       income,
       cut,
       weighted,
-      pagumeCarry,
-      rows
+      pagumeCarry
     );
 
-    s.json(await sendTelegram(d,message));
+    let result;
+
+    try{
+      const html=await buildMonthlyHtml(
+        d,
+        {month:e.month,year:e.year}
+      );
+
+      const filename=
+        `hakim-monthly-${e.month.replace(/\s+/g,'-')}-${e.year}.html`;
+
+      result=await sendTelegramDocument(
+        d,
+        Buffer.from(html,'utf8'),
+        filename,
+        message.slice(0,1024)
+      );
+    }catch(htmlError){
+      result=await sendTelegram(d,message);
+    }
+
+    s.json(result);
   }catch(err){
     s.status(400).json({message:err.message});
   }
@@ -173,11 +195,31 @@ r.post('/monthly-period',async(q,s)=>{
       income,
       cut,
       weighted,
-      pagumeCarry,
-      rows
+      pagumeCarry
     );
 
-    s.json(await sendTelegram(d,message));
+    let result;
+
+    try{
+      const html=await buildMonthlyHtml(
+        d,
+        {month,year}
+      );
+
+      const filename=
+        `hakim-monthly-${month.replace(/\s+/g,'-')}-${year}.html`;
+
+      result=await sendTelegramDocument(
+        d,
+        Buffer.from(html,'utf8'),
+        filename,
+        message.slice(0,1024)
+      );
+    }catch(htmlError){
+      result=await sendTelegram(d,message);
+    }
+
+    s.json(result);
   }catch(err){
     s.status(400).json({message:err.message});
   }
