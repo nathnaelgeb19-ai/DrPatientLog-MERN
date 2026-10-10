@@ -780,6 +780,28 @@ function Patients(){
   const[from,setFrom]=useState('');
   const[to,setTo]=useState('');
   const[busy,setBusy]=useState('');
+  const[hideFilters,setHideFilters]=useState(false);
+  const lastScrollY=useRef(0);
+
+  useEffect(()=>{
+    let ticking=false;
+    const onScroll=()=>{
+      if(ticking)return;
+      ticking=true;
+      requestAnimationFrame(()=>{
+        const y=window.scrollY;
+        const delta=y-lastScrollY.current;
+        const threshold=window.innerHeight*.5;
+        if(Math.abs(delta)>12){
+          setHideFilters(delta>0&&y>threshold);
+          lastScrollY.current=y;
+        }
+        ticking=false;
+      });
+    };
+    window.addEventListener('scroll',onScroll,{passive:true});
+    return()=>window.removeEventListener('scroll',onScroll);
+  },[]);
 
   const load=()=>{
     setBusy('search');
@@ -823,7 +845,7 @@ function Patients(){
 
     <section className="patients-workspace">
 
-      <div className="patients-toolbar">
+      <div className={'patients-toolbar'+(hideFilters?' filters-hidden':'')}>
 
         <div className="patients-search">
           <Search size={18}/>

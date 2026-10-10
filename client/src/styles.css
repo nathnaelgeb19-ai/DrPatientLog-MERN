@@ -1455,6 +1455,13 @@ input[type="datetime-local"]::-webkit-datetime-edit {
   backdrop-filter: blur(18px) saturate(160%);
   -webkit-backdrop-filter: blur(18px) saturate(160%);
   border-bottom: 1px solid var(--line-2);
+  will-change: transform, opacity;
+  transition: transform .7s var(--ease-out), opacity .45s ease;
+}
+.patients-toolbar.filters-hidden {
+  transform: translateY(calc(-100% - 14px));
+  opacity: 0;
+  pointer-events: none;
 }
 
 .patients-search {
@@ -1929,6 +1936,15 @@ input[type="datetime-local"]::-webkit-datetime-edit {
 @media (max-width: 720px) {
   .patients-summary { flex-wrap: wrap; gap: 10px 20px; }
   .patients-summary-note { flex-basis: 100%; }
+  .patients-toolbar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 10px 12px;
+  }
+  .patients-search { grid-column: 1 / -1; flex-basis: auto; min-width: 0; }
+  .patients-filter-button { grid-column: 1 / -1; }
+  .patients-filter-button, .patients-clear-button, .patients-export-button { width: 100%; }
   .patients-table-wrap table,
   .monthly-table-wrap table { min-width: 0; }
   .patients-table-wrap thead,
@@ -1988,9 +2004,7 @@ input[type="datetime-local"]::-webkit-datetime-edit {
 }
 
 @media (max-width: 560px) {
-  .patients-toolbar > * { flex: 1 1 100%; }
-  .patients-search { flex-basis: 100%; }
-  .patients-filter-button, .patients-clear-button, .patients-export-button { width: 100%; }
+  .patients-toolbar { gap: 9px 10px; }
   .doctor-grid { grid-template-columns: 1fr; }
 }
 
