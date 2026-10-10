@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { Doctor, Patient, Setting } from '../models/index.js';
+import { Doctor, Patient, Setting, SalaryClosure } from '../models/index.js';
 
 import {
   sendTelegram,
@@ -297,6 +297,12 @@ async function monthly() {
 
     const pct = income ? weighted / income : 0;
 
+    const closure = await SalaryClosure.findOne({
+      doctorId: d._id,
+      ethMonth: currentMonth,
+      ethYear: currentYear
+    }).lean();
+
     const message = await buildMonthlyMessage(
       currentMonth,
       currentYear,
@@ -304,7 +310,9 @@ async function monthly() {
       income,
       doctorEarnings,
       pct,
-      pagumeCarry
+      pagumeCarry,
+      [],
+      !!closure
     );
 
     try {

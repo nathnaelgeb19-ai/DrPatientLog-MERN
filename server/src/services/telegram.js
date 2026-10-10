@@ -391,7 +391,8 @@ export async function buildMonthlyMessage(
   doctorEarnings,
   doctorPct = null,
   pagumeCarry = 0,
-  rows = []
+  rows = [],
+  paid = undefined
 ) {
   const label =
     String(ethMonth || '') +
@@ -466,9 +467,22 @@ export async function buildMonthlyMessage(
         Number(doctorEarnings || 0) +
         Number(pagumeCarry || 0)
       ) +
-      ' Birr',
-    foot
+      ' Birr'
   );
+
+  if (paid === true) {
+    lines.push(
+      '',
+      '\u2705 Paid & closed'
+    );
+  } else if (paid === false) {
+    lines.push(
+      '',
+      '\u23F3 Pending payment \u00B7 mark as paid when you receive it'
+    );
+  }
+
+  lines.push(foot);
 
   return lines.join('\n');
 }

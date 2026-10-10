@@ -506,6 +506,7 @@ function Dashboard({clinic}){
   const[calRef,setCalRef]=useState(null);
   const[calDay,setCalDay]=useState(null);
   const[calDayData,setCalDayData]=useState();
+  const[pendingDismissed,setPendingDismissed]=useState(false);
 
   useEffect(()=>{
     setErr('');
@@ -548,6 +549,8 @@ function Dashboard({clinic}){
   const stepCal=n=>{if(!cal)return;setCalDay(null);setCalRef(n<0?ethPrevMonth(cal.monthIndex,cal.year):ethNextMonth(cal.monthIndex,cal.year));};
   const todayCal=()=>{setCalDay(null);setCalRef(null);};
   const pickDay=day=>setCalDay(cur=>cur===day?null:day);
+  const pendingMonths=months.filter(m=>m.canClose&&!m.closed&&Number(m.payable||0)>0);
+  const pendingTotal=pendingMonths.reduce((a,m)=>a+Number(m.payable||0),0);
 
   return <>
     <Reveal>
@@ -572,6 +575,38 @@ function Dashboard({clinic}){
         </div>
       </section>
     </Reveal>
+
+    {pendingMonths.length>0&&!pendingDismissed&&(
+      <Reveal>
+        <section className="unpaid-banner">
+          <div className="unpaid-banner-head">
+            <span className="unpaid-banner-icon"><Bell size={18}/></span>
+            <div className="unpaid-banner-title">
+              <b>Pending payment reminder</b>
+              <span>You have {pendingMonths.length} unpaid month(s), totalling {money(pendingTotal)}.</span>
+            </div>
+            <button className="icon ghost" aria-label="Dismiss reminder" onClick={()=>setPendingDismissed(true)}>
+              <X size={16}/>
+            </button>
+          </div>
+
+          <div className="unpaid-banner-list">
+            {pendingMonths.map(m=>(
+              <div key={`${m._id.year}-${m._id.month}`} className="unpaid-banner-item">
+                <span>{m._id.month} {m._id.year}</span>
+                <b>{money(m.payable)}</b>
+                <span className="pill unpaid-pill">Pending</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="unpaid-banner-foot">
+            <Link className="ghost small" to="/monthly"><CheckCircle2 size={15}/> Open Monthly</Link>
+            <span>Mark a month as paid &amp; closed only once you receive your payment.</span>
+          </div>
+        </section>
+      </Reveal>
+    )}
 
     <div className="dashboard-toolbar">
       <div>

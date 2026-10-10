@@ -1,5 +1,5 @@
 import {Router} from 'express';
-import {Patient, Setting} from '../models/index.js';
+import {Patient, Setting, SalaryClosure} from '../models/index.js';
 import {auth} from '../middleware/auth.js';
 import {ethiopianParts, isoToday, ETH_MONTHS} from '../utils/ethiopian.js';
 
@@ -89,6 +89,38 @@ if (requestedMonth && Number.isInteger(requestedYear) && requestedYear > 1900) {
       : 0;
 
     const doctorName = q.doctor.name || q.doctor.username || 'Doctor';
+
+    const closure = await SalaryClosure.findOne({
+      doctorId: q.doctor._id,
+      ethMonth: e.month,
+      ethYear: e.year
+    }).lean();
+
+    const paid = !!closure;
+
+    const paymentStatusBlock = paid
+      ? `
+  <section class="status-box status-paid">
+    <div class="status-label">Payment status</div>
+    <div class="status-value">
+      <span class="status-dot">&#10003;</span>
+      Paid &amp; Closed
+    </div>
+    <div class="status-note">
+      Closed on ${escapeHtml(closure.paidEthDate || closure.paidDate || '-')}${closure.closedBy ? ' by ' + escapeHtml(closure.closedBy) : ''}.
+    </div>
+  </section>`
+      : `
+  <section class="status-box status-pending">
+    <div class="status-label">Payment status</div>
+    <div class="status-value">
+      <span class="status-dot">&#8987;</span>
+      Pending payment
+    </div>
+    <div class="status-note">
+      This month's earnings have not been paid yet. Mark it as paid &amp; closed once you receive your payment.
+    </div>
+  </section>`;
 
 return `<!doctype html>
 <html lang="en">
@@ -562,7 +594,7 @@ return `<!doctype html>
       padding: 7px 5px;
     }
 
-    .carryover-box {
+.carryover-box {
     margin: 0 36px 26px;
     padding: 19px 20px;
     border: 1px solid #e7c98f;
@@ -570,6 +602,70 @@ return `<!doctype html>
     border-radius: 12px;
     background: linear-gradient(135deg, #fffaf0, #fffdf8);
     box-shadow: 0 4px 12px rgba(170, 110, 25, .07);
+  }
+
+  .status-box {
+    margin: 0 36px 22px;
+    padding: 18px 20px;
+    border: 1px solid #e6edf3;
+    border-left: 5px solid #b7c2cf;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #ffffff, #f7fafc);
+    box-shadow: 0 4px 12px rgba(30, 60, 90, .05);
+  }
+
+  .status-box.status-paid {
+    border-left-color: #2d9275;
+    background: linear-gradient(135deg, #ffffff, #f2faf6);
+  }
+
+  .status-box.status-pending {
+    border-left-color: #d58b32;
+    background: linear-gradient(135deg, #fffaf0, #fffdf8);
+  }
+
+  .status-label {
+    color: #718096;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .9px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .status-value {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    color: #172033;
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  .status-dot {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    font-size: 13px;
+    color: #fff;
+  }
+
+  .status-paid .status-dot {
+    background: #2d9275;
+  }
+
+  .status-pending .status-dot {
+    background: #d58b32;
+  }
+
+  .status-note {
+    margin-top: 7px;
+    color: #64748b;
+    font-size: 11px;
+    line-height: 1.5;
   }
 
   .carryover-header {
@@ -758,11 +854,13 @@ return `<!doctype html>
     Percentage-based doctor earnings for the selected Ethiopian month.
   </p>
 
-  <div class="meta">
+<div class="meta">
     <span><strong>Doctor:</strong> ${escapeHtml(doctorName)}</span>
     <span><strong>Month:</strong> ${escapeHtml(e.month)} ${e.year}</span>
     <span><strong>Patients:</strong> ${rows.length}</span>
   </div>
+
+  ${paymentStatusBlock}
 
   <section class="summary">
     <div class="summary-card">

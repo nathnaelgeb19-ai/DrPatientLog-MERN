@@ -1,5 +1,5 @@
 import {Router} from 'express';
-import {Doctor,Patient} from '../models/index.js';
+import {Doctor,Patient,SalaryClosure} from '../models/index.js';
 import {auth} from '../middleware/auth.js';
 import {
   sendTelegram,
@@ -101,6 +101,12 @@ r.post('/monthly',async(q,s)=>{
   }
 
   try{
+    const closure=await SalaryClosure.findOne({
+      doctorId:d._id,
+      ethMonth:e.month,
+      ethYear:e.year
+    }).lean();
+
     const message=await buildMonthlyMessage(
       e.month,
       e.year,
@@ -108,7 +114,9 @@ r.post('/monthly',async(q,s)=>{
       income,
       cut,
       weighted,
-      pagumeCarry
+      pagumeCarry,
+      [],
+      !!closure
     );
 
     let result;
@@ -188,6 +196,12 @@ r.post('/monthly-period',async(q,s)=>{
   }
 
   try{
+    const closure=await SalaryClosure.findOne({
+      doctorId:d._id,
+      ethMonth:month,
+      ethYear:year
+    }).lean();
+
     const message=await buildMonthlyMessage(
       month,
       year,
@@ -195,7 +209,9 @@ r.post('/monthly-period',async(q,s)=>{
       income,
       cut,
       weighted,
-      pagumeCarry
+      pagumeCarry,
+      [],
+      !!closure
     );
 
     let result;
