@@ -1,5 +1,6 @@
-import React,{useEffect,useState,useRef,useCallback}from'react';import{createRoot}from'react-dom/client';import{BrowserRouter,useNavigate,useLocation,Routes,Route,Link,Navigate}from'react-router-dom';import{LayoutDashboard,Users,UserRoundCog,CalendarDays,Settings,LogOut,Plus,Search,Menu,X,Stethoscope,ShieldCheck,ArrowUpRight,Trash2,Edit3,CheckCircle2,ReceiptText,ClipboardList,Database,Send,Download,Upload,RefreshCw,KeyRound,UserCog,Palette,Sun,Moon,Monitor,Bell,Clock,ChevronDown,FileText,Eye,EyeOff,Command,CornerDownLeft,Sparkles,TrendingUp,Wallet,Activity,ChevronRight,MoreHorizontal,PlusCircle,CircleDollarSign,ArrowRight,BarChart3,Info,Check,Lock,Star,UserPlus}from'lucide-react';import{AreaChart,Area,XAxis,YAxis,CartesianGrid,Tooltip,ResponsiveContainer}from'recharts';import{api}from'./api';import{ethiopianDate}from'./ethiopian.js';import'./styles.css';import doctorLogo from './assets/aa-logo.svg';
+import React,{useEffect,useState,useRef,useCallback,lazy,Suspense}from'react';import{createRoot}from'react-dom/client';import{createPortal}from'react-dom';import{BrowserRouter,useNavigate,useLocation,Routes,Route,Link,Navigate}from'react-router-dom';import{LayoutDashboard,Users,UserRoundCog,CalendarDays,Settings,LogOut,Plus,Search,Menu,X,Stethoscope,ShieldCheck,ArrowUpRight,Trash2,Edit3,CheckCircle2,ReceiptText,ClipboardList,Database,Send,Download,Upload,RefreshCw,KeyRound,UserCog,Palette,Sun,Moon,Monitor,Bell,Clock,ChevronDown,FileText,Eye,EyeOff,CornerDownLeft,Sparkles,TrendingUp,Wallet,Activity,BarChart3,Check,Lock}from'lucide-react';import{api}from'./api';import{ethiopianDate}from'./ethiopian.js';import'./styles.css';import doctorLogo from './assets/aa-logo.svg';
 const money=n=>`${Number(n||0).toFixed(2)} ETB`;
+const EarningsChart=lazy(()=>import('./components/EarningsChart.jsx'));
 function PageHead({title,subtitle,action}){return <div className="page-head"><div><p className="eyebrow">DRPATIENTLOG</p><h1>{title}</h1><p>{subtitle}</p></div>{action}</div>}
 function Loading(){return <div className="loading"><div/><div/><div/></div>}
 function Spinner(){return <span className="spinner" aria-hidden="true"/>}
@@ -10,7 +11,7 @@ function CountUp({value=0,format=v=>Math.round(v).toLocaleString(),duration=850}
 const ToastCtx=React.createContext(()=>{});
 function ToastProvider({children}){const[items,setItems]=useState([]);const push=useCallback((message,type='success')=>{const id=Math.random().toString(36).slice(2);setItems(x=>[...x,{id,message,type}]);setTimeout(()=>setItems(x=>x.filter(i=>i.id!==id)),2800)},[]);return <ToastCtx.Provider value={push}>{children}<div className="toast-stack" role="status" aria-live="polite">{items.map(i=><div key={i.id} className={'toast'+(i.type==='error'?' error':'')}><span className="toast-icon">{i.type==='error'?<X size={15}/>:<Check size={15}/>}</span>{i.message}</div>)}</div></ToastCtx.Provider>}
 const useToast=()=>React.useContext(ToastCtx);
-function Modal({open,onClose,title,subtitle,children}){useEffect(()=>{if(!open)return;const on=e=>e.key==='Escape'&&onClose();window.addEventListener('keydown',on);return()=>window.removeEventListener('keydown',on)},[open,onClose]);if(!open)return null;return <div className="modal-overlay" onMouseDown={e=>e.target===e.currentTarget&&onClose()}><div className="modal-panel" role="dialog" aria-modal="true" aria-label={title}><div className="modal-head"><div><h2>{title}</h2>{subtitle&&<p className="modal-sub">{subtitle}</p>}</div><button type="button" className="icon" aria-label="Close" onClick={onClose}><X size={18}/></button></div>{children}</div></div>}
+function Modal({open,onClose,title,subtitle,children}){useEffect(()=>{if(!open)return;const on=e=>e.key==='Escape'&&onClose();window.addEventListener('keydown',on);return()=>window.removeEventListener('keydown',on)},[open,onClose]);if(!open)return null;return createPortal(<div className="modal-overlay" onMouseDown={e=>e.target===e.currentTarget&&onClose()}><div className="modal-panel" role="dialog" aria-modal="true" aria-label={title}><div className="modal-head"><div><h2>{title}</h2>{subtitle&&<p className="modal-sub">{subtitle}</p>}</div><button type="button" className="icon" aria-label="Close" onClick={onClose}><X size={18}/></button></div>{children}</div></div>,document.body)}
 function Switch({checked,onChange,label}){return <label className="switch"><input type="checkbox" checked={checked} onChange={e=>onChange(e.target.checked)} aria-label={label}/><span className="track"/><span className="thumb"/></label>}
 function ScrollProgress(){const ref=useRef(null);useEffect(()=>{let raf;const on=()=>{if(raf)return;raf=requestAnimationFrame(()=>{raf=0;const h=document.documentElement,max=h.scrollHeight-h.clientHeight;if(ref.current)ref.current.style.transform=`scaleX(${max>0?h.scrollTop/max:0})`})};window.addEventListener('scroll',on,{passive:true});window.addEventListener('resize',on);on();return()=>{window.removeEventListener('scroll',on);window.removeEventListener('resize',on)}},[]);return <div className="scroll-progress" ref={ref}/>}
 function CommandPalette({open,onClose,nav}){const[q,setQ]=useState(''),[idx,setIdx]=useState(0),inputRef=useRef(null),go=useNavigate();useEffect(()=>{if(open){setQ('');setIdx(0);const t=setTimeout(()=>inputRef.current?.focus(),40);return()=>clearTimeout(t)}},[open]);const actions=nav.flatMap(([to,label,I])=>({label,to,icon:I}));const f=q.trim()?actions.filter(a=>a.label.toLowerCase().includes(q.toLowerCase())):actions;useEffect(()=>setIdx(0),[q]);const choose=a=>{if(!a)return;go(a.to);onClose()};if(!open)return null;return <div className="cmd-overlay" onMouseDown={e=>e.target===e.currentTarget&&onClose()}><div className="cmd-panel" role="dialog" aria-modal="true" aria-label="Command palette"><div className="cmd-search"><Search size={18}/><input ref={inputRef} value={q} placeholder="Search pages and actions…" onChange={e=>setQ(e.target.value)} onKeyDown={e=>{if(e.key==='ArrowDown'){e.preventDefault();setIdx(i=>Math.min(i+1,f.length-1))}else if(e.key==='ArrowUp'){e.preventDefault();setIdx(i=>Math.max(i-1,0))}else if(e.key==='Enter'){e.preventDefault();choose(f[idx])}else if(e.key==='Escape'){e.preventDefault();onClose()}}}/><kbd>ESC</kbd></div><div className="cmd-list">{f.length?f.map((a,i)=><button key={a.to} className={'cmd-item'+(i===idx?' active':'')} onMouseEnter={()=>setIdx(i)} onClick={()=>choose(a)}><a.icon size={17}/><span>{a.label}</span>{i===idx&&<CornerDownLeft size={14}/>}</button>):<div className="cmd-empty">{`No matches for "${q}".`}</div>}</div></div></div>}
@@ -426,8 +427,7 @@ function ResetPassword({clinic}){
 
      <p className="auth-foot"><Link to="/login">{done?'Back to sign in':'Cancel'}</Link></p>
  </AuthLayout>
-}function Stat({label,value,meta,icon:I}){return <div className="stat"><div className="stat-icon"><I size={19}/></div><span>{label}</span><strong>{value}</strong><small>{meta}</small></div>}
-function PatientTable({rows,onEdit,onDelete}){const[deleting,setDeleting]=useState(null);const hasActions=!!(onEdit||onDelete);return <div className="table-wrap"><table>
+}function PatientTable({rows,onEdit,onDelete}){const[deleting,setDeleting]=useState(null);const hasActions=!!(onEdit||onDelete);return <div className="table-wrap"><table>
 <thead><tr><th scope="col">Patient</th><th scope="col">Card</th><th scope="col">Ticket</th><th scope="col">Procedure</th><th scope="col">Fee</th><th scope="col">Cut</th>{hasActions&&<th scope="col">Actions</th>}</tr></thead>
 <tbody>{rows?.length?rows.map(r=><tr key={r._id}>
 <td>
@@ -1119,17 +1119,14 @@ function PatientForm(){
 function Monthly(){
   const[d,setD]=useState();
   const[err,setErr]=useState('');
-  const[loading,setLoading]=useState(true);
   const[busy,setBusy]=useState('');
 
   const load=()=>{
     setErr('');
-    setLoading(true);
 
     api.get('/dashboard/monthly')
       .then(setD)
-      .catch(e=>setErr(e.message||'Unable to load monthly report.'))
-      .finally(()=>setLoading(false));
+      .catch(e=>setErr(e.message||'Unable to load monthly report.'));
   };
 
   useEffect(()=>{
@@ -1137,7 +1134,6 @@ function Monthly(){
   },[]);
 
   if(err)return <div className="error">{err}</div>;
-  if(loading&&!d)return <Loading/>;  if(err)return <div className="error">{err}</div>;
   if(!d)return <Loading/>;
 
   const close=async m=>{
@@ -1174,31 +1170,14 @@ function Monthly(){
         </div>
 
         <div style={{height:270}}>
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart
+          <Suspense fallback={null}>
+            <EarningsChart
               data={[...(d.months||[])].reverse().map(m=>({
                 name:`${m._id.month.slice(0,3)} ${String(m._id.year).slice(-2)}`,
                 earnings:Math.round(Number(m.payable||0))
               }))}
-              margin={{top:14,right:8,left:-12,bottom:0}}
-            >
-              <defs>
-                <linearGradient id="earningsFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.35}/>
-                  <stop offset="100%" stopColor="var(--accent)" stopOpacity={0}/>
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--line-2)" vertical={false}/>
-              <XAxis dataKey="name" tick={{fill:'var(--muted)',fontSize:11}} axisLine={false} tickLine={false}/>
-              <YAxis tick={{fill:'var(--faint)',fontSize:11}} axisLine={false} tickLine={false}/>
-              <Tooltip
-                formatter={v=>[money(v),'Doctor earnings']}
-                contentStyle={{background:'var(--surface)',border:'1px solid var(--line)',borderRadius:'12px',fontSize:'12px',boxShadow:'var(--shadow-2)'}}
-                labelStyle={{color:'var(--muted)',fontWeight:600}}
-              />
-              <Area type="monotone" dataKey="earnings" stroke="var(--accent)" strokeWidth={2.5} fill="url(#earningsFill)"/>
-            </AreaChart>
-          </ResponsiveContainer>
+            />
+          </Suspense>
         </div>
       </section>
     </Reveal>

@@ -6,9 +6,14 @@ const app=express();
 app.set('etag', false);
 
 app.use((req,res,next)=>{
-  res.set('Cache-Control','no-store, no-cache, must-revalidate, proxy-revalidate');
-  res.set('Pragma','no-cache');
-  res.set('Expires','0');
+  if(req.path.startsWith('/assets/')){
+    res.set('Cache-Control','public, max-age=31536000, immutable');
+  }else{
+    res.set('Cache-Control','no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma','no-cache');
+    res.set('Expires','0');
+  }
+
   next();
 });
 
