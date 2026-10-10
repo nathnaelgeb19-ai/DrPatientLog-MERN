@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hakim Theme — Demo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Sora:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="hakim-theme.css" />
+    <style>
+      body { padding: 40px 24px; }
+      .wrap { max-width: 900px; margin: 0 auto; }
+      .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 28px; }
+      .topbar h1 { margin: 0; font-family: var(--font-display); letter-spacing: -.02em; }
+      .topbar p { margin: 4px 0 0; color: var(--muted); font-size: 13.5px; }
+      .seg { display: inline-flex; gap: 4px; padding: 5px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-2); }
+      .seg button { border: 0; background: none; padding: 8px 14px; border-radius: 10px; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; }
+      .seg button.active { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-1); }
+      section { margin-bottom: 40px; }
+      h2 { font-family: var(--font-display); font-size: 18px; letter-spacing: -.01em; margin-bottom: 14px; }
+      .swatches { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+      .swatch { padding: 14px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); }
+      .swatch b { display: block; font-size: 13px; }
+      .swatch span { display: block; font-size: 11px; color: var(--faint); margin-bottom: 10px; }
+      .chip { height: 40px; border-radius: 10px; }
+      .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+      .field-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+      .kicker { font-size: 10.5px; font-weight: 800; letter-spacing: 1.4px; text-transform: uppercase; color: var(--faint); }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="topbar">
+        <div>
+          <p class="kicker">Hakim design system</p>
+          <h1>Theme preview</h1>
+          <p>Every color and font on this page derives from the CSS variables in hakim-theme.css.</p>
+        </div>
+        <div class="seg" id="theme-seg" role="group" aria-label="Theme">
+          <button data-theme-value="light">Light</button>
+          <button data-theme-value="dark">Dark</button>
+          <button data-theme-value="system">System</button>
+        </div>
+      </div>
+
+      <section>
+        <h2>Color tokens</h2>
+        <div class="swatches">
+          <div class="swatch"><span>--bg</span><div class="chip" style="background:var(--bg)"></div></div>
+          <div class="swatch"><span>--surface</span><div class="chip" style="background:var(--surface)"></div></div>
+          <div class="swatch"><span>--surface-2</span><div class="chip" style="background:var(--surface-2)"></div></div>
+          <div class="swatch"><span>--surface-3</span><div class="chip" style="background:var(--surface-3)"></div></div>
+          <div class="swatch"><span>--ink</span><div class="chip" style="background:var(--ink)"></div></div>
+          <div class="swatch"><span>--accent</span><div class="chip" style="background:var(--accent)"></div></div>
+          <div class="swatch"><span>--accent-2</span><div class="chip" style="background:var(--accent-2)"></div></div>
+          <div class="swatch"><span>--mint</span><div class="chip" style="background:var(--mint)"></div></div>
+          <div class="swatch"><span>--success</span><div class="chip" style="background:var(--success)"></div></div>
+          <div class="swatch"><span>--danger</span><div class="chip" style="background:var(--danger)"></div></div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Buttons</h2>
+        <div class="row">
+          <a class="hk-btn-primary" href="#">Primary action</a>
+          <button class="hk-btn-ghost">Secondary action</button>
+          <span class="hk-pill hk-pill-success">Paid &amp; closed</span>
+          <span class="hk-pill hk-pill-danger">Pending</span>
+        </div>
+      </section>
+
+      <section>
+        <h2>Card &amp; fields</h2>
+        <div class="hk-card">
+          <div class="field-row">
+            <label class="hk-field">Name <input type="text" placeholder="e.g. Abebe Kebede" /></label>
+            <label class="hk-field">Role
+              <select>
+                <option>Doctor</option>
+                <option>Administrator</option>
+              </select>
+            </label>
+          </div>
+          <div class="row" style="margin-top:18px">
+            <button class="hk-btn-primary">Save</button>
+            <button class="hk-btn-ghost">Cancel</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="hk-toast-stack" id="toasts"></div>
+
+    <script>
+      function setTheme(value) {
+        const html = document.documentElement;
+        if (value === 'system') html.removeAttribute('data-theme');
+        else html.setAttribute('data-theme', value);
+        document.querySelectorAll('#theme-seg button').forEach(b =>
+          b.classList.toggle('active', b.dataset.themeValue === value));
+      }
+
+      const active = localStorage.getItem('hakim-theme') || 'system';
+      setTheme(active);
+
+      document.querySelector('#theme-seg').addEventListener('click', e => {
+        const value = e.target.dataset?.themeValue;
+        if (!value) return;
+        localStorage.setItem('hakim-theme', value);
+        setTheme(value);
+
+        // toast preview
+        const toasts = document.getElementById('toasts');
+        const toast = document.createElement('div');
+        toast.className = 'hk-toast';
+        toast.innerHTML = '<span style="flex:none;width:30px;height:30px;border-radius:10px;display:grid;place-items:center;color:var(--mint-text);background:var(--mint-soft)">&#10003;</span><span><b class="hk-toast-title">Theme applied</b><span class="hk-toast-message">Switched to ' + value + '.</span></span>';
+        toasts.appendChild(toast);
+        setTimeout(() => toast.remove(), 3200);
+      });
+    </script>
+  </body>
+</html>
