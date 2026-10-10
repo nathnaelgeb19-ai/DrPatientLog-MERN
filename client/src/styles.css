@@ -2603,6 +2603,7 @@ html[data-theme="dark"] button.primary { box-shadow: 0 14px 34px -16px rgba(124,
   padding-top: 10px;
   border-top: 1px solid var(--line-2);
 }
+.pulse-share-head { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; }
 .pulse-share-head span { font-size: 12px; font-weight: 600; color: var(--muted); }
 .pulse-share-head b { font-family: var(--font-display); font-size: 18px; font-weight: 600; color: var(--accent-ink); }
 .pulse-share .dashboard-bar { flex: 1; min-width: 60px; }
