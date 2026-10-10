@@ -2669,6 +2669,15 @@ html[data-theme="dark"] .cal-cell { background: var(--surface-3); }
   .pulse-cell.pulse-cell-accent { padding: 16px; }
   .pulse-share { padding-left: 0; }
 }
+
+/* Two-column dashboard: keep the analytics card bottom level with the calendar */
+@media (min-width: 1101px) {
+  .dashboard-main-col { grid-template-rows: auto minmax(0, 1fr); }
+  .dashboard-main-col > .reveal { display: flex; flex-direction: column; min-height: 0; }
+  .dashboard-overview-card { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+  .dashboard-overview-card .ref-chart { flex: 1 1 auto; height: auto; min-height: 120px; }
+  .dashboard-overview-card .empty-state { flex: 1 1 auto; justify-content: center; }
+}
 @media (max-width: 560px) {
   .dashboard-pulse { grid-template-columns: 1fr; padding: 16px; gap: 12px; }
   .pulse-cell { padding: 12px 14px; background: color-mix(in srgb, var(--surface-2) 70%, transparent); border-radius: 12px; }
