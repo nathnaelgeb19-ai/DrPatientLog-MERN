@@ -183,6 +183,7 @@ export async function sendTelegramDocument(
 
   form.append('chat_id', doctor.telegram.chatId);
   form.append('caption', caption);
+  form.append('parse_mode', 'HTML');
   form.append(
     'document',
     new Blob([buffer]),
@@ -426,6 +427,11 @@ export async function buildMonthlyMessage(
           ' Birr'
       );
     });
+  } else if (Number(patientCount || 0) > 0) {
+    lines.push(
+      '',
+      '\u{1F4CB} ' + Number(patientCount) + ' patient record(s)'
+    );
   } else {
     lines.push('', '\u{1F4CB} No patient records');
   }
