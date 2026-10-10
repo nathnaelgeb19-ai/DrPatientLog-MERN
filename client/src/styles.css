@@ -1107,6 +1107,9 @@ input[type="datetime-local"]::-webkit-datetime-edit {
   font-size: 13px;
   font-weight: 600;
 }
+.toggle-row > div { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.toggle-row b { display: block; font-size: 14px; font-weight: 600; color: var(--text); }
+.toggle-row span { display: block; font-size: 12px; font-weight: 400; line-height: 1.5; color: var(--muted); }
 .toggle-row input { width: 18px; height: 18px; flex: none; margin: 0; accent-color: var(--accent); }
 
 /* --------------------------------------------------------------------------
