@@ -310,26 +310,40 @@ async function monthly() {
     try {
       let result;
 
+      let html;
+
       try {
-        const html = await buildMonthlyHtml(d, {
+        html = await buildMonthlyHtml(d, {
           month: currentMonth,
           year: currentYear
         });
-
-        const filename =
-          `hakim-monthly-${currentMonth.replace(/\s+/g, '-')}-${currentYear}.html`;
-
-        result = await sendTelegramDocument(
-          d,
-          Buffer.from(html, 'utf8'),
-          filename,
-          message.slice(0, 1024)
-        );
       } catch (htmlError) {
         console.log(
           `[Monthly Report] HTML generation failed for ${d.name}: ${htmlError.message}. Falling back to summary.`
         );
 
+        html = null;
+      }
+
+      if (html) {
+        try {
+          const filename =
+            `hakim-monthly-${currentMonth.replace(/\s+/g, '-')}-${currentYear}.html`;
+
+          result = await sendTelegramDocument(
+            d,
+            Buffer.from(html, 'utf8'),
+            filename,
+            message.slice(0, 1024)
+          );
+        } catch (sendError) {
+          console.log(
+            `[Monthly Report] Document send failed for ${d.name}: ${sendError.message}. Falling back to summary.`
+          );
+
+          result = await sendTelegram(d, message);
+        }
+      } else {
         result = await sendTelegram(d, message);
       }
 

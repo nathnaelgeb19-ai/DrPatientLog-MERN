@@ -59,6 +59,30 @@ async function footer() {
   ].join('\n');
 }
 
+async function fetchRetry(url, options, attempts = 3) {
+  let lastError;
+
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    try {
+      return await fetch(url, options);
+    } catch (error) {
+      if (error?.name === 'AbortError') throw error;
+
+      lastError = error;
+
+      console.log(
+        `[Telegram] network error (attempt ${attempt + 1}/${attempts}): ${error.message || error}`
+      );
+
+      if (attempt < attempts - 1) {
+        await new Promise(res => setTimeout(res, 1000 * (attempt + 1)));
+      }
+    }
+  }
+
+  throw lastError;
+}
+
 async function sendMessage(doctor, text) {
   const url =
     `https://api.telegram.org/bot${doctor.telegram.botToken}/sendMessage`;
@@ -69,7 +93,7 @@ async function sendMessage(doctor, text) {
   let response;
 
   try {
-    response = await fetch(url, {
+    response = await fetchRetry(url, {
       method: 'POST',
       headers: {
         'content-type': 'application/json'
@@ -190,7 +214,7 @@ export async function sendTelegramDocument(
     filename
   );
 
-  const response = await fetch(
+  const response = await fetchRetry(
     `https://api.telegram.org/bot${doctor.telegram.botToken}/sendDocument`,
     {
       method: 'POST',
