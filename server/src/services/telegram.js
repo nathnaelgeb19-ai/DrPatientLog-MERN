@@ -224,56 +224,6 @@ export async function markOutboxFail(id, attempts, error) {
   );
 }
 
-async function monthTotals(doctorId, ethDate) {
-  const parts = String(ethDate || '').split(/\s+/);
-  const ethMonth = parts[0] || '';
-  const ethYear = Number(parts[2] || 0);
-
-  const rows = await Patient.find({ doctorId })
-    .select('ethDate totalFee myEarning')
-    .lean();
-
-  let income = 0;
-  let cutSum = 0;
-
-  for (const row of rows) {
-    const parts = String(row.ethDate || '').split(/\s+/);
-
-    if (
-      parts[0] === ethMonth &&
-      Number(parts[2]) === ethYear
-    ) {
-      income += Number(row.totalFee || 0);
-      cutSum += Number(row.myEarning || 0);
-    }
-  }
-
-  let pagumeCarry = 0;
-
-  if (ethMonth === ETH_MONTHS[0] && ethYear) {
-    const previousYear = ethYear - 1;
-
-    for (const row of rows) {
-      const parts = String(row.ethDate || '').split(/\s+/);
-
-      if (
-        parts[0] === ETH_MONTHS[ETH_MONTHS.length - 1] &&
-        Number(parts[2]) === previousYear
-      ) {
-        pagumeCarry += Number(row.myEarning || 0);
-      }
-    }
-  }
-
-  return {
-    label: `${ethMonth} ${ethYear}`.trim(),
-    income,
-    cutSum,
-    pagumeCarry,
-    payable: cutSum + pagumeCarry
-  };
-}
-
 export async function buildEarningMessage(
   title,
   eth,

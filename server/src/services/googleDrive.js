@@ -2,7 +2,7 @@ import { google } from 'googleapis';
 import fs from 'fs';
 import { Setting } from '../models/index.js';
 
-export async function getGoogleDriveRefreshToken() {
+async function getGoogleDriveRefreshToken() {
   const setting = await Setting.findOne({
     key: 'google_drive_refresh_token'
   }).lean();

@@ -1,4 +1,4 @@
-import React,{useEffect,useState,useRef,useCallback,lazy,Suspense}from'react';import{createRoot}from'react-dom/client';import{createPortal}from'react-dom';import{BrowserRouter,useNavigate,useLocation,Routes,Route,Link,Navigate}from'react-router-dom';import{LayoutDashboard,Users,UserRoundCog,CalendarDays,Settings,LogOut,Plus,Search,Menu,X,Stethoscope,ShieldCheck,ArrowUpRight,Trash2,Edit3,CheckCircle2,ReceiptText,ClipboardList,Database,Send,Download,Upload,RefreshCw,KeyRound,UserCog,Palette,Sun,Moon,Monitor,Bell,Clock,ChevronDown,FileText,Eye,EyeOff,CornerDownLeft,Sparkles,TrendingUp,Wallet,Activity,BarChart3,Check,Lock}from'lucide-react';import{api}from'./api';import{ethiopianDate}from'./ethiopian.js';import'./styles.css';import doctorLogo from './assets/aa-logo.svg';
+import React,{useEffect,useState,useRef,useCallback,lazy,Suspense}from'react';import{createRoot}from'react-dom/client';import{createPortal}from'react-dom';import{BrowserRouter,useNavigate,useLocation,Routes,Route,Link,Navigate}from'react-router-dom';import{LayoutDashboard,Users,UserRoundCog,CalendarDays,Settings,LogOut,Plus,Search,Menu,X,Stethoscope,ShieldCheck,ArrowUpRight,Trash2,Edit3,CheckCircle2,ReceiptText,ClipboardList,Database,Send,Download,Upload,RefreshCw,KeyRound,UserCog,Palette,Sun,Moon,Monitor,Bell,Clock,ChevronDown,ChevronLeft,ChevronRight,FileText,Eye,EyeOff,CornerDownLeft,Sparkles,TrendingUp,Activity,BarChart3,Check,Lock}from'lucide-react';import{api}from'./api';import{ethiopianDate,ETH_MONTHS,ethWeekday,ethMonthLength,ethPrevMonth,ethNextMonth}from'./ethiopian.js';import'./styles.css';import doctorLogo from './assets/aa-logo.svg';
 const money=n=>`${Number(n||0).toFixed(2)} ETB`;
 const EarningsChart=lazy(()=>import('./components/EarningsChart.jsx'));
 function PageHead({title,subtitle,action}){return <div className="page-head"><div><p className="eyebrow">DRPATIENTLOG</p><h1>{title}</h1><p>{subtitle}</p></div>{action}</div>}
@@ -15,7 +15,7 @@ function Modal({open,onClose,title,subtitle,children}){useEffect(()=>{if(!open)r
 function Switch({checked,onChange,label}){return <label className="switch"><input type="checkbox" checked={checked} onChange={e=>onChange(e.target.checked)} aria-label={label}/><span className="track"/><span className="thumb"/></label>}
 function ScrollProgress(){const ref=useRef(null);useEffect(()=>{let raf;const on=()=>{if(raf)return;raf=requestAnimationFrame(()=>{raf=0;const h=document.documentElement,max=h.scrollHeight-h.clientHeight;if(ref.current)ref.current.style.transform=`scaleX(${max>0?h.scrollTop/max:0})`})};window.addEventListener('scroll',on,{passive:true});window.addEventListener('resize',on);on();return()=>{window.removeEventListener('scroll',on);window.removeEventListener('resize',on)}},[]);return <div className="scroll-progress" ref={ref}/>}
 function CommandPalette({open,onClose,nav}){const[q,setQ]=useState(''),[idx,setIdx]=useState(0),inputRef=useRef(null),go=useNavigate();useEffect(()=>{if(open){setQ('');setIdx(0);const t=setTimeout(()=>inputRef.current?.focus(),40);return()=>clearTimeout(t)}},[open]);const actions=nav.flatMap(([to,label,I])=>({label,to,icon:I}));const f=q.trim()?actions.filter(a=>a.label.toLowerCase().includes(q.toLowerCase())):actions;useEffect(()=>setIdx(0),[q]);const choose=a=>{if(!a)return;go(a.to);onClose()};if(!open)return null;return <div className="cmd-overlay" onMouseDown={e=>e.target===e.currentTarget&&onClose()}><div className="cmd-panel" role="dialog" aria-modal="true" aria-label="Command palette"><div className="cmd-search"><Search size={18}/><input ref={inputRef} value={q} placeholder="Search pages and actions…" onChange={e=>setQ(e.target.value)} onKeyDown={e=>{if(e.key==='ArrowDown'){e.preventDefault();setIdx(i=>Math.min(i+1,f.length-1))}else if(e.key==='ArrowUp'){e.preventDefault();setIdx(i=>Math.max(i-1,0))}else if(e.key==='Enter'){e.preventDefault();choose(f[idx])}else if(e.key==='Escape'){e.preventDefault();onClose()}}}/><kbd>ESC</kbd></div><div className="cmd-list">{f.length?f.map((a,i)=><button key={a.to} className={'cmd-item'+(i===idx?' active':'')} onMouseEnter={()=>setIdx(i)} onClick={()=>choose(a)}><a.icon size={17}/><span>{a.label}</span>{i===idx&&<CornerDownLeft size={14}/>}</button>):<div className="cmd-empty">{`No matches for "${q}".`}</div>}</div></div></div>}
-function Shell({doctor,onLogout,children}){
+function Shell({doctor,onLogout,children,clinic}){
   const loc=useLocation();
   const[open,setOpen]=useState(false);
   const[loggingOut,setLoggingOut]=useState(false);
@@ -86,7 +86,6 @@ function Shell({doctor,onLogout,children}){
   },[]);
 
   const ThemeIcon=theme==='dark'?Moon:theme==='light'?Sun:Monitor;
-  const crumb=loc.pathname==='/'?['Dashboard']:loc.pathname.slice(1).split('/').filter(Boolean).map(s=>s.charAt(0).toUpperCase()+s.slice(1));
   const bottom=[['/','Home',LayoutDashboard],['/patients','Patients',Users],['/patients/new','',Plus],['/monthly','Monthly',CalendarDays]];
   const isMac=typeof navigator!=='undefined'&&/Mac/i.test(navigator.platform||navigator.userAgent||'');
 
@@ -182,90 +181,132 @@ function Shell({doctor,onLogout,children}){
 
     </aside>
 
-    <main>
+    <div className="app-window">
 
-      <header className="top">
+    <header className="topbar">
 
       <ScrollProgress/>
 
-      <button
-          className="icon mobile top-menu-button"
-          aria-label="Open navigation"
-          onClick={()=>setOpen(true)}
+      <Link to="/" className="brand" onClick={()=>setOpen(false)}>
+        <div className="logo">
+          <Stethoscope size={22}/>
+        </div>
+        <div className="brand-copy">
+          <b>DrPatientLog</b>
+          <span>{clinic?.short||clinic?.name||'Clinical workspace'}</span>
+        </div>
+      </Link>
+
+      <nav ref={navRef} className="topnav" aria-label="Primary">
+        {main.map(([to,label,I])=>
+          <Link
+            key={to}
+            to={to}
+            className={loc.pathname===to?'active':''}
+            aria-current={loc.pathname===to?'page':undefined}
+            aria-label={label}
+            title={label}
+          >
+            <span className="nav-icon"><I size={17}/></span>
+            <span>{label}</span>
+          </Link>
+        )}
+
+        {admin.length>0&&<React.Fragment>
+          <span className="nav-divider" aria-hidden="true"/>
+          {admin.map(([to,label,I])=>
+            <Link
+              key={to}
+              to={to}
+              className={loc.pathname===to?'active':''}
+              aria-current={loc.pathname===to?'page':undefined}
+              aria-label={label}
+              title={label}
+            >
+              <span className="nav-icon"><I size={17}/></span>
+              <span>{label}</span>
+            </Link>
+          )}
+        </React.Fragment>}
+      </nav>
+
+      <div className="top-actions">
+
+        <button
+          className="cmd-trigger"
+          onClick={()=>setCmdOpen(true)}
+          aria-label="Open command palette"
         >
-          <Menu size={21}/>
+          <Search size={16}/>
+          <span>Search</span>
+          <kbd>{isMac?'⌘K':'Ctrl K'}</kbd>
         </button>
 
-        <div className="breadcrumb">
-          <span className="crumb-root">Workspace</span>
-          {crumb.map((c,i)=>
-            <React.Fragment key={`${c}-${i}`}>
-              <span className="crumb-sep">/</span>
-              {i===crumb.length-1
-                ?<span className="top-title">{c}</span>
-                :<span className="crumb-root">{c}</span>}
-            </React.Fragment>
-          )}
-        </div>
+        <span className="status">
+          <span/>
+          System ready
+        </span>
 
-        <div className="top-actions">
+        <div className="theme-control">
 
           <button
-            className="cmd-trigger"
-            onClick={()=>setCmdOpen(true)}
-            aria-label="Open command palette"
+            className="theme-button"
+            aria-label="Change appearance"
+            title="Change appearance"
           >
-            <Search size={16}/>
-            <span>Search</span>
-            <kbd>{isMac?'⌘K':'Ctrl K'}</kbd>
+            <ThemeIcon size={17}/>
+            <span>
+              {theme==='system'
+                ?'System'
+                :theme==='light'
+                  ?'Light'
+                  :'Dark'}
+            </span>
+            <ChevronDown className="theme-chevron" size={15} />
           </button>
 
-          <span className="status">
-            <span/>
-            System ready
-          </span>
+          <div className="theme-menu">
 
-          <div className="theme-control">
-
-            <button
-              className="theme-button"
-              aria-label="Change appearance"
-              title="Change appearance"
-            >
-              <ThemeIcon size={17}/>
-              <span>
-                {theme==='system'
-                  ?'System'
-                  :theme==='light'
-                    ?'Light'
-                    :'Dark'}
-              </span>
-              <ChevronDown className="theme-chevron" size={15} />
-            </button>
-
-            <div className="theme-menu">
-
-              {[['system','System',Monitor],['light','Light',Sun],['dark','Dark',Moon]].map(([key,label,I])=>
-                <button
-                  key={key}
-                  className={theme===key?'selected':''}
-                  onClick={()=>applyTheme(key)}
-                >
-                  <I size={16}/>
-                  <span>{label}</span>
-                  {theme===key&&<CheckCircle2 size={15}/>}
-                </button>
-              )}
-
-            </div>
+            {[['system','System',Monitor],['light','Light',Sun],['dark','Dark',Moon]].map(([key,label,I])=>
+              <button
+                key={key}
+                className={theme===key?'selected':''}
+                onClick={()=>applyTheme(key)}
+              >
+                <I size={16}/>
+                <span>{label}</span>
+                {theme===key&&<CheckCircle2 size={15}/>}
+              </button>
+            )}
 
           </div>
 
-          <div className="mini-avatar">{doctor.name?.[0]}</div>
-
         </div>
 
-      </header>
+        <button
+          className="icon signout-button"
+          aria-label="Sign out"
+          title="Sign out"
+          disabled={loggingOut}
+          onClick={async()=>{
+            setLoggingOut(true);
+            try{
+              await onLogout();
+            }finally{
+              setLoggingOut(false);
+            }
+          }}
+        >
+          {loggingOut?<Spinner/>:<LogOut size={18}/>}
+        </button>
+
+        <div className="mini-avatar" title={doctor.name}>{doctor.name?.[0]}</div>
+
+      </div>
+
+    </header>
+
+    <main>
 
       <div className="content">
         <div className="route" key={loc.pathname}>
@@ -274,6 +315,8 @@ function Shell({doctor,onLogout,children}){
       </div>
 
     </main>
+
+    </div>
 
     {open&&<div className="sidebar-scrim" onClick={()=>setOpen(false)} aria-hidden="true"/>}
 
@@ -458,6 +501,11 @@ function Dashboard({clinic}){
   const[d,setD]=useState();
   const[err,setErr]=useState('');
   const[range,setRange]=useState('eth_month');
+  const[months,setMonths]=useState([]);
+  const[cal,setCal]=useState();
+  const[calRef,setCalRef]=useState(null);
+  const[calDay,setCalDay]=useState(null);
+  const[calDayData,setCalDayData]=useState();
 
   useEffect(()=>{
     setErr('');
@@ -466,11 +514,40 @@ function Dashboard({clinic}){
       .catch(e=>setErr(e.message||'Unable to load dashboard.'));
   },[range]);
 
+  useEffect(()=>{
+    api.get('/dashboard/monthly')
+      .then(m=>setMonths(m.months||[]))
+      .catch(()=>{});
+  },[]);
+
+  useEffect(()=>{
+    api.get('/dashboard/calendar'+(calRef?`?month=${encodeURIComponent(ETH_MONTHS[calRef.monthIndex-1])}&year=${calRef.year}`:''))
+      .then(setCal).catch(()=>{});
+  },[calRef]);
+
+  useEffect(()=>{
+    if(!cal||!calDay){setCalDayData(undefined);return;}
+    api.get(`/dashboard/calendar?month=${encodeURIComponent(cal.month)}&year=${cal.year}&day=${calDay}`)
+      .then(setCalDayData)
+      .catch(()=>setCalDayData(undefined));
+  },[cal,calDay]);
+
   if(err)return <div className="error">{err}</div>;
   if(!d)return <Loading/>;
   const income=Number(d.rangeIncome||0);
   const earnings=Number(d.rangeCut||0);
   const earningPct=income>0?Math.min(100,(earnings/income)*100):0;
+  const trend=[...months].reverse().slice(-7);
+  const trendMax=Math.max(1,...trend.map(m=>Number(m.payable||0)));
+  const rangeLabel=({today:'Today',week:'Last 7 days',eth_month:'This Ethiopian month',all:'All time'})[range]||range;
+  const calWeekdays=['እሁድ','ሰኞ','ማክሰ','ረቡዕ','ሐሙስ','ዓርብ','ቅዳሜ'];
+  const calLen=cal?ethMonthLength(cal.year,cal.monthIndex):30;
+  const calStart=cal?ethWeekday(cal.year,cal.monthIndex,1):0;
+  const calVisit=cal?Object.fromEntries(cal.days.map(x=>[x.day,x])):{};
+  const calIsCurrent=!!(cal&&d&&cal.month===d.ethToday.month&&cal.year===d.ethToday.year);
+  const stepCal=n=>{if(!cal)return;setCalDay(null);setCalRef(n<0?ethPrevMonth(cal.monthIndex,cal.year):ethNextMonth(cal.monthIndex,cal.year));};
+  const todayCal=()=>{setCalDay(null);setCalRef(null);};
+  const pickDay=day=>setCalDay(cur=>cur===day?null:day);
 
   return <>
     <Reveal>
@@ -478,11 +555,11 @@ function Dashboard({clinic}){
         <div className="hero-row">
           <div>
             {(clinic?.short||clinic?.name)&&<p className="eyebrow brand">{clinic?.short||clinic?.name}</p>}
-            <h1>{d.ethToday.month} {d.ethToday.day}, {d.ethToday.year}</h1>
-            <p>Welcome back. Here is what's happening across your practice.</p>
+            <h1>Welcome back</h1>
+            <p>{d.ethToday.month} {d.ethToday.day}, {d.ethToday.year} · Here is what's happening across your practice.</p>
           </div>
 
-          <div className="hero-actions">
+        <div className="hero-actions">
             <Link className="ghost" to="/monthly">
               <BarChart3 size={17}/>
               Monthly report
@@ -491,25 +568,6 @@ function Dashboard({clinic}){
               <Plus size={18}/>
               New patient
             </Link>
-          </div>
-        </div>
-
-        <div className="hero-stats">
-          <div className="hero-stat">
-            <span>Today's earnings</span>
-            <strong><CountUp value={d.todayCut} format={v=>money(v)}/></strong>
-          </div>
-          <div className="hero-stat">
-            <span>Range earnings</span>
-            <strong><CountUp value={earnings} format={v=>money(v)}/></strong>
-          </div>
-          <div className="hero-stat">
-            <span>Range income</span>
-            <strong><CountUp value={income} format={v=>money(v)}/></strong>
-          </div>
-          <div className="hero-stat">
-            <span>Visits in range</span>
-            <strong><CountUp value={d.count}/></strong>
           </div>
         </div>
       </section>
@@ -529,153 +587,139 @@ function Dashboard({clinic}){
       </select>
     </div>
 
-    <div className="dashboard-kpis">
-      <Reveal delay={0}>
-        <div className="dashboard-kpi dashboard-kpi-primary">
-          <div className="dashboard-kpi-top">
-            <span>Today's earnings</span>
-            <div className="dashboard-kpi-icon"><ReceiptText size={19}/></div>
-          </div>
-          <strong><CountUp value={d.todayCut} format={v=>money(v)}/></strong>
-          <small>Doctor earnings today</small>
-        </div>
-      </Reveal>
-
-      <Reveal delay={70}>
-        <div className="dashboard-kpi">
-          <div className="dashboard-kpi-top">
-            <span>Range earnings</span>
-            <div className="dashboard-kpi-icon"><TrendingUp size={19}/></div>
-          </div>
-          <strong><CountUp value={d.rangeCut} format={v=>money(v)}/></strong>
-          <small>Doctor earnings in selected period</small>
-        </div>
-      </Reveal>
-
-      <Reveal delay={140}>
-        <div className="dashboard-kpi">
-          <div className="dashboard-kpi-top">
-            <span>Clinic income</span>
-            <div className="dashboard-kpi-icon"><Wallet size={19}/></div>
-          </div>
-          <strong><CountUp value={d.rangeIncome} format={v=>money(v)}/></strong>
-          <small>Total recorded income</small>
-        </div>
-      </Reveal>
-
-      <Reveal delay={210}>
-        <div className="dashboard-kpi">
-          <div className="dashboard-kpi-top">
-            <span>Patients</span>
-            <div className="dashboard-kpi-icon"><Users size={19}/></div>
-          </div>
-          <strong><CountUp value={d.count}/></strong>
-          <small>Visits in selected period</small>
-        </div>
-      </Reveal>
-    </div>
-
     <div className="dashboard-main-grid">
+
+      <div className="dashboard-main-col">
+
+    <Reveal>
+      <div className="dashboard-pulse">
+        <div className="pulse-cell pulse-cell-accent">
+          <span>Today's earnings</span>
+          <strong><CountUp value={d.todayCut} format={v=>money(v)}/></strong>
+        </div>
+        <div className="pulse-cell">
+          <span>Doctor earnings</span>
+          <strong><CountUp value={d.rangeCut} format={v=>money(v)}/></strong>
+        </div>
+        <div className="pulse-cell">
+          <span>Clinic income</span>
+          <strong><CountUp value={d.rangeIncome} format={v=>money(v)}/></strong>
+        </div>
+        <div className="pulse-cell">
+          <span>Visits</span>
+          <strong><CountUp value={d.count}/></strong>
+        </div>
+        <div className="pulse-share">
+          <div className="pulse-share-head">
+            <span>Your share</span>
+            <b>{earningPct.toFixed(1)}%</b>
+          </div>
+          <div className="dashboard-bar">
+            <div style={{width:`${earningPct}%`}}/>
+          </div>
+          <small>{money(earnings)} of {money(income)}</small>
+        </div>
+      </div>
+    </Reveal>
 
       <Reveal>
         <section className="card dashboard-overview-card">
           <div className="section-head">
             <div>
-              <span className="dashboard-kicker">Financial overview</span>
-              <h2>Income & earnings</h2>
-              <p>Selected period performance</p>
+              <span className="dashboard-kicker">Analytics</span>
+              <h2>Earnings trend</h2>
+              <p>Doctor earnings by Ethiopian month</p>
             </div>
+            <span className="pill"><TrendingUp size={13}/> Based on recorded visits</span>
           </div>
 
-          <div className="dashboard-finance">
+          {trend.length
+            ?<>
+              <div className="ref-chart" role="img" aria-label="Doctor earnings by month">
+                {trend.map(m=>{
+                  const value=Math.round(Number(m.payable||0));
+                  const h=Math.max(6,Math.round((value/trendMax)*100));
+                  return <div className="ref-chart-col" key={m._id.month+m._id.year}>
+                    <div className="ref-bar-track">
+                      <div
+                        className={m.isCurrent?'ref-bar':'ref-bar muted'}
+                        style={{height:`${h}%`}}
+                        data-label={`${m._id.month} ${m._id.year}: ${money(value)}`}
+                      />
+                    </div>
+                    <span className="ref-chart-label">{m._id.month.slice(0,3)} {String(m._id.year).slice(-2)}</span>
+                  </div>;
+                })}
+              </div>
 
-            <div className="dashboard-finance-row">
+              <div className="ref-legend">
+                <span><i/>Current month</span>
+                <span><i className="is-muted"/>Earlier months</span>
+              </div>
+            </>
+            :<div className="empty-state">
+              <div className="empty-illustration"><BarChart3 size={26}/></div>
+              <b>No monthly data yet</b>
+              <p>Monthly earnings will appear here once visits are recorded.</p>
+            </div>}
+        </section>
+      </Reveal>
+
+      </div>
+
+      <div className="dashboard-side">
+
+        <Reveal delay={70}>
+          <section className="card dashboard-cal-card">
+            <div className="section-head">
+              <div>
+                <span className="dashboard-kicker">Calendar</span>
+                <h2>{cal?`${cal.month} ${cal.year}`:'Loading…'}</h2>
+                <p>Ethiopian month · visits per day</p>
+              </div>
+              <div className="cal-nav">
+                {calRef&&<button type="button" className="ghost cal-today" onClick={todayCal}>Today</button>}
+                <button type="button" className="icon" aria-label="Previous month" onClick={()=>stepCal(-1)} disabled={!cal}><ChevronLeft size={17}/></button>
+                <button type="button" className="icon" aria-label="Next month" onClick={()=>stepCal(1)} disabled={!cal}><ChevronRight size={17}/></button>
+              </div>
+            </div>
+
+            <div className="cal">
+              <div className="cal-week">
+                {calWeekdays.map(w=><span key={w}>{w}</span>)}
+              </div>
+              <div className="cal-grid">
+                {Array.from({length:calStart},(_,i)=><span key={'b'+i} className="cal-cell cal-blank"/>)}
+                {Array.from({length:calLen},(_,i)=>{
+                  const day=i+1;
+                  const v=calVisit[day];
+                  const isToday=calIsCurrent&&d&&d.ethToday.day===day;
+                  return <button type="button" key={day}
+                    className={'cal-cell'+(isToday?' is-today':'')+(v?' has-visits':'')+(calDay===day?' is-selected':'')}
+                    onClick={()=>pickDay(day)}
+                    aria-pressed={calDay===day}
+                    aria-label={`${cal?cal.month:''} ${day}, ${cal?cal.year:''}${v?` · ${v.count} visit${v.count>1?'s':''}`:' · no visits'}`}>
+                    <span className="cal-num">{day}</span>
+                    {v&&<i className="cal-dot"/>}
+                  </button>;
+                })}
+              </div>
+            </div>
+
+            <div className="dashboard-finance-summary cal-summary">
+              <div>
+                <span>Visits this month</span>
+                <b>{cal?cal.totalVisits:0}</b>
+              </div>
               <div>
                 <span>Clinic income</span>
-                <strong><CountUp value={income} format={v=>money(v)} duration={700}/></strong>
+                <b>{money(cal?cal.totalIncome:0)}</b>
               </div>
-              <b>{income>0?'100%':'0%'}</b>
             </div>
+          </section>
+        </Reveal>
 
-            <div className="dashboard-bar">
-              <div style={{width:income>0?'100%':'0%'}}/>
-            </div>
-
-            <div className="dashboard-finance-row">
-              <div>
-                <span>Your earnings</span>
-                <strong><CountUp value={earnings} format={v=>money(v)} duration={700}/></strong>
-              </div>
-              <b>{earningPct.toFixed(1)}%</b>
-            </div>
-
-            <div className="dashboard-bar earnings">
-              <div style={{width:`${earningPct}%`}}/>
-            </div>
-
-          </div>
-
-          <div className="dashboard-finance-summary">
-            <div>
-              <span>Today's earnings</span>
-              <b>{money(d.todayCut)}</b>
-            </div>
-
-            <div>
-              <span>Patients</span>
-              <b>{d.count}</b>
-            </div>
-          </div>
-        </section>
-      </Reveal>
-
-      <Reveal delay={90}>
-        <section className="card dashboard-actions-card">
-          <div className="section-head">
-            <div>
-              <span className="dashboard-kicker">Quick actions</span>
-              <h2>Clinic tools</h2>
-              <p>Common tasks</p>
-            </div>
-          </div>
-
-          <div className="dashboard-actions">
-
-            <Link to="/patients/new" className="dashboard-action">
-              <div className="dashboard-action-icon"><Plus size={19}/></div>
-              <div>
-                <b>New patient</b>
-                <span>Record a new visit</span>
-              </div>
-            </Link>
-
-            <Link to="/patients" className="dashboard-action">
-              <div className="dashboard-action-icon"><Users size={19}/></div>
-              <div>
-                <b>Patients</b>
-                <span>Search patient records</span>
-              </div>
-            </Link>
-
-            <Link to="/monthly" className="dashboard-action">
-              <div className="dashboard-action-icon"><ArrowUpRight size={19}/></div>
-              <div>
-                <b>Monthly earnings</b>
-                <span>View your earnings</span>
-              </div>
-            </Link>
-
-            <Link to="/backup" className="dashboard-action">
-              <div className="dashboard-action-icon"><Database size={19}/></div>
-              <div>
-                <b>Backup center</b>
-                <span>Protect clinic data</span>
-              </div>
-            </Link>
-
-          </div>
-        </section>
-      </Reveal>
+      </div>
 
     </div>
 
@@ -707,6 +751,27 @@ function Dashboard({clinic}){
 
       </section>
     </Reveal>
+
+    <Modal open={!!calDay} onClose={()=>setCalDay(null)}
+      title={calDay&&cal?`${cal.month} ${calDay}, ${cal.year}`:'Visits'}
+      subtitle={calDayData?`${calDayData.count} visit${calDayData.count===1?'':'s'} · clinic income ${money(calDayData.income)}`:'Loading…'}>
+      {calDayData
+        ? (calDayData.patients.length
+          ? <ul className="cal-list cal-list-modal">
+              {calDayData.patients.map((p,idx)=><li key={p._id||idx}>
+                <div className="cal-list-main">
+                  <b>{p.patientName}</b>
+                  <span>{p.procedure||'—'}{p.cardNumber?` · ${p.cardNumber}`:''}</span>
+                </div>
+                <div className="cal-list-fig">
+                  <b>{money(p.totalFee)}</b>
+                  <span>{money(p.myEarning)}</span>
+                </div>
+              </li>)}
+            </ul>
+          : <div className="cal-empty">No visits recorded on this date.</div>)
+        : <div className="cal-empty">Loading…</div>}
+    </Modal>
   </>
 }
 function Patients(){
@@ -2277,7 +2342,7 @@ function SettingsPage(){
       );
     };
   },[doctor]);
-if(doctor===undefined&&!setup)return <Loading/>;if(setup)return <Setup clinic={clinic} onLogin={d=>{setSetup(false);setDoctor(d)}}/>;if(!doctor)return <Routes><Route path="/forgot" element={<Forgot clinic={clinic}/>}/><Route path="/reset-password" element={<ResetPassword clinic={clinic}/>}/><Route path="*" element={<Login onLogin={setDoctor} clinic={clinic}/>}/></Routes>;return <Shell doctor={doctor} onLogout={async()=>{await api.post('/auth/logout',{});setDoctor(null)}}><Routes><Route path="/" element={<Dashboard clinic={clinic}/>}/><Route path="/patients" element={<Patients/>}/><Route path="/patients/new" element={<PatientForm/>}/><Route path="/patients/edit/:id" element={<PatientForm/>}/><Route path="/monthly" element={<Monthly/>}/><Route path="/doctors" element={doctor.role==='admin'?<Doctors/>:<Navigate to="/"/>}/><Route path="/backup" element={doctor.role==='admin'?<Backup/>:<Navigate to="/"/>}/><Route path="/notifications" element={doctor.role==='admin'?<NotificationsPage/>:<Navigate to="/"/>}/><Route path="/settings" element={doctor.role==='admin'?<SettingsPage/>:<Navigate to="/"/>}/><Route path="*" element={<Navigate to="/"/>}/></Routes></Shell>}
+if(doctor===undefined&&!setup)return <Loading/>;if(setup)return <Setup clinic={clinic} onLogin={d=>{setSetup(false);setDoctor(d)}}/>;if(!doctor)return <Routes><Route path="/forgot" element={<Forgot clinic={clinic}/>}/><Route path="/reset-password" element={<ResetPassword clinic={clinic}/>}/><Route path="*" element={<Login onLogin={setDoctor} clinic={clinic}/>}/></Routes>;return <Shell doctor={doctor} clinic={clinic} onLogout={async()=>{await api.post('/auth/logout',{});setDoctor(null)}}><Routes><Route path="/" element={<Dashboard clinic={clinic}/>}/><Route path="/patients" element={<Patients/>}/><Route path="/patients/new" element={<PatientForm/>}/><Route path="/patients/edit/:id" element={<PatientForm/>}/><Route path="/monthly" element={<Monthly/>}/><Route path="/doctors" element={doctor.role==='admin'?<Doctors/>:<Navigate to="/"/>}/><Route path="/backup" element={doctor.role==='admin'?<Backup/>:<Navigate to="/"/>}/><Route path="/notifications" element={doctor.role==='admin'?<NotificationsPage/>:<Navigate to="/"/>}/><Route path="/settings" element={doctor.role==='admin'?<SettingsPage/>:<Navigate to="/"/>}/><Route path="*" element={<Navigate to="/"/>}/></Routes></Shell>}
 createRoot(document.getElementById('root')).render(<BrowserRouter><ToastProvider><App/></ToastProvider></BrowserRouter>);
 
 

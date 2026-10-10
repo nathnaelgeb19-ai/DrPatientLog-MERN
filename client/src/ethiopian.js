@@ -1,3 +1,8 @@
 export const ETH_MONTHS=['መስከረም','ጥቅምት','ህዳር','ታኅሣሥ','ጥር','የካቲት','መጋቢት','ሚያዝያ','ግንቦት','ሰኔ','ሐምሌ','ነሐሴ','ጳጉሜ'];
 export function ethiopianParts(iso){const [yy,mm,dd]=iso.split('-').map(Number);const a=Math.floor((14-mm)/12),y=yy+4800-a,m=mm+12*a-3,jdn=dd+Math.floor((153*m+2)/5)+365*y+Math.floor(y/4)-Math.floor(y/100)+Math.floor(y/400)-32045;const days=jdn-1724221,cycles=Math.floor(days/1461),rem=days%1461;let ey=cycles*4+1;if(rem>=365){if(rem<730){ey++;}else if(rem<1096){ey+=2;}else{ey+=3;}}let rd=rem;if(rem>=365){if(rem<730)rd-=365;else if(rem<1096)rd-=730;else rd-=1096;}let mi=Math.floor(rd/30);if(mi>12)mi=12;return {month:ETH_MONTHS[mi],monthIndex:mi+1,day:rd%30+1,year:ey};}
 export const ethiopianDate=iso=>{const p=ethiopianParts(iso);return `${p.month} ${p.day} ${p.year}`};
+export function ethToJdn(year,monthIndex,day){return 365*(year-1)+Math.floor((year-1)/4)+(monthIndex-1)*30+(day-1)+1724221;}
+export function ethWeekday(year,monthIndex,day){return (ethToJdn(year,monthIndex,day)+1)%7;}
+export function ethMonthLength(year,monthIndex){return monthIndex===13?(year%4===3?6:5):30;}
+export function ethPrevMonth(monthIndex,year){let i=monthIndex-1,y=year;if(i<1){i=13;y--;}return {monthIndex:i,year:y};}
+export function ethNextMonth(monthIndex,year){let i=monthIndex+1,y=year;if(i>13){i=1;y++;}return {monthIndex:i,year:y};}
