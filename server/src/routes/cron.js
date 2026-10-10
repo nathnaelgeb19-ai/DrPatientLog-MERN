@@ -11,6 +11,8 @@ import {
   buildMonthlyMessage
 } from '../services/telegram.js';
 
+import { buildMonthlyHtml } from './reports.js';
+
 import { driveBackup } from '../services/googleDrive.js';
 import { createBackupFile } from '../services/backup.js';
 import {
@@ -254,7 +256,30 @@ async function monthly() {
     );
 
     try {
-      const result = await sendTelegram(d, message);
+      let result;
+
+      try {
+        const html = await buildMonthlyHtml(d, {
+          month: currentMonth,
+          year: currentYear
+        });
+
+        const filename =
+          `hakim-monthly-${current.replace(/\s+/g, '-')}-${currentYear}.html`;
+
+        result = await sendTelegramDocument(
+          d,
+          Buffer.from(html, 'utf8'),
+          filename,
+          message.slice(0, 1024)
+        );
+      } catch (htmlError) {
+        console.log(
+          `[Monthly Report] HTML generation failed for ${d.name}: ${htmlError.message}. Falling back to summary.`
+        );
+
+        result = await sendTelegram(d, message);
+      }
 
       telegramResults.push({
         doctor: d.name,

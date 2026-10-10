@@ -59,18 +59,7 @@ async function footer() {
   ].join('\n');
 }
 
-export async function sendTelegram(doctor, text) {
-  if (
-    !doctor?.telegram?.enabled ||
-    !doctor.telegram.botToken ||
-    !doctor.telegram.chatId
-  ) {
-    return {
-      sent: false,
-      reason: 'Telegram is disabled or not configured.'
-    };
-  }
-
+async function sendMessage(doctor, text) {
   const url =
     `https://api.telegram.org/bot${doctor.telegram.botToken}/sendMessage`;
 
@@ -119,9 +108,57 @@ export async function sendTelegram(doctor, text) {
     throw new Error(`Telegram: ${description}`);
   }
 
+  return data.result?.message_id ?? null;
+}
+
+function splitMessage(text, limit = 4000) {
+  if (text.length <= limit) return [text];
+
+  const chunks = [];
+  let current = '';
+
+  for (const line of text.split('\n')) {
+    if (current && (current + line).length > limit) {
+      chunks.push(current);
+      current = '';
+    }
+
+    current += line + '\n';
+  }
+
+  if (current) chunks.push(current);
+
+  return chunks.map(c => c.trimEnd());
+}
+
+export async function sendTelegram(doctor, text) {
+  if (
+    !doctor?.telegram?.enabled ||
+    !doctor.telegram.botToken ||
+    !doctor.telegram.chatId
+  ) {
+    return {
+      sent: false,
+      reason: 'Telegram is disabled or not configured.'
+    };
+  }
+
+  const parts = splitMessage(text);
+
+  let firstMessageId = null;
+
+  for (const part of parts) {
+    const messageId = await sendMessage(doctor, part);
+
+    if (firstMessageId === null) {
+      firstMessageId = messageId;
+    }
+  }
+
   return {
     sent: true,
-    messageId: data.result?.message_id ?? null
+    messageId: firstMessageId,
+    parts: parts.length
   };
 }
 

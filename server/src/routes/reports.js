@@ -21,9 +21,9 @@ const money = value => Number(value || 0).toLocaleString('en-US', {
   maximumFractionDigits: 2
 });
 
-r.get('/monthly.html', async (q, s) => {
-  try {
-    const requestedMonth = q.query.month;
+export async function buildMonthlyHtml(doctor, query = {}) {
+  const q = { doctor, query };
+  const requestedMonth = q.query.month;
 const requestedYear = Number(q.query.year);
 
 let e;
@@ -90,9 +90,7 @@ if (requestedMonth && Number.isInteger(requestedYear) && requestedYear > 1900) {
 
     const doctorName = q.doctor.name || q.doctor.username || 'Doctor';
 
-    s.set('Content-Type', 'text/html; charset=utf-8');
-
-    s.send(`<!doctype html>
+return `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -862,7 +860,14 @@ if (requestedMonth && Number.isInteger(requestedYear) && requestedYear > 1900) {
 
 </main>
 </body>
-</html>`);
+</html>`;
+}
+
+r.get('/monthly.html', async (q, s) => {
+  try {
+    const html = await buildMonthlyHtml(q.doctor, q.query);
+    s.set('Content-Type', 'text/html; charset=utf-8');
+    s.send(html);
   } catch (error) {
     console.error('Monthly HTML report error:', error);
     s.status(500).send('Unable to generate the monthly report.');
