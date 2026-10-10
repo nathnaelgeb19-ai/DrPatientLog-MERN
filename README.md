@@ -54,7 +54,7 @@ Telegram is implemented directly through the Bot API and uses each doctor's encr
 
 ### Cron-job.org
 
-For hosts that sleep, use the included `POST /api/cron/daily` endpoint with the `x-cron-secret` header (or `?secret=`) to trigger the daily report/backup externally. The internal node-cron job is also included for always-on deployments.
+The app schedules the daily report, monthly report, and automatic backup internally with `node-cron` (times come from the clinic settings, timezone `Africa/Addis_Ababa`). On free-tier hosts that spin down after inactivity, these internal jobs cannot fire while the instance is asleep, so keep the instance awake with **one** cron-job.org job that pings `GET /api/health` every 5 minutes. The other endpoints (`POST /api/cron/daily`, `POST /api/cron/monthly-report`, `POST /api/cron/automatic-backup`) remain available for manual/alternative triggering with the `x-cron-secret` header (or `?secret=`).
 
 ### PostgreSQL → MongoDB migration
 

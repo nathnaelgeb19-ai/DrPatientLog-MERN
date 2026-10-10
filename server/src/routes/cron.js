@@ -15,6 +15,7 @@ import { buildMonthlyHtml } from './reports.js';
 
 import { driveBackup } from '../services/googleDrive.js';
 import { createBackupFile } from '../services/backup.js';
+import cronJob from 'node-cron';
 import {
   ethiopianParts,
   isoToday,
@@ -31,6 +32,57 @@ function ok(req) {
 
   return !process.env.CRON_SECRET ||
     supplied === process.env.CRON_SECRET;
+}
+
+const jobGroups = [];
+
+async function scheduleCronJobs() {
+  jobGroups.forEach(j => j.destroy());
+  jobGroups.length = 0;
+
+  const rows = await Setting.find({
+    key: {
+      $in: [
+        'telegram_daily_report_time',
+        'telegram_monthly_report_time',
+        'telegram_backup_time'
+      ]
+    }
+  }).lean();
+
+  const vals = Object.fromEntries(rows.map(x => [x.key, x.value]));
+
+  const toCron = input => {
+    const [h, m] = String(input || '19:00').split(':').map(Number);
+    const hour = Number.isInteger(h) ? h : 19;
+    const min = Number.isInteger(m) ? m : 0;
+
+    return `${min} ${hour} * * *`;
+  };
+
+  jobGroups.push(
+    cronJob.schedule(
+      toCron(vals.telegram_daily_report_time),
+      () => daily().catch(console.error),
+      { timezone: 'Africa/Addis_Ababa' }
+    ),
+    cronJob.schedule(
+      toCron(vals.telegram_monthly_report_time),
+      () => monthly().catch(console.error),
+      { timezone: 'Africa/Addis_Ababa' }
+    ),
+    cronJob.schedule(
+      toCron(vals.telegram_backup_time),
+      () => automaticBackup().catch(console.error),
+      { timezone: 'Africa/Addis_Ababa' }
+    )
+  );
+
+  console.log(
+    `[Cron] scheduled daily (${vals.telegram_daily_report_time || '19:00'}), ` +
+    `monthly (${vals.telegram_monthly_report_time || '19:00'}), ` +
+    `backup (${vals.telegram_backup_time || '19:00'}) - Africa/Addis_Ababa`
+  );
 }
 
 async function processOutbox() {
@@ -494,8 +546,10 @@ r.post('/automatic-backup', async (q, s) => {
 
 export {
   daily,
+  monthly,
   processOutbox,
-  automaticBackup
+  automaticBackup,
+  scheduleCronJobs
 };
 
 export default r;

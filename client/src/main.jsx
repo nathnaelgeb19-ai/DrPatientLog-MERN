@@ -1796,7 +1796,7 @@ function Backup(){
         <span>{loading?'Contacting the server…':statusReady?'Database and backup location verified':'Check your server configuration'}</span>
       </div>
       <div className="status-hero-meta">
-        <div><small>Automatic backup</small><b>Daily at 19:00</b></div>
+        <div><small>Automatic backup</small><b>Daily on schedule</b></div>
         <div><small>Last automatic backup</small>
           <b style={status?.lastAutomaticBackup&&!status.lastAutomaticBackup.ok?{color:'var(--danger)'}:undefined}>
             {loading?'…':status?.lastAutomaticBackup
@@ -1893,7 +1893,7 @@ function Backup(){
       <div className="section-head">
         <div>
           <h2>Automatic backup</h2>
-          <p>Production automatic backups are triggered by cron-job.org. You can also run a backup manually below.</p>
+          <p>The server schedules a backup automatically every day. You can also run a backup manually below.</p>
         </div>
 
         <Btn className="ghost" loading={loading} loadingText="Refreshing…" onClick={loadStatus}>
@@ -1916,7 +1916,7 @@ function Backup(){
             Schedule
           </span>
           <b style={{display:'block',fontSize:'14px'}}>
-            Daily at 19:00 via cron-job.org
+            Daily · set in Notifications
           </b>
         </div>
       </div>
@@ -1941,7 +1941,7 @@ function Backup(){
 }
 function NotificationsPage(){
  const[tg,setTg]=useState({botToken:'',chatId:'',enabled:false}),
- [f,setF]=useState({telegram_daily_report_time:'19:00',telegram_monthly_report_time:'19:00'}),
+ [f,setF]=useState({telegram_daily_report_time:'19:00',telegram_monthly_report_time:'19:00',telegram_backup_time:'19:00'}),
  [saved,setSaved]=useState(false),
 [busy,setBusy]=useState(false),
   [savingTg,setSavingTg]=useState(false),
@@ -1956,9 +1956,10 @@ function NotificationsPage(){
      try{
        setLastMonthly(settings.last_monthly_report?JSON.parse(settings.last_monthly_report):null);
      }catch{}
-     setF({
+setF({
        telegram_daily_report_time:settings.telegram_daily_report_time||'19:00',
-       telegram_monthly_report_time:settings.telegram_monthly_report_time||'19:00'
+       telegram_monthly_report_time:settings.telegram_monthly_report_time||'19:00',
+       telegram_backup_time:settings.telegram_backup_time||'19:00'
      });
      setTg({
        botToken:me.doctor.telegram?.botToken||'',
@@ -1975,7 +1976,8 @@ function NotificationsPage(){
      await api.post('/doctors/'+me.doctor._id+'/telegram',tg);
      await api.put('/settings',{
        telegram_daily_report_time:f.telegram_daily_report_time,
-       telegram_monthly_report_time:f.telegram_monthly_report_time
+       telegram_monthly_report_time:f.telegram_monthly_report_time,
+       telegram_backup_time:f.telegram_backup_time
      });
      setSaved(true);
      setTimeout(()=>setSaved(false),1800);
@@ -2090,7 +2092,17 @@ function NotificationsPage(){
                 onChange={e=>setF({...f,telegram_monthly_report_time:e.target.value})}
               />
             </label>
+
+            <label>Automatic backup time
+              <input
+                type="time"
+                value={f.telegram_backup_time}
+                onChange={e=>setF({...f,telegram_backup_time:e.target.value})}
+              />
+            </label>
           </div>
+
+          <p className="note">Reports and the automatic backup are sent by the server at these times (Africa/Addis_Ababa). The monthly report goes out on the last day of each Ethiopian month.</p>
 
           <div className="toggle-row">
             <div>
