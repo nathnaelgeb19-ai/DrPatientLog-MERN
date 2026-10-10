@@ -1,5 +1,5 @@
-﻿import { Router } from 'express';
-import { Doctor, Patient } from '../models/index.js';
+import { Router } from 'express';
+import { Doctor, Patient, Setting } from '../models/index.js';
 
 import {
   sendTelegram,
@@ -167,16 +167,34 @@ async function monthly() {
     tomorrow.year === current.year &&
     tomorrow.monthIndex === current.monthIndex
   ) {
-    return {
+    const skipped = {
       ok: true,
       skipped: true,
-      reason: 'Not Ethiopian month end'
+      reason: 'Not Ethiopian month end',
+      ethDate: `${current.month} ${current.day} ${current.year}`
     };
+
+    await Setting.updateOne(
+      { key: 'last_monthly_report' },
+      {
+        key: 'last_monthly_report',
+        value: JSON.stringify(skipped)
+      },
+      { upsert: true }
+    );
+
+    console.log(
+      `[Monthly Report] skipped on ${skipped.ethDate}: ${skipped.reason}`
+    );
+
+    return skipped;
   }
 
   const currentMonth = current.month;
   const currentYear = current.year;
   const pattern = '^' + currentMonth + ' \\d{1,2} ' + currentYear + '$';
+
+  const telegramResults = [];
 
   for (const d of await Doctor.find({
     'telegram.enabled': true
@@ -235,15 +253,50 @@ async function monthly() {
       pagumeCarry
     );
 
-    await sendTelegram(d, message).catch(error => {
+    try {
+      const result = await sendTelegram(d, message);
+
+      telegramResults.push({
+        doctor: d.name,
+        sent: !!result.sent,
+        reason: result.reason || ''
+      });
+
       console.log(
-        '[Monthly Report] Telegram failed for ' +
-        d.name +
-        ': ' +
-        error.message
+        `[Monthly Report] Telegram ${d.name}: ${
+          result.sent ? 'sent' : result.reason || 'not sent'
+        }`
       );
-    });
+    } catch (error) {
+      telegramResults.push({
+        doctor: d.name,
+        sent: false,
+        reason: error.message || 'Telegram send failed'
+      });
+
+      console.log(
+        `[Monthly Report] Telegram failed for ${d.name}: ${error.message}`
+      );
+    }
   }
+
+  const result = {
+    ok: telegramResults.some(x => x.sent),
+    skipped: false,
+    ethDate: `${current.month} ${current.day} ${current.year}`,
+    telegram: telegramResults
+  };
+
+  await Setting.updateOne(
+    { key: 'last_monthly_report' },
+    {
+      key: 'last_monthly_report',
+      value: JSON.stringify(result)
+    },
+    { upsert: true }
+  );
+
+  return result;
 }async function automaticBackup() {
   console.log('[Automatic Backup] starting...');
 
@@ -288,7 +341,7 @@ async function monthly() {
   ) {
     try {
       const caption =
-        `DrPatientLog Automatic Backup\n\n` +
+        `Hakim Automatic Backup\n\n` +
         `Date: ${e.month} ${e.day} ${e.year}\n` +
         `Backup file: ${backup.filename}`;
 
@@ -329,10 +382,26 @@ async function monthly() {
     }
   }
 
-  return {
-    ok:
-      backupResult.uploaded ||
+  const lastAutomaticBackup = {
+    ranAt: new Date().toISOString(),
+    ethDate: `${e.month} ${e.day} ${e.year}`,
+    ok: backupResult.uploaded ||
       telegramResults.some(x => x.sent),
+    googleDrive: backupResult,
+    telegram: telegramResults
+  };
+
+  await Setting.updateOne(
+    { key: 'last_automatic_backup' },
+    {
+      key: 'last_automatic_backup',
+      value: JSON.stringify(lastAutomaticBackup)
+    },
+    { upsert: true }
+  );
+
+  return {
+    ok: lastAutomaticBackup.ok,
 
     backupFile: {
       filename: backup.filename
@@ -348,8 +417,7 @@ r.post('/monthly-report', async (q, s) => {
   if (!ok(q)) return s.sendStatus(403);
 
   try {
-    await monthly();
-    s.json({ ok: true });
+    s.json(await monthly());
   } catch (e) {
     console.error('[Monthly Report] failed:', e);
 

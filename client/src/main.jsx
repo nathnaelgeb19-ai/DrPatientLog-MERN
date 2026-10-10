@@ -1,7 +1,7 @@
 import React,{useEffect,useState,useRef,useCallback,lazy,Suspense}from'react';import{createRoot}from'react-dom/client';import{createPortal}from'react-dom';import{BrowserRouter,useNavigate,useLocation,Routes,Route,Link,Navigate}from'react-router-dom';import{LayoutDashboard,Users,UserRoundCog,CalendarDays,Settings,LogOut,Plus,Search,Menu,X,Stethoscope,ShieldCheck,ArrowUpRight,Trash2,Edit3,CheckCircle2,ReceiptText,ClipboardList,Database,Send,Download,Upload,RefreshCw,KeyRound,UserCog,Palette,Sun,Moon,Monitor,Bell,Clock,ChevronDown,ChevronLeft,ChevronRight,FileText,Eye,EyeOff,CornerDownLeft,Sparkles,TrendingUp,Activity,BarChart3,Check,Lock}from'lucide-react';import{api}from'./api';import{ethiopianDate,ETH_MONTHS,ethWeekday,ethMonthLength,ethPrevMonth,ethNextMonth}from'./ethiopian.js';import'./styles.css';import doctorLogo from './assets/aa-logo.svg';
 const money=n=>`${Number(n||0).toFixed(2)} ETB`;
 const EarningsChart=lazy(()=>import('./components/EarningsChart.jsx'));
-function PageHead({title,subtitle,action}){return <div className="page-head"><div><p className="eyebrow">DRPATIENTLOG</p><h1>{title}</h1><p>{subtitle}</p></div>{action}</div>}
+function PageHead({title,subtitle,action}){return <div className="page-head"><div><p className="eyebrow">HAKIM</p><h1>{title}</h1><p>{subtitle}</p></div>{action}</div>}
 function Loading(){return <div className="loading"><div/><div/><div/></div>}
 function Spinner(){return <span className="spinner" aria-hidden="true"/>}
 function Btn({className='',loading=false,loadingText,children,disabled=false,...rest}){return <button className={loading?className+' is-loading':className} disabled={loading||disabled} aria-busy={loading?'true':undefined} {...rest}>{loading?<><Spinner/>{loadingText??children}</>:children}</button>}
@@ -19,14 +19,14 @@ function Shell({doctor,onLogout,children,clinic}){
   const loc=useLocation();
   const[open,setOpen]=useState(false);
   const[loggingOut,setLoggingOut]=useState(false);
-  const[theme,setTheme]=useState(()=>localStorage.getItem('drpatientlog-theme')||'system');
+  const[theme,setTheme]=useState(()=>localStorage.getItem('hakim-theme')||'system');
   const[cmdOpen,setCmdOpen]=useState(false);
   const navRef=useRef(null);
   const[ind,setInd]=useState({top:0,height:0,show:false});
 
   const applyTheme=value=>{
     setTheme(value);
-    localStorage.setItem('drpatientlog-theme',value);
+    localStorage.setItem('hakim-theme',value);
 
     if(value==='system'){
       document.documentElement.removeAttribute('data-theme');
@@ -36,7 +36,7 @@ function Shell({doctor,onLogout,children,clinic}){
   };
 
   useEffect(()=>{
-    applyTheme(localStorage.getItem('drpatientlog-theme')||'system');
+    applyTheme(localStorage.getItem('hakim-theme')||'system');
   },[]);
 
   useEffect(()=>{
@@ -99,7 +99,7 @@ function Shell({doctor,onLogout,children,clinic}){
         </div>
 
         <div className="brand-copy">
-          <b>DrPatientLog</b>
+          <b>Hakim</b>
           <span>Clinical workspace</span>
         </div>
 
@@ -192,7 +192,7 @@ function Shell({doctor,onLogout,children,clinic}){
           <Stethoscope size={22}/>
         </div>
         <div className="brand-copy">
-          <b>DrPatientLog</b>
+          <b>Hakim</b>
           <span>{clinic?.short||clinic?.name||'Clinical workspace'}</span>
         </div>
       </Link>
@@ -352,7 +352,7 @@ function AuthLayout({title,subtitle,points,clinic,children}){return <div classNa
   <aside className="auth-visual">
     <div className="auth-brand">
       <div className="logo"><Stethoscope size={20}/></div>
-      <div><b>DrPatientLog</b>{clinic?.name&&<span>{clinic.name}</span>}</div>
+      <div><b>Hakim</b>{clinic?.name&&<span>{clinic.name}</span>}</div>
     </div>
     {title?(
       <div className="auth-hero">
@@ -383,14 +383,14 @@ function AuthLayout({title,subtitle,points,clinic,children}){return <div classNa
         {clinic?.name&&<span className="auth-art-pill"><Stethoscope size={18}/>{clinic.name}</span>}
       </div>
     )}
-    <footer>© {new Date().getFullYear()} DrPatientLog · Secure clinical records</footer>
+    <footer>© {new Date().getFullYear()} Hakim · Secure clinical records</footer>
   </aside>
   <main className="auth-main">
     <div className="auth-card">{children}</div>
   </main>
 </div>}
 function Login({onLogin,clinic}){const[f,setF]=useState({username:'',password:''}),[err,setErr]=useState(''),[busy,setBusy]=useState(false),[show,setShow]=useState(false);const go=async e=>{e.preventDefault();setBusy(true);try{onLogin((await api.post('/auth/login',f)).doctor)}catch(x){setErr(x.message)}finally{setBusy(false)}};return <AuthLayout clinic={clinic}>{(clinic?.short||clinic?.name)&&<p className="eyebrow brand">{clinic?.short||clinic?.name}</p>}<h1>Welcome back</h1><p className="sub">Sign in to your practice workspace.</p>{err&&<div className="error">{err}</div>}<form onSubmit={go}><label>Username<input autoComplete="username" required value={f.username} onChange={e=>setF({...f,username:e.target.value})}/></label><label>Password<span className="password-field"><input type={show?'text':'password'} autoComplete="current-password" required value={f.password} onChange={e=>setF({...f,password:e.target.value})}/><button type="button" className="password-toggle" title={show?'Hide password':'Show password'} aria-label={show?'Hide password':'Show password'} onClick={()=>setShow(!show)}>{show?<EyeOff size={16}/>:<Eye size={16}/>}</button></span></label><Btn className="primary full" loading={busy} loadingText="Signing in…">Sign in <ArrowUpRight size={17}/></Btn></form><p className="auth-foot"><Link className="ghost full" to="/forgot">Forgot password?</Link></p></AuthLayout>}
-function Setup({onLogin,clinic}){const[f,setF]=useState({name:'',username:'',password:'',email:''}),[err,setErr]=useState(''),[busy,setBusy]=useState(false);const go=async e=>{e.preventDefault();setBusy(true);try{onLogin((await api.post('/auth/setup',f)).doctor)}catch(x){setErr(x.message)}finally{setBusy(false)}};return <AuthLayout clinic={clinic} title="Set up your clinic workspace." subtitle="Create the first administrator account to get started." points={[[Sparkles,'One-time setup','Takes less than a minute.'],[ShieldCheck,'Secure from the start','Your data never leaves your server.'],[Users,'Ready for your team','Add doctors once you are in.']]}><p className="eyebrow">FIRST-TIME SETUP</p><h1>Create administrator</h1><p className="sub">Set up the first DrPatientLog account.</p>{err&&<div className="error">{err}</div>}<form onSubmit={go}>{[['name','Full name'],['username','Username'],['email','Email'],['password','Password']].map(([k,l])=><label key={k}>{l}<input type={k==='password'?'password':'text'} required={k!=='email'} value={f[k]} onChange={e=>setF({...f,[k]:e.target.value})}/></label>)}<Btn className="primary full" loading={busy} loadingText="Creating account…">Create administrator</Btn></form></AuthLayout>}
+function Setup({onLogin,clinic}){const[f,setF]=useState({name:'',username:'',password:'',email:''}),[err,setErr]=useState(''),[busy,setBusy]=useState(false);const go=async e=>{e.preventDefault();setBusy(true);try{onLogin((await api.post('/auth/setup',f)).doctor)}catch(x){setErr(x.message)}finally{setBusy(false)}};return <AuthLayout clinic={clinic} title="Set up your clinic workspace." subtitle="Create the first administrator account to get started." points={[[Sparkles,'One-time setup','Takes less than a minute.'],[ShieldCheck,'Secure from the start','Your data never leaves your server.'],[Users,'Ready for your team','Add doctors once you are in.']]}><p className="eyebrow">FIRST-TIME SETUP</p><h1>Create administrator</h1><p className="sub">Set up the first Hakim account.</p>{err&&<div className="error">{err}</div>}<form onSubmit={go}>{[['name','Full name'],['username','Username'],['email','Email'],['password','Password']].map(([k,l])=><label key={k}>{l}<input type={k==='password'?'password':'text'} required={k!=='email'} value={f[k]} onChange={e=>setF({...f,[k]:e.target.value})}/></label>)}<Btn className="primary full" loading={busy} loadingText="Creating account…">Create administrator</Btn></form></AuthLayout>}
 function Forgot({clinic}){const[email,setEmail]=useState(''),[msg,setMsg]=useState(''),[busy,setBusy]=useState(false);const go=async e=>{e.preventDefault();setBusy(true);try{const x=await api.post('/auth/forgot',{email});setMsg(x.resetToken?`Development reset token: ${x.resetToken}`:'If the account exists, reset instructions have been prepared.');}finally{setBusy(false)}};return <AuthLayout clinic={clinic} title="Locked out? We'll get you back in." subtitle="Enter your account email and we'll prepare reset instructions." points={[[KeyRound,'Secure reset','Reset links expire quickly.'],[ShieldCheck,'No data exposed','We never reveal whether an email exists.'],[Clock,'Quick recovery','Back to your records in moments.']]}><KeyRound size={30}/><h1>Reset password</h1><p className="sub">Enter the account email.</p>{msg&&<div className="note">{msg}</div>}<form onSubmit={go}><label>Email<input type="email" required value={email} onChange={e=>setEmail(e.target.value)}/></label><Btn className="primary full" loading={busy} loadingText="Generating…">Generate reset</Btn></form><p className="auth-foot"><Link to="/login">Back to sign in</Link></p></AuthLayout>}
 function ResetPassword({clinic}){
  const params=new URLSearchParams(window.location.search),
@@ -437,7 +437,7 @@ function ResetPassword({clinic}){
  return <AuthLayout clinic={clinic} title="Choose a strong new password." subtitle="Your reset link is valid for a single use." points={[[Lock,'Strong passwords','At least 8 characters.'],[ShieldCheck,'Encrypted','Stored securely on your server.'],[CheckCircle2,'Back to work','Sign in again right after.']]}>
      <KeyRound size={30}/>
      <h1>Set new password</h1>
-     <p className="sub">Choose a new password for your DrPatientLog account.</p>
+     <p className="sub">Choose a new password for your Hakim account.</p>
 
      {err&&<div className="error">{err}</div>}
      {msg&&<div className="note">{msg}</div>}
@@ -933,6 +933,8 @@ function PatientForm(){
     gregDate:new Date().toLocaleDateString('en-CA',{timeZone:'Africa/Addis_Ababa'}),
     ethDate:'',
     patientName:'',
+    firstName:'',
+    lastName:'',
     cardNumber:'',
     ticketNo:'',
     procedure:'',
@@ -949,7 +951,10 @@ function PatientForm(){
     api.get('/patients/presets/list').then(setPresets);
 
     if(editing){
-      api.get('/patients/'+id).then(setF);
+      api.get('/patients/'+id).then(p=>{
+        const parts=(p.patientName||'').trim().split(/\s+/);
+        setF({...p,firstName:parts[0]||'',lastName:parts.slice(1).join(' ')});
+      });
     }
   },[]);
 
@@ -968,7 +973,8 @@ function PatientForm(){
     setBusy(true);
 
     try{
-      await(editing?api.put('/patients/'+id,f):api.post('/patients',f));
+      const data={...f,patientName:fullName};
+      await(editing?api.put('/patients/'+id,data):api.post('/patients',data));
       nav('/patients');
     }catch(x){
       setErr(x.message);
@@ -996,6 +1002,8 @@ function PatientForm(){
 
   const doctorEarning=
     Number(f.totalFee||0)*Number(f.doctorPct||0)/100;
+
+  const fullName=[f.firstName,f.lastName].filter(Boolean).join(' ').trim();
 
   return <>
     <PageHead
@@ -1041,13 +1049,22 @@ function PatientForm(){
               />
             </label>
 
-            <label className="patient-form-wide">
-              <span>Patient name</span>
+            <label>
+              <span>First name</span>
               <input
                 required
-                placeholder="Enter patient's full name"
-                value={f.patientName||''}
-                onChange={e=>set('patientName',e.target.value)}
+                placeholder="First name"
+                value={f.firstName||''}
+                onChange={e=>set('firstName',e.target.value)}
+              />
+            </label>
+
+            <label>
+              <span>Last name <em>Optional</em></span>
+              <input
+                placeholder="Last name"
+                value={f.lastName||''}
+                onChange={e=>set('lastName',e.target.value)}
               />
             </label>
 
@@ -1160,11 +1177,11 @@ function PatientForm(){
       </form>
 
       <aside className="patient-summary">
-        <h3>{f.patientName?f.patientName:(editing?'Editing record':'New visit')}</h3>
+        <h3>{fullName||(editing?'Editing record':'New visit')}</h3>
         <p className="summary-sub">{f.procedure||'Fill in the treatment details to preview the summary.'}</p>
 
         <div className="summary-rows">
-          <div className="summary-row"><span>Patient</span><b>{f.patientName||'—'}</b></div>
+          <div className="summary-row"><span>Patient</span><b>{fullName||'—'}</b></div>
           <div className="summary-row"><span>Date</span><b>{f.ethDate||f.gregDate||'—'}</b></div>
           <div className="summary-row"><span>Card</span><b>{f.cardNumber||'—'}</b></div>
           <div className="summary-row"><span>Ticket</span><b>{f.ticketNo||'—'}</b></div>
@@ -1636,7 +1653,7 @@ function Backup(){
       const b=await api.download('/admin/backup');
       const a=document.createElement('a');
       a.href=URL.createObjectURL(b);
-      a.download='drpatientlog-backup.json';
+      a.download='hakim-backup.json';
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -1750,7 +1767,7 @@ function Backup(){
   };
 
   const disconnectGoogleDrive=async()=>{
-    if(!window.confirm('Disconnect Google Drive from DrPatientLog?'))return;
+    if(!window.confirm('Disconnect Google Drive from Hakim?'))return;
 
     setDisconnecting(true);
     try{
@@ -1780,6 +1797,13 @@ function Backup(){
       </div>
       <div className="status-hero-meta">
         <div><small>Automatic backup</small><b>Daily at 19:00</b></div>
+        <div><small>Last automatic backup</small>
+          <b style={status?.lastAutomaticBackup&&!status.lastAutomaticBackup.ok?{color:'var(--danger)'}:undefined}>
+            {loading?'…':status?.lastAutomaticBackup
+              ?(status.lastAutomaticBackup.ok?'Successful · '+status.lastAutomaticBackup.ethDate:'Failed · '+status.lastAutomaticBackup.ethDate)
+              :'No automatic run yet'}
+          </b>
+        </div>
         <div><small>Google Drive</small><b>{loading?'…':googleConfigured?'Connected':'Not connected'}</b></div>
         <div><small>Database</small><b>MongoDB</b></div>
       </div>
@@ -1919,15 +1943,19 @@ function NotificationsPage(){
  const[tg,setTg]=useState({botToken:'',chatId:'',enabled:false}),
  [f,setF]=useState({telegram_daily_report_time:'19:00',telegram_monthly_report_time:'19:00'}),
  [saved,setSaved]=useState(false),
- [busy,setBusy]=useState(false),
- [savingTg,setSavingTg]=useState(false),
- [tab,setTab]=useState('telegram');
+[busy,setBusy]=useState(false),
+  [savingTg,setSavingTg]=useState(false),
+  [tab,setTab]=useState('telegram'),
+  [lastMonthly,setLastMonthly]=useState(null);
 
  useEffect(()=>{
    Promise.all([
      api.get('/settings'),
      api.get('/auth/me')
    ]).then(([settings,me])=>{
+     try{
+       setLastMonthly(settings.last_monthly_report?JSON.parse(settings.last_monthly_report):null);
+     }catch{}
      setF({
        telegram_daily_report_time:settings.telegram_daily_report_time||'19:00',
        telegram_monthly_report_time:settings.telegram_monthly_report_time||'19:00'
@@ -2046,25 +2074,41 @@ function NotificationsPage(){
        <section className="card form">
          <h2><Clock size={19}/>Report schedule</h2>
 
-         <div className="form-grid">
-           <label>Daily report time
-             <input
-               type="time"
-               value={f.telegram_daily_report_time}
-               onChange={e=>setF({...f,telegram_daily_report_time:e.target.value})}
-             />
-           </label>
+<div className="form-grid">
+            <label>Daily report time
+              <input
+                type="time"
+                value={f.telegram_daily_report_time}
+                onChange={e=>setF({...f,telegram_daily_report_time:e.target.value})}
+              />
+            </label>
 
-           <label>Monthly report time
-             <input
-               type="time"
-               value={f.telegram_monthly_report_time}
-               onChange={e=>setF({...f,telegram_monthly_report_time:e.target.value})}
-             />
-           </label>
-         </div>
+            <label>Monthly report time
+              <input
+                type="time"
+                value={f.telegram_monthly_report_time}
+                onChange={e=>setF({...f,telegram_monthly_report_time:e.target.value})}
+              />
+            </label>
+          </div>
 
-         <div className="form-actions">
+          <div className="toggle-row">
+            <div>
+              <b>Last monthly report run</b>
+              <span>
+                {!lastMonthly&&'No run recorded yet. Deploy the latest server code so reports record their outcome here.'}
+                {lastMonthly&&lastMonthly.skipped&&('Skipped on '+lastMonthly.ethDate+' — not Ethiopian month end.'+
+                  (lastMonthly.reason?' ('+lastMonthly.reason+')':''))}
+                {lastMonthly&&!lastMonthly.skipped&&(
+                  (lastMonthly.telegram||[]).length
+                   ? ('Ran on '+lastMonthly.ethDate+' · '+(lastMonthly.telegram||[]).map(t=>t.doctor+': '+(t.sent?'sent':(t.reason||'failed'))).join(' · '))
+                   : 'Ran on '+lastMonthly.ethDate+' — no doctors with Telegram enabled.'
+                )}
+              </span>
+            </div>
+          </div>
+
+          <div className="form-actions">
            <Btn className="primary" loading={savingTg} loadingText="Saving…" onClick={saveTelegram}>
              Save notification settings
            </Btn>

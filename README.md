@@ -1,6 +1,6 @@
-# DrPatientLog — MERN Edition
+# Hakim — MERN Edition
 
-A complete React + Express + MongoDB rebuild of DrPatientLog, designed as a separate replacement project. The original Flask/Python application is not modified.
+A complete React + Express + MongoDB rebuild of Hakim, designed as a separate replacement project. The original Flask/Python application is not modified.
 
 ## Included
 
@@ -44,7 +44,7 @@ The Vite client defaults to `/api`; for separate development set `VITE_API_URL=h
 
 The simplest deployment is one Node service on Render that builds `client` and starts `server`. MongoDB Atlas is the database target. Do not put production secrets in GitHub. Use environment variables.
 
-## Existing DrPatientLog database
+## Existing Hakim database
 
 The existing Neon/PostgreSQL database is NOT modified by this project. A deliberate PostgreSQL → MongoDB migration should be done only after validating the new application against a backup copy. The included JSON backup/restore format is for the MERN database and is intentionally separate from PostgreSQL `pg_dump` files.
 

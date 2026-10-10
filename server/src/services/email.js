@@ -19,12 +19,12 @@ export async function sendPasswordResetEmail({to,name,token}){
   await resend.emails.send({
     from,
     to,
-    subject:'Reset your DrPatientLog password',
+    subject:'Reset your Hakim password',
     html:`
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:24px">
         <h2>${clinicName}</h2>
         <p>Hello ${String(name||'there').replace(/[<>&"]/g,'')}</p>
-        <p>We received a request to reset your DrPatientLog password.</p>
+        <p>We received a request to reset your Hakim password.</p>
         <p>
           <a href="${resetUrl}"
              style="display:inline-block;padding:12px 20px;background:#111827;color:#fff;text-decoration:none;border-radius:8px">

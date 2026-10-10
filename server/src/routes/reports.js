@@ -1,4 +1,4 @@
-﻿import {Router} from 'express';
+import {Router} from 'express';
 import {Patient, Setting} from '../models/index.js';
 import {auth} from '../middleware/auth.js';
 import {ethiopianParts, isoToday, ETH_MONTHS} from '../utils/ethiopian.js';
@@ -857,7 +857,7 @@ if (requestedMonth && Number.isInteger(requestedYear) && requestedYear > 1900) {
 
   <footer class="footer">
     <span>${escapeHtml(clinicName)}</span>
-    <span>Generated from DrPatientLog</span>
+    <span>Generated from Hakim</span>
   </footer>
 
 </main>

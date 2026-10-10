@@ -1,5 +1,5 @@
 {
-  "name": "drpatientlog-mern",
+  "name": "hakim-mern",
   "private": true,
   "scripts": {
     "build": "npm --prefix client install && npm --prefix client run build",

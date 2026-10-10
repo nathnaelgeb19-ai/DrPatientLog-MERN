@@ -1,4 +1,4 @@
-﻿import {Router} from 'express';
+import {Router} from 'express';
 import {AuditLog,Doctor,Setting} from '../models/index.js';
 import {automaticBackup} from './cron.js';
 import {auth,adminOnly} from '../middleware/auth.js';
@@ -19,12 +19,12 @@ r.get('/audit',adminOnly,async(q,s)=>
 r.get('/backup',adminOnly,async(q,s)=>{
   const data=await snapshot();
   s.set('content-type','application/json');
-  s.set('content-disposition',`attachment; filename="drpatientlog-backup-${isoToday()}.json"`);
+  s.set('content-disposition',`attachment; filename="hakim-backup-${isoToday()}.json"`);
   s.send(JSON.stringify(data,null,2));
 });
 
 r.get('/backup/status',adminOnly,async(q,s)=>{
-  const dir=process.env.BACKUP_DIR||'/tmp/drpatientlog-backups';
+  const dir=process.env.BACKUP_DIR||'/tmp/hakim-backups';
 
   let backupDirReady=false;
   try{
@@ -41,12 +41,24 @@ r.get('/backup/status',adminOnly,async(q,s)=>{
   })
 );
 
+  let lastAutomaticBackup = null;
+  const lastSetting = await Setting.findOne({
+    key: 'last_automatic_backup'
+  }).lean();
+
+  if (lastSetting?.value) {
+    try {
+      lastAutomaticBackup = JSON.parse(lastSetting.value);
+    } catch {}
+  }
+
   s.json({
     database:'MongoDB',
     backupDir:dir,
     backupDirReady,
     googleDriveConfigured,
-    automaticSchedule:process.env.DAILY_CRON||'0 19 * * *'
+    automaticSchedule:process.env.DAILY_CRON||'0 19 * * *',
+    lastAutomaticBackup
   });
 });
 r.post('/google-drive/upload',adminOnly,async(q,s)=>{

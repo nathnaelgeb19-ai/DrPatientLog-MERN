@@ -28,12 +28,12 @@ export async function createBackupFile() {
 
   const dir =
     process.env.BACKUP_DIR ||
-    '/tmp/drpatientlog-backups';
+    '/tmp/hakim-backups';
 
   await fs.mkdir(dir, { recursive: true });
 
   const filename =
-    `drpatientlog-backup-${
+    `hakim-backup-${
       new Date().toISOString().replaceAll(':', '-')
     }.json`;
 
@@ -57,7 +57,7 @@ export async function restore(data) {
 
   const dir =
     process.env.BACKUP_DIR ||
-    '/tmp/drpatientlog-backups';
+    '/tmp/hakim-backups';
 
   await fs.mkdir(dir, { recursive: true });
 
