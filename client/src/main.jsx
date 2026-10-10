@@ -9,7 +9,7 @@ function prefersReduced(){return typeof window!=='undefined'&&window.matchMedia&
 function Reveal({className='',delay=0,children,...rest}){const ref=useRef(null);useEffect(()=>{const el=ref.current;if(!el)return;if(prefersReduced()){el.classList.add('in');return}const io=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){el.classList.add('in');io.disconnect()}})},{threshold:.1,rootMargin:'0px 0px -40px 0px'});io.observe(el);return()=>io.disconnect()},[]);return <div ref={ref} className={('reveal '+className).trim()} style={{transitionDelay:`${delay}ms`}} {...rest}>{children}</div>}
 function CountUp({value=0,format=v=>Math.round(v).toLocaleString(),duration=850}){const[n,setN]=useState(prefersReduced()?value:0);useEffect(()=>{if(prefersReduced()){setN(value);return}let raf,start;const tick=t=>{if(start===undefined)start=t;const p=Math.min(1,(t-start)/duration);setN(value*(1-Math.pow(1-p,3)));if(p<1)raf=requestAnimationFrame(tick)};raf=requestAnimationFrame(tick);return()=>cancelAnimationFrame(raf)},[value,duration]);return <>{format(n)}</>}
 const ToastCtx=React.createContext(()=>{});
-function ToastProvider({children}){const[items,setItems]=useState([]);const push=useCallback((message,type='success')=>{const id=Math.random().toString(36).slice(2);setItems(x=>[...x,{id,message,type}]);setTimeout(()=>setItems(x=>x.filter(i=>i.id!==id)),2800)},[]);return <ToastCtx.Provider value={push}>{children}<div className="toast-stack" role="status" aria-live="polite">{items.map(i=><div key={i.id} className={'toast'+(i.type==='error'?' error':'')}><span className="toast-icon">{i.type==='error'?<X size={15}/>:<Check size={15}/>}</span>{i.message}</div>)}</div></ToastCtx.Provider>}
+function ToastProvider({children}){const[items,setItems]=useState([]);const push=useCallback((message,type='success',opts={})=>{const id=Math.random().toString(36).slice(2);const item={id,message,type,title:opts.title,onClick:opts.onClick,duration:opts.duration||2800,position:opts.position||'bottom'};setItems(x=>[...x,item]);setTimeout(()=>setItems(x=>x.filter(i=>i.id!==id)),item.duration)},[]);const dismiss=id=>setItems(x=>x.filter(i=>i.id!==id));const renderItem=i=>{const warn=i.type==='warn';const err=i.type==='error';return <div key={i.id} className={'toast'+(err?' error':warn?' warn':'')+(i.onClick?' clickable':'')} onClick={()=>{i.onClick&&i.onClick();dismiss(i.id)}}>{<span className="toast-icon">{err?<X size={15}/>:warn?<Bell size={15}/>:<Check size={15}/>}</span>}{(i.title||i.message)&&<div className="toast-body">{i.title&&<b className="toast-title">{i.title}</b>}<span className="toast-message">{i.message}</span></div>}</div>};const top=items.filter(i=>i.position==='top');const bottom=items.filter(i=>i.position!=='top');return <ToastCtx.Provider value={push}>{children}{bottom.length>0&&<div className="toast-stack" role="status" aria-live="polite">{bottom.map(renderItem)}</div>}{top.length>0&&<div className="toast-stack top" role="status" aria-live="polite">{top.map(renderItem)}</div>}</ToastCtx.Provider>}
 const useToast=()=>React.useContext(ToastCtx);
 function Modal({open,onClose,title,subtitle,children}){useEffect(()=>{if(!open)return;const on=e=>e.key==='Escape'&&onClose();window.addEventListener('keydown',on);return()=>window.removeEventListener('keydown',on)},[open,onClose]);if(!open)return null;return createPortal(<div className="modal-overlay" onMouseDown={e=>e.target===e.currentTarget&&onClose()}><div className="modal-panel" role="dialog" aria-modal="true" aria-label={title}><div className="modal-head"><div><h2>{title}</h2>{subtitle&&<p className="modal-sub">{subtitle}</p>}</div><button type="button" className="icon" aria-label="Close" onClick={onClose}><X size={18}/></button></div>{children}</div></div>,document.body)}
 function Switch({checked,onChange,label}){return <label className="switch"><input type="checkbox" checked={checked} onChange={e=>onChange(e.target.checked)} aria-label={label}/><span className="track"/><span className="thumb"/></label>}
@@ -506,7 +506,6 @@ function Dashboard({clinic}){
   const[calRef,setCalRef]=useState(null);
   const[calDay,setCalDay]=useState(null);
   const[calDayData,setCalDayData]=useState();
-  const[pendingDismissed,setPendingDismissed]=useState(false);
 
   useEffect(()=>{
     setErr('');
@@ -520,6 +519,27 @@ function Dashboard({clinic}){
       .then(m=>setMonths(m.months||[]))
       .catch(()=>{});
   },[]);
+
+  const toast=useToast();
+  const nav=useNavigate();
+  const toastSent=useRef(false);
+
+  useEffect(()=>{
+    const pending=months.filter(m=>m.canClose&&!m.closed&&Number(m.payable||0)>0);
+    if(!pending.length||toastSent.current)return;
+    toastSent.current=true;
+    const total=pending.reduce((a,m)=>a+Number(m.payable||0),0);
+    toast(
+      pending.map(m=>`${m._id.month} ${m._id.year} \u00B7 ${money(m.payable)}`).join('\n'),
+      'warn',
+      {
+        title:`Pending payment \u00B7 ${pending.length} unpaid month(s) \u00B7 ${money(total)}`,
+        duration:6500,
+        position:'top',
+        onClick:()=>nav('/monthly')
+      }
+    );
+  },[months]);
 
   useEffect(()=>{
     api.get('/dashboard/calendar'+(calRef?`?month=${encodeURIComponent(ETH_MONTHS[calRef.monthIndex-1])}&year=${calRef.year}`:''))
@@ -549,8 +569,6 @@ function Dashboard({clinic}){
   const stepCal=n=>{if(!cal)return;setCalDay(null);setCalRef(n<0?ethPrevMonth(cal.monthIndex,cal.year):ethNextMonth(cal.monthIndex,cal.year));};
   const todayCal=()=>{setCalDay(null);setCalRef(null);};
   const pickDay=day=>setCalDay(cur=>cur===day?null:day);
-  const pendingMonths=months.filter(m=>m.canClose&&!m.closed&&Number(m.payable||0)>0);
-  const pendingTotal=pendingMonths.reduce((a,m)=>a+Number(m.payable||0),0);
 
   return <>
     <Reveal>
@@ -575,38 +593,6 @@ function Dashboard({clinic}){
         </div>
       </section>
     </Reveal>
-
-    {pendingMonths.length>0&&!pendingDismissed&&(
-      <Reveal>
-        <section className="unpaid-banner">
-          <div className="unpaid-banner-head">
-            <span className="unpaid-banner-icon"><Bell size={18}/></span>
-            <div className="unpaid-banner-title">
-              <b>Pending payment reminder</b>
-              <span>You have {pendingMonths.length} unpaid month(s), totalling {money(pendingTotal)}.</span>
-            </div>
-            <button className="icon ghost" aria-label="Dismiss reminder" onClick={()=>setPendingDismissed(true)}>
-              <X size={16}/>
-            </button>
-          </div>
-
-          <div className="unpaid-banner-list">
-            {pendingMonths.map(m=>(
-              <div key={`${m._id.year}-${m._id.month}`} className="unpaid-banner-item">
-                <span>{m._id.month} {m._id.year}</span>
-                <b>{money(m.payable)}</b>
-                <span className="pill unpaid-pill">Pending</span>
-              </div>
-            ))}
-          </div>
-
-          <div className="unpaid-banner-foot">
-            <Link className="ghost small" to="/monthly"><CheckCircle2 size={15}/> Open Monthly</Link>
-            <span>Mark a month as paid &amp; closed only once you receive your payment.</span>
-          </div>
-        </section>
-      </Reveal>
-    )}
 
     <div className="dashboard-toolbar">
       <div>
