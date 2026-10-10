@@ -265,7 +265,7 @@ async function monthly() {
         });
 
         const filename =
-          `hakim-monthly-${current.replace(/\s+/g, '-')}-${currentYear}.html`;
+          `hakim-monthly-${currentMonth.replace(/\s+/g, '-')}-${currentYear}.html`;
 
         result = await sendTelegramDocument(
           d,
