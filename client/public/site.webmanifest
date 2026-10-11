@@ -1,0 +1,12 @@
+{
+  "name": "Hakim",
+  "short_name": "Hakim",
+  "description": "Patient records, monthly earnings and reports for medical practices.",
+  "icons": [
+    { "src": "/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/android-chrome-512x512.png", "sizes": "512x512", "type": "image/png" }
+  ],
+  "theme_color": "#f4f6f9",
+  "background_color": "#f4f6f9",
+  "display": "standalone"
+}
