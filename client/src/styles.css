@@ -1191,13 +1191,41 @@ input[type="datetime-local"]::-webkit-datetime-edit {
 }
 .toast.error .toast-icon { color: var(--danger-text); background: var(--danger-soft); }
 
-.toast-stack.top { top: 18px; bottom: auto; }
+.toast-stack.top-right { top: 18px; bottom: auto; display: grid; }
+
+.toast.toast-reminder {
+  background: color-mix(in srgb, var(--surface) 68%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(1.35);
+  backdrop-filter: blur(14px) saturate(1.35);
+  border-color: color-mix(in srgb, #d58b32 45%, transparent);
+  animation: toastInRight var(--dur-2) var(--ease-spring) both;
+}
+@keyframes toastInRight {
+  from { opacity: 0; transform: translateX(22px) scale(.98); }
+  to { opacity: 1; transform: none; }
+}
+.toast .toast-close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  margin-left: auto;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  opacity: .72;
+  transition: opacity var(--dur-1) ease, background var(--dur-1) ease;
+}
+.toast .toast-close:hover { opacity: 1; background: color-mix(in srgb, var(--ink) 10%, transparent); }
 
 .toast.warn .toast-icon { color: #d58b32; background: rgba(213, 139, 50, .16); }
 
 .toast.clickable { cursor: pointer; }
 
-.toast .toast-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.toast .toast-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
 
 .toast .toast-title { font-size: 13.5px; font-weight: 700; color: var(--ink); }
 
@@ -2721,4 +2749,29 @@ html[data-theme="dark"] .cal-cell { background: var(--surface-3); }
   .pulse-share { flex-wrap: wrap; gap: 10px; }
   .pulse-share .dashboard-bar { order: 3; flex-basis: 100%; min-width: 0; }
   .cal-cell { border-radius: 9px; font-size: 12px; }
+}
+
+/* --------------------------------------------------------------------------
+   Touch devices: make taps land first time.
+   - touch-action: manipulation removes double-tap-zoom delay.
+   - hover-only transforms are disabled on touch so the first tap does not
+     shift/shake the target (the classic "have to tap twice" cause).
+   - entrance animations keep their fade but stop sliding tap targets.
+   -------------------------------------------------------------------------- */
+button, a, input, select, textarea, label, summary, [role="button"] {
+  touch-action: manipulation;
+}
+
+@media (hover: none) {
+  .primary:hover,
+  .ghost:hover,
+  .icon:hover,
+  .cmd-trigger:hover,
+  .theme-button:hover,
+  .doctor-card:hover,
+  .ref-bar:hover,
+  .patients-filter-button:hover { transform: none; }
+
+  .reveal { transform: none; }
+  .route { animation: none; }
 }
