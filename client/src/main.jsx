@@ -1032,6 +1032,15 @@ function PatientForm(){
 
   const fullName=[f.firstName,f.lastName].filter(Boolean).join(' ').trim();
 
+  const nextOnEnter=e=>{
+    if(e.key!=='Enter'||e.shiftKey||e.altKey||e.ctrlKey||e.metaKey)return;
+    const t=e.target;
+    if(!t||t.tagName!=='INPUT')return;
+    const fields=[...e.currentTarget.querySelectorAll('input')].filter(el=>!el.disabled&&!el.readOnly);
+    const i=fields.indexOf(t);
+    if(i>-1&&i<fields.length-1){e.preventDefault();fields[i+1].focus();}
+  };
+
   return <>
     <PageHead
       title={editing?'Edit patient':'New patient'}
@@ -1040,7 +1049,7 @@ function PatientForm(){
 
     <div className="patient-form-layout">
 
-      <form className="patient-form-card" onSubmit={save}>
+      <form className="patient-form-card" onSubmit={save} onKeyDown={nextOnEnter}>
         {err&&(
           <div className="patient-form-error">
             <span>{err}</span>
