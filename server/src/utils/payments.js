@@ -579,11 +579,8 @@ const summarizePayments = (patients, filter = {}) => {
 };
 
 export {
-  DEFAULT_PCT,
   round2,
   commissionFor,
-  makeInitialPayment,
-  normalizePayment,
   normalizeTreatment,
   normalizePatient,
   recomputePatientTotals,
@@ -594,6 +591,5 @@ export {
   adjustTreatmentPayments,
   buildPatientPayload,
   flattenPayments,
-  matchPayment,
   summarizePayments
 };

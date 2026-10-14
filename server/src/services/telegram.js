@@ -1,5 +1,4 @@
 import { Patient, Setting, TelegramOutbox } from '../models/index.js';
-import { ETH_MONTHS } from '../utils/ethiopian.js';
 
 function htmlEscape(value) {
   return String(value ?? '')
