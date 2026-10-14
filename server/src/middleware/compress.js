@@ -2,10 +2,28 @@ import zlib from 'node:zlib';
 
 const COMPRESSIBLE = /^(?:text\/|application\/(?:json|javascript|xml|rss|x-javascript|manifest\+json)|image\/svg\+xml)/;
 
+const BROTLI = /\bbr\b/;
+const GZIP = /\bgzip\b/;
+
+const makeStream = (encoding) => {
+  if (encoding === 'br') {
+    return zlib.createBrotliCompress({
+      params: {
+        [zlib.constants.BROTLI_PARAM_QUALITY]: 5,
+        [zlib.constants.BROTLI_PARAM_SIZE_HINT]: 0
+      }
+    });
+  }
+  return zlib.createGzip({ level: 6 });
+};
+
 export default function compress() {
   return function (req, res, next) {
     const accept = String(req.headers['accept-encoding'] || '');
-    if (req.method === 'HEAD' || !/\bgzip\b/.test(accept)) return next();
+    if (req.method === 'HEAD') return next();
+
+    const encoding = BROTLI.test(accept) ? 'br' : GZIP.test(accept) ? 'gzip' : null;
+    if (!encoding) return next();
 
     const originalEnd = res.end.bind(res);
     const originalWrite = res.write.bind(res);
@@ -28,14 +46,14 @@ export default function compress() {
       if (decided) return;
       decided = true;
       if (!isCompressible(headers)) return;
-      res.setHeader('Content-Encoding', 'gzip');
+      res.setHeader('Content-Encoding', encoding);
       res.setHeader('Vary', 'Accept-Encoding');
       res.removeHeader('Content-Length');
       if (headers) {
         delete headers['Content-Length'];
         delete headers['content-length'];
       }
-      stream = zlib.createGzip({ level: 6 });
+      stream = makeStream(encoding);
       stream.on('data', (chunk) => {
         if (originalWrite(chunk) === false) {
           stream.pause();

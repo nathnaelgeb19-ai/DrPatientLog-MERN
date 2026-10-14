@@ -29,26 +29,42 @@ function Shell({doctor,onLogout,children,clinic}){
 
   useEffect(()=>{
     if(remindSent.current)return;
-    api.get('/dashboard/monthly')
-      .then(m=>{
-        if(remindSent.current)return;
-        const pending=(m.months||[]).filter(x=>x.canClose&&!x.closed);
-        if(!pending.length)return;
-        remindSent.current=true;
-        const total=pending.reduce((a,x)=>a+Number(x.payable||0),0);
-        toast(
-          pending.map(x=>`${x._id.month} ${x._id.year}: ${money(x.payable)}`).join('\n')+'\nTap to mark it paid and close the month.',
-          'warn',
-          {
-            title:`Payment reminder: ${money(total)}`,
-            className:'toast-reminder',
-            duration:8000,
-            position:'top',
-            onClick:()=>navigate('/monthly')
-          }
-        );
-      })
-      .catch(()=>{});
+    let cancelled=false;
+    let idle;
+    let timer;
+    const load=()=>{
+      if(cancelled||remindSent.current)return;
+      api.get('/dashboard/monthly')
+        .then(m=>{
+          if(cancelled||remindSent.current)return;
+          const pending=(m.months||[]).filter(x=>x.canClose&&!x.closed);
+          if(!pending.length)return;
+          remindSent.current=true;
+          const total=pending.reduce((a,x)=>a+Number(x.payable||0),0);
+          toast(
+            pending.map(x=>`${x._id.month} ${x._id.year}: ${money(x.payable)}`).join('\n')+'\nTap to mark it paid and close the month.',
+            'warn',
+            {
+              title:`Payment reminder: ${money(total)}`,
+              className:'toast-reminder',
+              duration:8000,
+              position:'top',
+              onClick:()=>navigate('/monthly')
+            }
+          );
+        })
+        .catch(()=>{});
+    };
+    if(typeof window!=='undefined'&&'requestIdleCallback' in window){
+      idle=window.requestIdleCallback(load,{timeout:2500});
+    }else{
+      timer=setTimeout(load,1200);
+    }
+    return()=>{
+      cancelled=true;
+      if(idle!==undefined&&'cancelIdleCallback' in window)window.cancelIdleCallback(idle);
+      if(timer)clearTimeout(timer);
+    };
   },[]);
 
   const applyTheme=value=>{

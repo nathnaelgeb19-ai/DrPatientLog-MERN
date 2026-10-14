@@ -2,7 +2,7 @@ import {Router} from 'express';
 import {Patient, Setting, SalaryClosure} from '../models/index.js';
 import {auth} from '../middleware/auth.js';
 import {ethiopianParts, isoToday, ETH_MONTHS} from '../utils/ethiopian.js';
-import {summarizePayments} from '../utils/payments.js';
+import {normalizePatient, summarizeNormalized} from '../utils/payments.js';
 
 const r = Router();
 r.use(auth);
@@ -43,7 +43,8 @@ if (requestedMonth && Number.isInteger(requestedYear) && requestedYear > 1900) {
 
     const patients = await Patient.find({doctorId: q.doctor._id}).sort({gregDate: 1, createdAt: 1}).lean();
 
-    const monthSum = summarizePayments(patients, {ethPattern: new RegExp(monthPattern)});
+    const normalized = patients.map(normalizePatient);
+    const monthSum = summarizeNormalized(normalized, {ethPattern: new RegExp(monthPattern)});
     const rows = monthSum.rows;
     const income = monthSum.income;
     const earnings = monthSum.cut;
@@ -57,7 +58,7 @@ if (requestedMonth && Number.isInteger(requestedYear) && requestedYear > 1900) {
       const previousYear = e.year - 1;
       const pagumePattern = `^${escapeRegex(ETH_MONTHS[ETH_MONTHS.length - 1])} \\d{1,2} ${previousYear}$`;
 
-      pagumeCarry = summarizePayments(patients, {ethPattern: new RegExp(pagumePattern)}).cut;
+      pagumeCarry = summarizeNormalized(normalized, {ethPattern: new RegExp(pagumePattern)}).cut;
     }
 
     const payableEarnings = earnings + pagumeCarry;

@@ -9,7 +9,7 @@ import {
 } from '../services/telegram.js';
 import {buildMonthlyHtml} from './reports.js';
 import {ethiopianParts,isoToday} from '../utils/ethiopian.js';
-import {summarizePayments} from '../utils/payments.js';
+import {normalizePatient, summarizeNormalized} from '../utils/payments.js';
 
 const r=Router();
 
@@ -49,8 +49,9 @@ r.post('/monthly',async(q,s)=>{
   const e=ethiopianParts(isoToday());
 
   const patients=await Patient.find({doctorId:d._id}).lean();
+  const normalized=patients.map(normalizePatient);
   const monthPattern=new RegExp(`^${e.month.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')} \\d{1,2} ${e.year}$`);
-  const sum=summarizePayments(patients,{ethPattern:monthPattern});
+  const sum=summarizeNormalized(normalized,{ethPattern:monthPattern});
   const rows=sum.rows;
   const income=sum.income;
   const cut=sum.cut;
@@ -59,7 +60,7 @@ r.post('/monthly',async(q,s)=>{
   let pagumeCarry=0;
 
   if(e.month==='መስከረም' && e.year){
-    pagumeCarry=summarizePayments(patients,{
+    pagumeCarry=summarizeNormalized(normalized,{
       ethPattern:new RegExp(`^ጳጉሜ \\d{1,2} ${e.year-1}$`)
     }).cut;
   }
@@ -123,7 +124,8 @@ r.post('/monthly-period',async(q,s)=>{
   }
 
   const patients=await Patient.find({doctorId:d._id}).lean();
-  const sum=summarizePayments(patients,{ethPattern:new RegExp(`^${month} \\d{1,2} ${year}$`)});
+  const normalized=patients.map(normalizePatient);
+  const sum=summarizeNormalized(normalized,{ethPattern:new RegExp(`^${month} \\d{1,2} ${year}$`)});
   const rows=sum.rows;
   const income=sum.income;
   const cut=sum.cut;
@@ -132,7 +134,7 @@ r.post('/monthly-period',async(q,s)=>{
   let pagumeCarry=0;
 
   if(month==='መስከረም' && year){
-    pagumeCarry=summarizePayments(patients,{
+    pagumeCarry=summarizeNormalized(normalized,{
       ethPattern:new RegExp(`^ጳጉሜ \\d{1,2} ${year-1}$`)
     }).cut;
   }
