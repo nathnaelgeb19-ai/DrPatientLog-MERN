@@ -2,7 +2,7 @@ import {Router} from 'express';
 import {Patient,SalaryClosure} from '../models/index.js';
 import {auth} from '../middleware/auth.js';
 import {ethiopianParts,ETH_MONTHS,isoToday,monthStarted} from '../utils/ethiopian.js';
-import {normalizePatient,summarizePayments} from '../utils/payments.js';
+import {normalizePatient,summarizeNormalized,summarizePayments} from '../utils/payments.js';
 
 const r=Router();
 r.use(auth);
@@ -43,11 +43,12 @@ r.get('/',async(q,s)=>{
   }
 
   const patients=await allPatients(q.doctor._id);
-  const today=summarizePayments(patients,{date:iso});
-  const rangeSum=summarizePayments(patients,payFilter);
+  const normalized=patients.map(normalizePatient);
+  const today=summarizeNormalized(normalized,{date:iso});
+  const rangeSum=summarizeNormalized(normalized,payFilter);
   const count=patients.filter(patientInRange).length;
   const outstanding=Number(
-    patients.reduce((sum,p)=>sum+Number(normalizePatient(p).balance||0),0).toFixed(2)
+    normalized.reduce((sum,p)=>sum+Number(p.balance||0),0).toFixed(2)
   );
 
   const recent=(await Patient.find({doctorId:q.doctor._id})

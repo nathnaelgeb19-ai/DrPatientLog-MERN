@@ -502,8 +502,7 @@ const buildPatientPayload = (body, doctorId, existingDoc = null) => {
   return recomputePatientTotals(patient);
 };
 
-const flattenPayments = patient => {
-  const normalized = normalizePatient(patient);
+const flattenNormalized = normalized => {
   const out = [];
 
   for (const treatment of normalized.treatments || []) {
@@ -529,6 +528,8 @@ const flattenPayments = patient => {
   return out;
 };
 
+const flattenPayments = patient => flattenNormalized(normalizePatient(patient));
+
 const matchPayment = (payment, filter = {}) => {
   if (filter.date && payment.date !== filter.date) return false;
   if (filter.dateFrom && payment.date < filter.dateFrom) return false;
@@ -537,14 +538,14 @@ const matchPayment = (payment, filter = {}) => {
   return true;
 };
 
-const summarizePayments = (patients, filter = {}) => {
+const summarizeNormalized = (normalizedList, filter = {}) => {
   const rows = [];
   let income = 0;
   let cut = 0;
   let weighted = 0;
 
-  for (const patient of patients || []) {
-    for (const payment of flattenPayments(patient)) {
+  for (const normalized of normalizedList || []) {
+    for (const payment of flattenNormalized(normalized)) {
       if (!matchPayment(payment, filter)) continue;
 
       income += payment.amount;
@@ -578,6 +579,9 @@ const summarizePayments = (patients, filter = {}) => {
   };
 };
 
+const summarizePayments = (patients, filter = {}) =>
+  summarizeNormalized((patients || []).map(normalizePatient), filter);
+
 export {
   round2,
   commissionFor,
@@ -591,5 +595,6 @@ export {
   adjustTreatmentPayments,
   buildPatientPayload,
   flattenPayments,
+  summarizeNormalized,
   summarizePayments
 };
