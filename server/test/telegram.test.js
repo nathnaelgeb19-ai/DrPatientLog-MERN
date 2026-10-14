@@ -130,3 +130,35 @@ test('genuinely new patient keeps the aggregated notification', () => {
   assert.match(text, /Service fee: 6,000\.00 Birr/);
   assert.match(text, /Doctor earnings: 200\.00 Birr/);
 });
+
+test('registration message differentiates full payment from partial payment', () => {
+  const full = earningMessageLines({
+    ethDate: 'መስከረም 1 2018',
+    patientName: 'Kemsur Redi',
+    procedure: 'Simple Extraction',
+    fee: 1000,
+    cut: 40,
+    paid: 1000,
+    balance: 0
+  }).join('\n');
+
+  assert.match(full, /Full payment/);
+  assert.doesNotMatch(full, /Partial payment/);
+  assert.match(full, /Paid: 1,000\.00 Birr/);
+  assert.match(full, /Outstanding balance: 0\.00 Birr/);
+
+  const partial = earningMessageLines({
+    ethDate: 'መስከረም 1 2018',
+    patientName: 'Kemsur Redi',
+    procedure: 'Simple Extraction',
+    fee: 1000,
+    cut: 16,
+    paid: 400,
+    balance: 600
+  }).join('\n');
+
+  assert.match(partial, /Partial payment/);
+  assert.doesNotMatch(partial, /Full payment/);
+  assert.match(partial, /Paid: 400\.00 Birr/);
+  assert.match(partial, /Outstanding balance: 600\.00 Birr/);
+});

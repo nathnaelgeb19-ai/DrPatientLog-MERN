@@ -105,18 +105,19 @@ r.post('/',async(q,s)=>{
       detail:p.patientName
     });
 
-    const message=await buildEarningMessage(
-      'New patient record',
-      p.ethDate,
-      p.ticketNo,
-      p.patientName,
-      p.cardNumber,
-      p.procedure,
-      p.totalFee,
-      p.myEarning,
-      p.doctorPct,
-      p.doctorId
-    );
+    const message=await buildEarningMessage({
+      title:'New patient record',
+      ethDate:p.ethDate,
+      ticketNo:p.ticketNo,
+      patientName:p.patientName,
+      cardNumber:p.cardNumber,
+      procedure:p.procedure,
+      fee:p.totalFee,
+      cut:p.myEarning,
+      paid:p.paidAmount,
+      balance:p.balance,
+      paymentType:Number(p.balance||0)>0?'partial':'full'
+    });
 
     const telegram=await sendOrQueue(p.doctorId,message);
 
@@ -217,18 +218,19 @@ r.put('/:id',async(q,s)=>{
         ? results[0]
         : {sent:results.every(r=>r.sent),queued:results.some(r=>r.queued),count:results.length};
     }else{
-      const message=await buildEarningMessage(
-        'Record updated',
-        p.ethDate,
-        p.ticketNo,
-        p.patientName,
-        p.cardNumber,
-        p.procedure,
-        p.totalFee,
-        p.myEarning,
-        p.doctorPct,
-        p.doctorId
-      );
+      const message=await buildEarningMessage({
+        title:'Record updated',
+        ethDate:p.ethDate,
+        ticketNo:p.ticketNo,
+        patientName:p.patientName,
+        cardNumber:p.cardNumber,
+        procedure:p.procedure,
+        fee:p.totalFee,
+        cut:p.myEarning,
+        paid:p.paidAmount,
+        balance:p.balance,
+        paymentType:Number(p.balance||0)>0?'partial':'full'
+      });
       telegram=await sendOrQueue(p.doctorId,message);
     }
 

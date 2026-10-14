@@ -55,7 +55,7 @@ async function footer() {
 
   return [
     rule(),
-    '\u{1F3E5} <b>' + htmlEscape(clinic.short) + '</b>'
+    '\u{1F3E5} <b>' + htmlEscape(clinic.name) + '</b>'
   ].join('\n');
 }
 
@@ -293,9 +293,17 @@ export function earningMessageLines({
   ticketNo,
   procedure,
   fee,
-  cut
+  cut,
+  paid,
+  balance,
+  paymentType
 } = {}) {
-  return [
+  const hasPaymentInfo = paid != null || balance != null;
+  const type = paymentType === 'full' || paymentType === 'partial'
+    ? paymentType
+    : (Number(balance || 0) > 0 ? 'partial' : 'full');
+
+  const lines = [
     '\u{1F4C5} Ethiopian: ' + htmlEscape(ethDate || '-'),
     '',
     '\u{1F464} Patient: ' + htmlEscape(patientName || '-'),
@@ -303,23 +311,37 @@ export function earningMessageLines({
     '\u{1F3AB} Ticket: #' + htmlEscape(ticketNo || '-'),
     '',
     '\u{1F9B7} Procedure: ' + htmlEscape(procedure || '-'),
-    '\u{1F4B0} Service fee: ' + money(Number(fee || 0)) + ' Birr',
-    '\u2702\uFE0F Doctor earnings: ' + money(Number(cut || 0)) + ' Birr'
+    '\u{1F4B0} Service fee: ' + money(Number(fee || 0)) + ' Birr'
   ];
+
+  if (hasPaymentInfo) {
+    lines.push(
+      (type === 'full' ? '\u2705' : '\u{1F4B3}') +
+        ' Payment: ' +
+        (type === 'full' ? 'Full payment' : 'Partial payment'),
+      '\u{1F4B5} Paid: ' + money(Number(paid || 0)) + ' Birr',
+      '\u23F3 Outstanding balance: ' + money(Number(balance || 0)) + ' Birr'
+    );
+  }
+
+  lines.push('\u2702\uFE0F Doctor earnings: ' + money(Number(cut || 0)) + ' Birr');
+
+  return lines;
 }
 
-export async function buildEarningMessage(
+export async function buildEarningMessage({
   title,
-  eth,
-  ticket,
-  patient,
+  ethDate,
+  ticketNo,
+  patientName,
   cardNumber,
   procedure,
   fee,
   cut,
-  doctorPct,
-  doctorId
-) {
+  paid,
+  balance,
+  paymentType
+} = {}) {
   const head = await header(
     '\u{1F9B7}',
     title === 'New patient record'
@@ -332,13 +354,16 @@ export async function buildEarningMessage(
   return [
     head,
     ...earningMessageLines({
-      ethDate: eth,
-      patientName: patient,
+      ethDate,
+      patientName,
       cardNumber,
-      ticketNo: ticket,
+      ticketNo,
       procedure,
       fee,
-      cut
+      cut,
+      paid,
+      balance,
+      paymentType
     }),
     foot
   ].join('\n');
