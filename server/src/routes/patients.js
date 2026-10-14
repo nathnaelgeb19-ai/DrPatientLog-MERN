@@ -53,10 +53,11 @@ const sendOrQueue=async(doctorId,message)=>{
 
 r.get('/',async(q,s)=>{
   const filter={doctorId:q.doctor._id};
-  const {q:term,from,to,hasBalance}=q.query;
+  const {q:term,from,to,hasBalance,balance}=q.query;
   if(from||to)filter.gregDate={...(from?{$gte:from}:{}),...(to?{$lte:to}:{})};
   if(term)filter.$or=['patientName','cardNumber','ticketNo','treatments.ticketNo','procedure'].map(k=>({[k]:{$regex:term,$options:'i'}}));
-  if(hasBalance==='true')filter.balance={$gt:0};
+  if(balance==='due'||hasBalance==='true')filter.balance={$gt:0};
+  else if(balance==='paid')filter.balance={$lte:0};
   const list=await Patient.find(filter).sort({gregDate:-1,createdAt:-1}).limit(500).lean();
   s.json(list.map(ensureTreatments).map(orderTreatments));
 });

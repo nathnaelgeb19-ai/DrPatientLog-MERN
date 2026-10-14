@@ -1537,6 +1537,7 @@ input[type="datetime-local"]::-webkit-datetime-edit {
 .patients-date { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; gap: 6px; }
 .patients-date label { font-size: 11px; font-weight: 700; color: var(--muted); }
 .patients-date input { height: 46px; }
+.patients-date select { height: 46px; min-width: 190px; }
 
 .patients-filter-button, .patients-clear-button, .patients-export-button {
   display: inline-flex;

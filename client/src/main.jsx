@@ -843,6 +843,7 @@ function Patients(){
   const[q,setQ]=useState('');
   const[from,setFrom]=useState('');
   const[to,setTo]=useState('');
+  const[balance,setBalance]=useState('');
   const[busy,setBusy]=useState('');
   const[hideFilters,setHideFilters]=useState(false);
   const lastScrollY=useRef(0);
@@ -867,9 +868,19 @@ function Patients(){
     return()=>window.removeEventListener('scroll',onScroll);
   },[]);
 
-  const load=()=>{
+  const buildQuery=(over={})=>{
+    const v=k=>over[k]!==undefined?over[k]:{q,from,to,balance}[k];
+    return `/patients?q=${encodeURIComponent(v('q'))}&from=${v('from')}&to=${v('to')}&balance=${v('balance')}`;
+  };
+
+  const load=(over={})=>{
     setBusy('search');
-    return api.get(`/patients?q=${encodeURIComponent(q)}&from=${from}&to=${to}`).then(setRows).finally(()=>setBusy(''));
+    return api.get(buildQuery(over)).then(setRows).finally(()=>setBusy(''));
+  };
+
+  const changeBalance=value=>{
+    setBalance(value);
+    load({balance:value});
   };
 
   useEffect(()=>{
@@ -880,8 +891,9 @@ function Patients(){
     setQ('');
     setFrom('');
     setTo('');
+    setBalance('');
     setBusy('clear');
-    api.get('/patients?q=&from=&to=').then(setRows).finally(()=>setBusy(''));
+    api.get('/patients?q=&from=&to=&balance=').then(setRows).finally(()=>setBusy(''));
   };
 
   const del=async r=>{
@@ -907,7 +919,7 @@ function Patients(){
   const totalFees=rows.reduce((a,r)=>a+Number(r.totalFee||0),0);
   const totalCut=rows.reduce((a,r)=>a+Number(r.myEarning||0),0);
   const totalBal=rows.reduce((a,r)=>a+Number(r.balance||0),0);
-  const activeFilters=!!(q.trim()||from||to);
+  const activeFilters=!!(q.trim()||from||to||balance);
 
   return <>
     <PageHead
@@ -939,6 +951,15 @@ function Patients(){
             onChange={e=>setQ(e.target.value)}
             onKeyDown={e=>e.key==='Enter'&&load()}
           />
+        </div>
+
+        <div className="patients-date">
+          <label>Balance</label>
+          <select value={balance} onChange={e=>changeBalance(e.target.value)}>
+            <option value="">All patients</option>
+            <option value="due">With outstanding balance</option>
+            <option value="paid">Fully settled</option>
+          </select>
         </div>
 
         <div className="patients-date">

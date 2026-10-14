@@ -176,21 +176,44 @@ const recomputePatientTotals = patient => {
   return patient;
 };
 
+// Creation time encoded in a treatment id. Mongoose assigns ObjectId
+// subdocument ids, whose first 4 bytes are the insertion timestamp, so a
+// treatment registered later always sorts after one registered earlier even
+// when both share a visit date. Non-ObjectId ids (legacy/imported) yield 0 so
+// ties fall back to the stored order.
+const treatmentCreatedAt = id => {
+  if (!id) return 0;
+  if (typeof id === 'object' && typeof id.getTimestamp === 'function') {
+    return id.getTimestamp().getTime();
+  }
+  const hex = String(id);
+  return /^[0-9a-fA-F]{24}$/.test(hex)
+    ? parseInt(hex.slice(0, 8), 16) * 1000
+    : 0;
+};
+
 // Display order for the Patients page: newest treatment first, matching the
-// newest-first patient list. Sorting is stable, so treatments sharing a date
-// (or missing one) keep their stored order and adding a treatment never
-// disturbs unrelated historical rows.
+// newest-first patient list. Treatments are ordered by their visit date, then
+// by registration time, then by stored order. This keeps same-day treatments
+// in the order they were recorded regardless of their outstanding balance.
 const orderTreatments = patient => {
   if (!patient || !Array.isArray(patient.treatments)) return patient;
 
-  const treatments = [...patient.treatments].sort((a, b) => {
-    const aDate = a?.date || '';
-    const bDate = b?.date || '';
-    if (aDate === bDate) return 0;
-    return aDate < bDate ? 1 : -1;
+  const indexed = patient.treatments.map((treatment, index) => ({ treatment, index }));
+
+  indexed.sort((a, b) => {
+    const aDate = a.treatment?.date || '';
+    const bDate = b.treatment?.date || '';
+    if (aDate !== bDate) return aDate < bDate ? 1 : -1;
+
+    const aCreated = treatmentCreatedAt(a.treatment?._id);
+    const bCreated = treatmentCreatedAt(b.treatment?._id);
+    if (aCreated !== bCreated) return bCreated - aCreated;
+
+    return a.index - b.index;
   });
 
-  return { ...patient, treatments };
+  return { ...patient, treatments: indexed.map(x => x.treatment) };
 };
 
 const removeTreatment = (patient, treatmentId) => {

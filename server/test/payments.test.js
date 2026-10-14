@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import mongoose from 'mongoose';
 import {
   round2,
   commissionFor,
@@ -880,6 +881,25 @@ test('orderTreatments is stable for equal or missing dates', () => {
 
   const ordered = orderTreatments(patient);
   assert.deepEqual(ordered.treatments.map(t => t._id), ['a', 'b', 'c']);
+});
+
+test('orderTreatments orders same-date treatments by registration time, not balance', () => {
+  const older = new mongoose.Types.ObjectId('65000000' + '0000000000000000');
+  const newer = new mongoose.Types.ObjectId('66000000' + '0000000000000000');
+
+  // The earlier treatment still carries an outstanding balance; the later one
+  // was paid in full. Registration order must win regardless of balance.
+  const patient = {
+    _id: 'p3',
+    treatments: [
+      normalizeTreatment({ _id: older, date: '2026-01-01', procedure: 'Earlier partial', totalFee: 1000, doctorPct: 4, paidAmount: 400, balance: 600 }),
+      normalizeTreatment({ _id: newer, date: '2026-01-01', procedure: 'Later full', totalFee: 500, doctorPct: 4, paidAmount: 500, balance: 0 })
+    ]
+  };
+
+  const ordered = orderTreatments(patient);
+  assert.deepEqual(ordered.treatments.map(t => t.procedure), ['Later full', 'Earlier partial']);
+  assert.deepEqual(patient.treatments.map(t => t.procedure), ['Earlier partial', 'Later full']);
 });
 
 test('removing one treatment deletes only it and recomputes the patient totals', () => {
