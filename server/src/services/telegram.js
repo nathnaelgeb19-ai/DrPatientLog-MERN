@@ -31,8 +31,8 @@ async function clinicBranding() {
   );
 
   return {
-    name: values.clinic_name || 'Holy Bethel Dental Clinic',
-    short: values.clinic_name_short || 'Holy Bethel'
+    name: values.clinic_name || 'NathDent Hakim Log',
+    short: values.clinic_name_short || 'Hakim Log'
   };
 }
 
@@ -286,6 +286,28 @@ export async function markOutboxFail(id, attempts, error) {
   );
 }
 
+export function earningMessageLines({
+  ethDate,
+  patientName,
+  cardNumber,
+  ticketNo,
+  procedure,
+  fee,
+  cut
+} = {}) {
+  return [
+    '\u{1F4C5} Ethiopian: ' + htmlEscape(ethDate || '-'),
+    '',
+    '\u{1F464} Patient: ' + htmlEscape(patientName || '-'),
+    '\u{1F4B3} Card: ' + htmlEscape(cardNumber || '-'),
+    '\u{1F3AB} Ticket: #' + htmlEscape(ticketNo || '-'),
+    '',
+    '\u{1F9B7} Procedure: ' + htmlEscape(procedure || '-'),
+    '\u{1F4B0} Service fee: ' + money(Number(fee || 0)) + ' Birr',
+    '\u2702\uFE0F Doctor earnings: ' + money(Number(cut || 0)) + ' Birr'
+  ];
+}
+
 export async function buildEarningMessage(
   title,
   eth,
@@ -307,20 +329,151 @@ export async function buildEarningMessage(
 
   const foot = await footer();
 
-  const feeNumber = Number(fee || 0);
-  const cutNumber = Number(cut || 0);
+  return [
+    head,
+    ...earningMessageLines({
+      ethDate: eth,
+      patientName: patient,
+      cardNumber,
+      ticketNo: ticket,
+      procedure,
+      fee,
+      cut
+    }),
+    foot
+  ].join('\n');
+}
+
+export function treatmentMessageLines({
+  ethDate,
+  patientName,
+  cardNumber,
+  ticketNo,
+  treatment
+} = {}) {
+  const t = treatment || {};
+  const pct = Number(t.doctorPct ?? 0);
+
+  return [
+    '\u{1F4C5} Ethiopian: ' + htmlEscape(ethDate || '-'),
+    '',
+    '\u{1F464} Patient: ' + htmlEscape(patientName || '-'),
+    '\u{1F4B3} Card: ' + htmlEscape(cardNumber || '-'),
+    '\u{1F3AB} Ticket: #' + htmlEscape(ticketNo || '-'),
+    '',
+    '\u{1F9B7} Treatment: ' + htmlEscape(t.procedure || '-'),
+    '\u{1F4B0} Service fee: ' + money(t.totalFee) + ' Birr',
+    '\u{1F4B5} Paid: ' + money(t.paidAmount) + ' Birr',
+    '\u23F3 Outstanding balance: ' + money(t.balance) + ' Birr',
+    '\u2702\uFE0F Doctor earnings: ' + money(t.myEarning) + ' Birr' +
+      (pct > 0 ? ' (' + pct + '%)' : '')
+  ];
+}
+
+export async function buildTreatmentMessage(options) {
+  const head = await header(
+    '\u{1F9B7}',
+    'New treatment'
+  );
+
+  const foot = await footer();
 
   return [
     head,
-    '\u{1F4C5} Ethiopian: ' + htmlEscape(eth || '-'),
+    ...treatmentMessageLines(options),
+    foot
+  ].join('\n');
+}
+
+export async function buildTreatmentUpdateMessage(options) {
+  const head = await header(
+    '\u270F\uFE0F',
+    'Treatment updated'
+  );
+
+  const foot = await footer();
+
+  return [
+    head,
+    ...treatmentMessageLines(options),
+    foot
+  ].join('\n');
+}
+
+export function treatmentDeleteMessageLines({
+  ethDate,
+  patientName,
+  cardNumber,
+  ticketNo,
+  treatment
+} = {}) {
+  const t = treatment || {};
+
+  return [
+    '\u{1F4C5} Ethiopian: ' + htmlEscape(ethDate || '-'),
     '',
-    '\u{1F464} Patient: ' + htmlEscape(patient || '-'),
+    '\u{1F464} Patient: ' + htmlEscape(patientName || '-'),
     '\u{1F4B3} Card: ' + htmlEscape(cardNumber || '-'),
-    '\u{1F3AB} Ticket: #' + htmlEscape(ticket || '-'),
+    '\u{1F3AB} Ticket: #' + htmlEscape(ticketNo || '-'),
     '',
-    '\u{1F9B7} Procedure: ' + htmlEscape(procedure || '-'),
-    '\u{1F4B0} Service fee: ' + money(feeNumber) + ' Birr',
-    '\u2702\uFE0F Doctor earnings: ' + money(cutNumber) + ' Birr',
+    '\u{1F9B7} Treatment: ' + htmlEscape(t.procedure || '-'),
+    '\u{1F4B0} Service fee: ' + money(t.totalFee) + ' Birr',
+    '',
+    '\u{1F5D1}\uFE0F Treatment removed'
+  ];
+}
+
+export async function buildTreatmentDeleteMessage(options) {
+  const head = await header(
+    '\u{1F5D1}\uFE0F',
+    'Treatment deleted'
+  );
+
+  const foot = await footer();
+
+  return [
+    head,
+    ...treatmentDeleteMessageLines(options),
+    foot
+  ].join('\n');
+}
+
+export function paymentMessageLines({
+  ethDate,
+  patientName,
+  cardNumber,
+  ticketNo,
+  treatment,
+  payment
+} = {}) {
+  const t = treatment || {};
+  const pay = payment || {};
+
+  return [
+    '\u{1F4C5} Ethiopian: ' + htmlEscape(ethDate || '-'),
+    '',
+    '\u{1F464} Patient: ' + htmlEscape(patientName || '-'),
+    '\u{1F4B3} Card: ' + htmlEscape(cardNumber || '-'),
+    '\u{1F3AB} Ticket: #' + htmlEscape(ticketNo || '-'),
+    '',
+    '\u{1F9B7} Treatment: ' + htmlEscape(t.procedure || '-'),
+    '\u{1F4B5} Amount received: ' + money(pay.amount) + ' Birr',
+    '\u2702\uFE0F Doctor earnings: ' + money(pay.commission) + ' Birr',
+    '\u23F3 Outstanding balance: ' + money(t.balance) + ' Birr'
+  ];
+}
+
+export async function buildPaymentMessage(options) {
+  const head = await header(
+    '\u{1F4B5}',
+    'Payment received'
+  );
+
+  const foot = await footer();
+
+  return [
+    head,
+    ...paymentMessageLines(options),
     foot
   ].join('\n');
 }

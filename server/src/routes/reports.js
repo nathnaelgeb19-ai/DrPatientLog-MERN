@@ -2,6 +2,7 @@ import {Router} from 'express';
 import {Patient, Setting, SalaryClosure} from '../models/index.js';
 import {auth} from '../middleware/auth.js';
 import {ethiopianParts, isoToday, ETH_MONTHS} from '../utils/ethiopian.js';
+import {summarizePayments} from '../utils/payments.js';
 
 const r = Router();
 r.use(auth);
@@ -40,52 +41,29 @@ if (requestedMonth && Number.isInteger(requestedYear) && requestedYear > 1900) {
 
     const monthPattern = `^${escapeRegex(e.month)} \\d{1,2} ${e.year}$`;
 
-    const rows = await Patient.find({
-      doctorId: q.doctor._id,
-      ethDate: {$regex: monthPattern}
-    })
-      .sort({gregDate: 1, createdAt: 1})
-      .lean();
+    const patients = await Patient.find({doctorId: q.doctor._id}).sort({gregDate: 1, createdAt: 1}).lean();
+
+    const monthSum = summarizePayments(patients, {ethPattern: new RegExp(monthPattern)});
+    const rows = monthSum.rows;
+    const income = monthSum.income;
+    const earnings = monthSum.cut;
 
     const clinicSetting = await Setting.findOne({key: 'clinic_name'}).lean();
-    const clinicName = clinicSetting?.value || 'Holy Bethel Dental Clinic';
+    const clinicName = clinicSetting?.value || 'NathDent Hakim Log';
 
-    const income = rows.reduce(
-      (sum, row) => sum + Number(row.totalFee || 0),
-      0
-    );
-
-    const earnings = rows.reduce(
-      (sum, row) => sum + Number(row.myEarning || 0),
-      0
-    );
-        let pagumeCarry = 0;
+    let pagumeCarry = 0;
 
     if (e.month === ETH_MONTHS[0] && e.year) {
       const previousYear = e.year - 1;
       const pagumePattern = `^${escapeRegex(ETH_MONTHS[ETH_MONTHS.length - 1])} \\d{1,2} ${previousYear}$`;
 
-      const pagumeRows = await Patient.find({
-        doctorId: q.doctor._id,
-        ethDate: {$regex: pagumePattern}
-      }).lean();
-
-      pagumeCarry = pagumeRows.reduce(
-        (sum, row) => sum + Number(row.myEarning || 0),
-        0
-      );
+      pagumeCarry = summarizePayments(patients, {ethPattern: new RegExp(pagumePattern)}).cut;
     }
 
     const payableEarnings = earnings + pagumeCarry;
 
-    const weightedPercentage = rows.reduce(
-      (sum, row) =>
-        sum + Number(row.totalFee || 0) * Number(row.doctorPct || 0),
-      0
-    );
-
     const percentage = income
-      ? weightedPercentage / income
+      ? monthSum.weighted / income
       : 0;
 
     const doctorName = q.doctor.name || q.doctor.username || 'Doctor';
@@ -486,22 +464,6 @@ return `<!doctype html>
     font-size: 18px;
   }
 
-  @media (max-width: 700px) {
-    .carryover-box {
-      margin-left: 20px;
-      margin-right: 20px;
-    }
-
-    .carryover-details {
-      grid-template-columns: 1fr;
-      gap: 7px;
-    }
-
-    .carryover-symbol {
-      line-height: 1;
-    }
-  }
-
   @media print {
     .carryover-box,
     .carryover-item,
@@ -594,14 +556,6 @@ return `<!doctype html>
       padding: 7px 5px;
     }
 
-.carryover-box {
-    margin: 0 36px 26px;
-    padding: 19px 20px;
-    border: 1px solid #e7c98f;
-    border-left: 5px solid #d58b32;
-    border-radius: 12px;
-    background: linear-gradient(135deg, #fffaf0, #fffdf8);
-    box-shadow: 0 4px 12px rgba(170, 110, 25, .07);
   }
 
   .status-box {
@@ -668,88 +622,6 @@ return `<!doctype html>
     line-height: 1.5;
   }
 
-  .carryover-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 20px;
-    margin-bottom: 17px;
-  }
-
-  .carryover-label {
-    color: #a76518;
-    font-size: 10px;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 1.2px;
-  }
-
-  .carryover-title {
-    margin-top: 3px;
-    color: #513b20;
-    font-size: 15px;
-    font-weight: 700;
-  }
-
-  .carryover-badge {
-    flex-shrink: 0;
-    padding: 5px 10px;
-    border-radius: 20px;
-    background: #f3d9aa;
-    color: #8a5718;
-    font-size: 9px;
-    font-weight: 800;
-    letter-spacing: .8px;
-  }
-
-  .carryover-details {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr auto 1.15fr;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .carryover-item {
-    padding: 12px 14px;
-    border-radius: 9px;
-    background: rgba(255,255,255,.78);
-    border: 1px solid rgba(213,139,50,.2);
-  }
-
-  .carryover-item span {
-    display: block;
-    color: #806d55;
-    font-size: 10px;
-    margin-bottom: 4px;
-  }
-
-  .carryover-item strong {
-    display: block;
-    color: #3d3020;
-    font-size: 16px;
-  }
-
-  .carryover-symbol {
-    color: #b47727;
-    font-size: 21px;
-    font-weight: 800;
-    text-align: center;
-  }
-
-  .carryover-total {
-    background: #fff2d9;
-    border-color: #e4bc70;
-  }
-
-  .carryover-total span {
-    color: #98651f;
-  }
-
-  .carryover-total strong {
-    color: #925a12;
-    font-size: 18px;
-  }
-
   @media (max-width: 700px) {
     .carryover-box {
       margin-left: 20px;
@@ -764,17 +636,13 @@ return `<!doctype html>
     .carryover-symbol {
       line-height: 1;
     }
-  }
 
-  @media print {
-    .carryover-box,
-    .carryover-item,
-    .carryover-total {
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
+    .status-box {
+      margin-left: 20px;
+      margin-right: 20px;
     }
-  }
-  .footer {
+
+    .footer {
       margin-left: 20px;
       margin-right: 20px;
     }
@@ -857,14 +725,14 @@ return `<!doctype html>
 <div class="meta">
     <span><strong>Doctor:</strong> ${escapeHtml(doctorName)}</span>
     <span><strong>Month:</strong> ${escapeHtml(e.month)} ${e.year}</span>
-    <span><strong>Patients:</strong> ${rows.length}</span>
+    <span><strong>Payments:</strong> ${rows.length}</span>
   </div>
 
   ${paymentStatusBlock}
 
   <section class="summary">
     <div class="summary-card">
-      <span>Patients</span>
+      <span>Payments</span>
       <strong>${rows.length}</strong>
     </div>
 
@@ -944,7 +812,7 @@ return `<!doctype html>
       `).join('') : `
         <tr>
           <td colspan="7" class="muted" style="text-align:center;padding:24px">
-            No patient records for this Ethiopian month.
+            No payments recorded for this Ethiopian month.
           </td>
         </tr>
       `}

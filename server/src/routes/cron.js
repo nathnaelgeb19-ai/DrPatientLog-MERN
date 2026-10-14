@@ -15,6 +15,7 @@ import { buildMonthlyHtml } from './reports.js';
 
 import { driveBackup } from '../services/googleDrive.js';
 import { createBackupFile } from '../services/backup.js';
+import { summarizePayments } from '../utils/payments.js';
 import cronJob from 'node-cron';
 import {
   ethiopianParts,
@@ -161,30 +162,12 @@ async function daily() {
       'telegram.enabled': true
     }).lean()
   ) {
-    const rows = await Patient.find({
-      doctorId: d._id,
-      gregDate: iso
-    }).lean();
-
-    const income = rows.reduce(
-      (a, x) => a + Number(x.totalFee || 0),
-      0
-    );
-
-    const cut = rows.reduce(
-      (a, x) => a + Number(x.myEarning || 0),
-      0
-    );
-
-    const weighted = income
-      ? rows.reduce(
-          (a, x) =>
-            a +
-            Number(x.totalFee || 0) *
-              Number(x.doctorPct || 0),
-          0
-        ) / income
-      : 0;
+    const patients = await Patient.find({doctorId: d._id}).lean();
+    const sum = summarizePayments(patients, {date: iso});
+    const rows = sum.rows;
+    const income = sum.income;
+    const cut = sum.cut;
+    const weighted = income ? sum.weighted / income : 0;
 
     const message = await buildDailyMessage(
       `${e.month} ${e.day} ${e.year}`,
@@ -253,20 +236,11 @@ async function monthly() {
   for (const d of await Doctor.find({
     'telegram.enabled': true
   }).lean()) {
-    const rows = await Patient.find({
-      doctorId: d._id,
-      ethDate: { $regex: pattern }
-    }).lean();
-
-    const income = rows.reduce(
-      (sum, row) => sum + Number(row.totalFee || 0),
-      0
-    );
-
-    const doctorEarnings = rows.reduce(
-      (sum, row) => sum + Number(row.myEarning || 0),
-      0
-    );
+    const patients = await Patient.find({doctorId: d._id}).lean();
+    const sum = summarizePayments(patients, {ethPattern: new RegExp(pattern)});
+    const rows = sum.rows;
+    const income = sum.income;
+    const doctorEarnings = sum.cut;
 
     let pagumeCarry = 0;
 
@@ -274,28 +248,14 @@ async function monthly() {
       const previousYear = currentYear - 1;
       const pagumePattern = '^' + ETH_MONTHS[ETH_MONTHS.length - 1] + ' \\d{1,2} ' + previousYear + '$';
 
-      const pagumeRows = await Patient.find({
-        doctorId: d._id,
-        ethDate: { $regex: pagumePattern }
-      }).lean();
-
-      pagumeCarry = pagumeRows.reduce(
-        (sum, row) => sum + Number(row.myEarning || 0),
-        0
-      );
+      pagumeCarry = summarizePayments(patients, {
+        ethPattern: new RegExp(pagumePattern)
+      }).cut;
     }
 
     const payableEarnings = doctorEarnings + pagumeCarry;
 
-    const weighted = rows.reduce(
-      (sum, row) =>
-        sum +
-        Number(row.totalFee || 0) *
-        Number(row.doctorPct || 0),
-      0
-    );
-
-    const pct = income ? weighted / income : 0;
+    const pct = income ? sum.weighted / income : 0;
 
     const closure = await SalaryClosure.findOne({
       doctorId: d._id,

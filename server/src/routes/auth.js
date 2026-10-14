@@ -23,8 +23,8 @@ r.get("/clinic", async (q, s) => {
   }).lean();
   const values = Object.fromEntries(rows.map((x) => [x.key, x.value]));
   s.json({
-    name: values.clinic_name || "Holy Bethel Dental Clinic",
-    short: values.clinic_name_short || "Holy Bethel",
+    name: values.clinic_name || "NathDent Hakim Log",
+    short: values.clinic_name_short || "Hakim Log",
   });
 });
 r.get("/me", auth, (q, s) => s.json({ doctor: q.doctor }));

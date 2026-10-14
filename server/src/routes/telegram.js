@@ -9,6 +9,7 @@ import {
 } from '../services/telegram.js';
 import {buildMonthlyHtml} from './reports.js';
 import {ethiopianParts,isoToday} from '../utils/ethiopian.js';
+import {summarizePayments} from '../utils/payments.js';
 
 const r=Router();
 
@@ -19,28 +20,12 @@ r.post('/daily',async(q,s)=>{
   const iso=isoToday();
   const e=ethiopianParts(iso);
 
-  const rows=await Patient.find({
-    doctorId:d._id,
-    gregDate:iso
-  }).lean();
-
-  const income=rows.reduce(
-    (a,x)=>a+Number(x.totalFee||0),
-    0
-  );
-
-  const cut=rows.reduce(
-    (a,x)=>a+Number(x.myEarning||0),
-    0
-  );
-
-  const weighted=income
-    ? rows.reduce(
-        (a,x)=>a+
-          (Number(x.totalFee||0)*Number(x.doctorPct||0)),
-        0
-      )/income
-    : 0;
+  const patients=await Patient.find({doctorId:d._id}).lean();
+  const sum=summarizePayments(patients,{date:iso});
+  const rows=sum.rows;
+  const income=sum.income;
+  const cut=sum.cut;
+  const weighted=income?sum.weighted/income:0;
 
   try{
     const message=await buildDailyMessage(
@@ -63,41 +48,20 @@ r.post('/monthly',async(q,s)=>{
   const d=await Doctor.findById(q.doctor._id);
   const e=ethiopianParts(isoToday());
 
-  const rows=await Patient.find({
-    doctorId:d._id,
-    ethDate:{$regex:`^${e.month.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')} \\d{1,2} ${e.year}$`}
-  }).lean();
-
-  const income=rows.reduce(
-    (a,x)=>a+Number(x.totalFee||0),
-    0
-  );
-
-  const cut=rows.reduce(
-    (a,x)=>a+Number(x.myEarning||0),
-    0
-  );
-
-  const weighted=income
-    ? rows.reduce(
-        (a,x)=>a+
-          (Number(x.totalFee||0)*Number(x.doctorPct||0)),
-        0
-      )/income
-    : 0;
+  const patients=await Patient.find({doctorId:d._id}).lean();
+  const monthPattern=new RegExp(`^${e.month.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')} \\d{1,2} ${e.year}$`);
+  const sum=summarizePayments(patients,{ethPattern:monthPattern});
+  const rows=sum.rows;
+  const income=sum.income;
+  const cut=sum.cut;
+  const weighted=income?sum.weighted/income:0;
 
   let pagumeCarry=0;
 
   if(e.month==='መስከረም' && e.year){
-    const pagumeRows=await Patient.find({
-      doctorId:d._id,
-      ethDate:{$regex:`^ጳጉሜ \\d{1,2} ${e.year-1}$`}
-    }).lean();
-
-    pagumeCarry=pagumeRows.reduce(
-      (a,x)=>a+Number(x.myEarning||0),
-      0
-    );
+    pagumeCarry=summarizePayments(patients,{
+      ethPattern:new RegExp(`^ጳጉሜ \\d{1,2} ${e.year-1}$`)
+    }).cut;
   }
 
   try{
@@ -158,41 +122,19 @@ r.post('/monthly-period',async(q,s)=>{
     });
   }
 
-  const rows=await Patient.find({
-    doctorId:d._id,
-    ethDate:{$regex:`^${month} \\d{1,2} ${year}$`}
-  }).lean();
-
-  const income=rows.reduce(
-    (a,x)=>a+Number(x.totalFee||0),
-    0
-  );
-
-  const cut=rows.reduce(
-    (a,x)=>a+Number(x.myEarning||0),
-    0
-  );
-
-  const weighted=income
-    ? rows.reduce(
-        (a,x)=>a+
-          (Number(x.totalFee||0)*Number(x.doctorPct||0)),
-        0
-      )/income
-    : 0;
+  const patients=await Patient.find({doctorId:d._id}).lean();
+  const sum=summarizePayments(patients,{ethPattern:new RegExp(`^${month} \\d{1,2} ${year}$`)});
+  const rows=sum.rows;
+  const income=sum.income;
+  const cut=sum.cut;
+  const weighted=income?sum.weighted/income:0;
 
   let pagumeCarry=0;
 
   if(month==='መስከረም' && year){
-    const pagumeRows=await Patient.find({
-      doctorId:d._id,
-      ethDate:{$regex:`^ጳጉሜ \\d{1,2} ${year-1}$`}
-    }).lean();
-
-    pagumeCarry=pagumeRows.reduce(
-      (a,x)=>a+Number(x.myEarning||0),
-      0
-    );
+    pagumeCarry=summarizePayments(patients,{
+      ethPattern:new RegExp(`^ጳጉሜ \\d{1,2} ${year-1}$`)
+    }).cut;
   }
 
   try{

@@ -12,7 +12,7 @@ export async function sendPasswordResetEmail({to,name,token}){
   }
 
   const clinicSetting = await Setting.findOne({ key: 'clinic_name' }).lean();
-  const clinicName = clinicSetting?.value || 'Holy Bethel Dental Clinic';
+  const clinicName = clinicSetting?.value || 'NathDent Hakim Log';
 
   const from=process.env.EMAIL_FROM||`${clinicName} <onboarding@resend.dev>`;
 

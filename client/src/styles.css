@@ -843,6 +843,9 @@ nav a.active .nav-icon { color: var(--accent); transform: translateY(-1px) scale
 }
 .icon:hover { background: var(--surface-2); color: var(--ink); }
 .icon.danger:hover, .patient-row-action-delete:hover { background: var(--danger-soft); color: var(--danger); }
+.patient-row-action-new:hover { background: var(--mint-soft); color: var(--mint-text); }
+.patient-row-action-delete-patient { background: var(--danger-soft); color: var(--danger); }
+.patient-row-action-delete-patient:hover { background: var(--danger); color: #fff; }
 .mobile { display: none; }
 
 button:disabled, .primary:disabled, .ghost:disabled {
@@ -1647,9 +1650,10 @@ input[type="datetime-local"]::-webkit-datetime-edit {
   color: var(--accent);
   background: var(--accent-soft);
 }
+.patient-earnings-text { min-width: 0; }
 .patient-earnings-card span { display: block; font-size: 12px; color: var(--muted); }
 .patient-earnings-card small { font-size: 12px; color: var(--faint); }
-.patient-earnings-card strong { margin-left: auto; font-family: var(--font-display); font-size: 23px; font-weight: 600; color: var(--accent-ink); }
+.patient-earnings-card strong { margin-left: auto; min-width: 0; font-family: var(--font-display); font-size: 23px; font-weight: 600; color: var(--accent-ink); overflow-wrap: anywhere; text-align: right; }
 .patient-form-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; }
 
 /* Sticky live summary */
@@ -1666,14 +1670,39 @@ input[type="datetime-local"]::-webkit-datetime-edit {
 }
 .patient-summary h3 { margin: 0 0 4px; font-family: var(--font-display); font-size: 17px; font-weight: 600; }
 .patient-summary .summary-sub { margin: 0 0 20px; font-size: 12.5px; color: var(--muted); }
+.patient-existing-treatments {
+  margin: 0 0 18px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid var(--line-2);
+  background: var(--surface-2);
+}
+.patient-existing-title { display: block; margin-bottom: 10px; font-size: 11.5px; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; color: var(--muted); }
+.patient-existing-list { display: grid; gap: 8px; }
+.patient-existing-item { display: flex; flex-direction: column; gap: 2px; padding-bottom: 8px; border-bottom: 1px solid var(--line-2); }
+.patient-existing-item:last-child { padding-bottom: 0; border-bottom: 0; }
+.patient-existing-item b { font-size: 13px; }
+.patient-existing-item small { font-size: 11.5px; color: var(--muted); }
+.patient-breakdown { margin-top: 22px; }
+.patient-breakdown-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+.patient-breakdown-item { min-width: 0; padding: 10px 12px; border: 1px solid var(--line-2); border-radius: 12px; background: var(--surface-2); }
+.patient-breakdown-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; margin-bottom: 8px; }
+.patient-breakdown-head b { font-size: 13px; color: var(--ink); }
+.patient-breakdown-title { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.patient-breakdown-title b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.patient-breakdown-ticket { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.patient-breakdown-tag { flex: none; font-size: 10px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 1px 7px; }
+.patient-breakdown-money { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 14px; }
+.patient-breakdown-money span { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; min-width: 0; font-size: 11.5px; color: var(--muted); }
+.patient-breakdown-money b { min-width: 0; font-size: 12.5px; color: var(--ink); overflow-wrap: anywhere; text-align: right; }
 .summary-rows { display: grid; gap: 14px; }
 .summary-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; min-width: 0; }
 .summary-row span { flex: none; font-size: 12.5px; color: var(--muted); }
 .summary-row b { min-width: 0; font-size: 14px; text-align: right; overflow-wrap: anywhere; }
 .summary-divider { height: 1px; background: var(--line-2); margin: 20px 0; }
-.summary-total { display: flex; align-items: baseline; justify-content: space-between; }
-.summary-total span { font-size: 13px; color: var(--muted); }
-.summary-total strong { font-family: var(--font-display); font-size: 30px; font-weight: 600; letter-spacing: -.02em; color: var(--accent-ink); }
+.summary-total { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; }
+.summary-total span { flex: none; font-size: 13px; color: var(--muted); }
+.summary-total strong { min-width: 0; font-family: var(--font-display); font-size: 30px; font-weight: 600; letter-spacing: -.02em; color: var(--accent-ink); text-align: right; overflow-wrap: anywhere; }
 .patient-summary-badge {
   display: inline-flex;
   align-items: center;
@@ -1686,6 +1715,245 @@ input[type="datetime-local"]::-webkit-datetime-edit {
   background: var(--mint-soft);
   color: var(--mint-text);
 }
+
+/* Multiple treatments per patient */
+.treatments-stack { display: grid; gap: 14px; }
+.treatment-item-card {
+  padding: 18px 20px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  display: grid;
+  gap: 14px;
+}
+.treatment-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.treatment-item-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.treatment-item-pill {
+  display: inline-flex;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+}
+.treatment-item-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.treatment-remove-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--danger-text);
+}
+.treatment-remove-btn:hover {
+  background: var(--danger-soft);
+}
+.payment-type-selector {
+  display: flex;
+  gap: 8px;
+}
+.payment-type-btn {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: all var(--dur-1) ease;
+}
+.payment-type-btn:hover {
+  background: var(--surface-3);
+  border-color: var(--accent);
+}
+.payment-type-btn.active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+.input-readonly-soft {
+  background: var(--surface-2) !important;
+  color: var(--ink-2) !important;
+  cursor: default !important;
+}
+.treatment-balance-badge-wrap {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.treatment-balance-badge-wrap > span {
+  font-size: 12px;
+  color: var(--muted);
+}
+.treatment-balance-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+  font-size: 13px;
+}
+.treatment-balance-badge.has-balance {
+  background: var(--danger-soft);
+  border-color: rgba(255, 111, 97, .3);
+  color: var(--danger-text);
+}
+.treatment-balance-badge .balance-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--danger);
+  flex: none;
+}
+.treatment-balance-badge .balance-check {
+  color: var(--mint);
+  flex: none;
+}
+.treatment-balance-badge strong {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+}
+.treatment-balance-badge small {
+  margin-left: auto;
+  font-size: 11.5px;
+  opacity: .85;
+}
+.add-treatment-btn {
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px dashed var(--line);
+  border-radius: 13px;
+  background: var(--surface);
+  color: var(--accent);
+  font-weight: 650;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background var(--dur-1) ease, border-color var(--dur-1) ease;
+}
+.add-treatment-btn:hover {
+  background: var(--accent-soft-2);
+  border-color: var(--accent);
+}
+.patient-balance-notice {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--danger-soft);
+  color: var(--danger-text);
+  text-align: center;
+}
+
+/* Outstanding balances section */
+.balances-workspace { display: grid; gap: 20px; }
+.balances-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+.stat-card {
+  padding: 18px 20px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-1);
+  display: grid;
+  gap: 4px;
+}
+.stat-card span { font-size: 12px; color: var(--muted); font-weight: 600; }
+.stat-card strong { font-family: var(--font-display); font-size: 24px; font-weight: 650; letter-spacing: -.02em; }
+.stat-card small { font-size: 11.5px; color: var(--faint); }
+.balances-list { display: grid; gap: 16px; }
+.balance-patient-card {
+  padding: 22px;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-1);
+  display: grid;
+  gap: 16px;
+}
+.balance-patient-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.balance-patient-name { margin: 0; font-family: var(--font-display); font-size: 18px; font-weight: 650; }
+.balance-patient-meta { display: flex; gap: 14px; margin-top: 5px; font-size: 12px; color: var(--muted); flex-wrap: wrap; }
+.balance-treatments-table-wrap { overflow-x: auto; margin-top: 4px; }
+.balance-treatments-table { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 640px; }
+.balance-treatments-table th {
+  text-align: left;
+  padding: 10px 12px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line-2);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+.balance-treatments-table td { padding: 12px; border-bottom: 1px solid var(--line-2); vertical-align: middle; }
+.balance-treatments-table tr:last-child td { border-bottom: none; }
+.balance-treatments-table tr.row-pending-balance { background: rgba(255, 111, 97, .02); }
+.balance-treatments-table tr.row-settled { opacity: .7; }
+.payment-summary-box {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--line-2);
+  margin-bottom: 18px;
+}
+.payment-summary-metric { display: grid; gap: 2px; }
+.payment-summary-metric span { font-size: 11.5px; color: var(--muted); }
+.payment-summary-metric b { font-size: 15px; }
+.payment-summary-metric.highlight strong { font-family: var(--font-display); font-size: 18px; }
+.payment-fields-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.payment-preview-card {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--accent-soft-2);
+  border: 1px solid var(--line-2);
+  font-size: 13px;
+}
+.payment-preview-card strong { font-family: var(--font-display); font-size: 20px; color: var(--accent-ink); }
+.payment-history-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 500px; }
+.payment-history-table th { text-align: left; padding: 9px 11px; font-size: 11px; font-weight: 700; color: var(--muted); border-bottom: 1px solid var(--line-2); }
+.payment-history-table td { padding: 11px; border-bottom: 1px solid var(--line-2); }
+.payment-history-table tr:last-child td { border-bottom: none; }
 
 /* --------------------------------------------------------------------------
    16. Monthly report
@@ -1939,6 +2207,7 @@ input[type="datetime-local"]::-webkit-datetime-edit {
 
 @media (max-width: 900px) {
   .patient-row-action-edit span,
+  .patient-row-action-new span,
   .patient-row-action-delete span { display: none; }
 }
 
@@ -2035,8 +2304,10 @@ input[type="datetime-local"]::-webkit-datetime-edit {
   .patients-table-wrap tbody td:nth-child(3)::before { content: "Ticket"; }
   .patients-table-wrap tbody td:nth-child(4)::before { content: "Procedure"; }
   .patients-table-wrap tbody td:nth-child(5)::before { content: "Fee"; }
-  .patients-table-wrap tbody td:nth-child(6)::before { content: "Cut"; }
-  .patients-table-wrap tbody td:nth-child(7)::before { content: "Actions"; }
+  .patients-table-wrap tbody td:nth-child(6)::before { content: "Received"; }
+  .patients-table-wrap tbody td:nth-child(7)::before { content: "Balance"; }
+  .patients-table-wrap tbody td:nth-child(8)::before { content: "Cut"; }
+  .patients-table-wrap tbody td:nth-child(9)::before { content: "Actions"; }
   .monthly-table-wrap tbody td:nth-child(1)::before { content: "Month"; }
   .monthly-table-wrap tbody td:nth-child(2)::before { content: "Patients"; }
   .monthly-table-wrap tbody td:nth-child(3)::before { content: "Income"; }
@@ -2609,7 +2880,7 @@ html[data-theme="dark"] button.primary { box-shadow: 0 14px 34px -16px rgba(124,
 .dashboard-side { align-content: start; }
 .dashboard-pulse {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 8px 0;
   margin-bottom: 0;
   padding: 12px 14px;
@@ -2627,9 +2898,9 @@ html[data-theme="dark"] button.primary { box-shadow: 0 14px 34px -16px rgba(124,
   padding: 0 12px;
   border-left: 1px solid var(--line-2);
 }
-.pulse-cell span { font-size: 11.5px; font-weight: 600; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.pulse-cell strong { display: block; margin-top: 2px; font-family: var(--font-display); font-size: 17px; font-weight: 600; letter-spacing: -.02em; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.pulse-cell small { display: block; margin-top: 1px; font-size: 10.5px; color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pulse-cell span { font-size: 11px; font-weight: 600; color: var(--muted); line-height: 1.25; overflow-wrap: anywhere; }
+.pulse-cell strong { display: block; margin-top: 2px; font-family: var(--font-display); font-size: 15px; font-weight: 600; letter-spacing: -.02em; color: var(--ink); line-height: 1.25; overflow-wrap: anywhere; }
+.pulse-cell small { display: block; margin-top: 1px; font-size: 10.5px; color: var(--faint); overflow-wrap: anywhere; }
 .pulse-cell.pulse-cell-accent {
   border: 0;
   border-radius: 12px;
