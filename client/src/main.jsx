@@ -498,12 +498,14 @@ function ResetPassword({clinic}){
 
      <p className="auth-foot"><Link to="/login">{done?'Back to sign in':'Cancel'}</Link></p>
  </AuthLayout>
-}function PatientTable({rows,onEdit,onDelete,onDeleteTreatment,onNewTreatment,perTreatment=false}){
+}function PatientTable({rows,onEdit,onDelete,onDeleteTreatment,onNewTreatment,perTreatment=false,treatmentFilter=null}){
   const[deleting,setDeleting]=useState(null);
   const hasActions=!!(onEdit||onDelete||onDeleteTreatment||onNewTreatment);
   const items=[];
   (rows||[]).forEach(p=>{
-    const list=perTreatment&&p.treatments&&p.treatments.length?p.treatments:[null];
+    let list=perTreatment&&p.treatments&&p.treatments.length?p.treatments:[null];
+    if(perTreatment&&treatmentFilter)list=list.filter(t=>treatmentFilter(t,p));
+    if(!list.length)list=[null];
     list.forEach((t,i)=>items.push({key:String(p._id)+':'+(t?String(t._id??i):i),patient:p,treatment:t,isFirst:i===0,isOriginal:i===list.length-1}));
   });
   return <div className="table-wrap"><table>
@@ -920,6 +922,11 @@ function Patients(){
   const totalCut=rows.reduce((a,r)=>a+Number(r.myEarning||0),0);
   const totalBal=rows.reduce((a,r)=>a+Number(r.balance||0),0);
   const activeFilters=!!(q.trim()||from||to||balance);
+  const treatmentFilter=balance==='due'
+    ?t=>Number(t.balance||0)>0
+    :balance==='paid'
+      ?t=>Number(t.balance||0)<=0
+      :null;
 
   return <>
     <PageHead
@@ -1028,6 +1035,7 @@ function Patients(){
         <PatientTable
           rows={rows}
           perTreatment
+          treatmentFilter={treatmentFilter}
           onEdit={r=>window.location.href='/patients/edit/'+r._id}
           onNewTreatment={r=>nav('/patients/'+r._id+'/treatment/new')}
           onDelete={del}
