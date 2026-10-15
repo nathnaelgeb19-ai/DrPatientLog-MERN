@@ -1951,9 +1951,15 @@ input[type="datetime-local"]::-webkit-datetime-edit {
   font-size: 13px;
 }
 .payment-preview-card strong { font-family: var(--font-display); font-size: 20px; color: var(--accent-ink); }
-.payment-history-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 500px; }
-.payment-history-table th { text-align: left; padding: 9px 11px; font-size: 11px; font-weight: 700; color: var(--muted); border-bottom: 1px solid var(--line-2); }
+.payment-history-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 660px; }
+.payment-history-table th { text-align: left; padding: 9px 11px; font-size: 11px; font-weight: 700; color: var(--muted); border-bottom: 1px solid var(--line-2); white-space: nowrap; }
 .payment-history-table td { padding: 11px; border-bottom: 1px solid var(--line-2); }
+.payment-history-table td:nth-child(1),
+.payment-history-table td:nth-child(2),
+.payment-history-table td:nth-child(3),
+.payment-history-table td:nth-child(4),
+.payment-history-table td:nth-child(6),
+.payment-history-table td:nth-child(7) { white-space: nowrap; }
 .payment-history-table tr:last-child td { border-bottom: none; }
 
 /* --------------------------------------------------------------------------
@@ -2121,6 +2127,7 @@ input[type="datetime-local"]::-webkit-datetime-edit {
 }
 .modal-panel h2 { margin: 0 0 4px; font-family: var(--font-display); font-size: 22px; font-weight: 600; }
 .modal-panel .modal-sub { margin: 0 0 20px; font-size: 13px; color: var(--muted); }
+.modal-panel.wide { width: min(860px, 100%); }
 .modal-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
 
 /* Settings tabs */
