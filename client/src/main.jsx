@@ -618,7 +618,6 @@ function Dashboard({clinic}){
   const earningPct=income>0?Math.min(100,(earnings/income)*100):0;
   const trend=[...months].reverse().slice(-7);
   const trendMax=Math.max(1,...trend.map(m=>Number(m.payable||0)));
-  const rangeLabel=({today:'Today',week:'Last 7 days',eth_month:'This Ethiopian month',all:'All time'})[range]||range;
   const calWeekdays=['እሁድ','ሰኞ','ማክሰ','ረቡዕ','ሐሙስ','ዓርብ','ቅዳሜ'];
   const calLen=cal?ethMonthLength(cal.year,cal.monthIndex):30;
   const calStart=cal?ethWeekday(cal.year,cal.monthIndex,1):0;

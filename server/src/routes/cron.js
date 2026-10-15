@@ -253,8 +253,6 @@ async function monthly() {
       }).cut;
     }
 
-    const payableEarnings = doctorEarnings + pagumeCarry;
-
     const pct = income ? sum.weighted / income : 0;
 
     const closure = await SalaryClosure.findOne({
