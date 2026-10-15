@@ -1954,13 +1954,15 @@ input[type="datetime-local"]::-webkit-datetime-edit {
 .payment-history-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 660px; }
 .payment-history-table th { text-align: left; padding: 9px 11px; font-size: 11px; font-weight: 700; color: var(--muted); border-bottom: 1px solid var(--line-2); white-space: nowrap; }
 .payment-history-table td { padding: 11px; border-bottom: 1px solid var(--line-2); }
-.payment-history-table td:nth-child(1),
-.payment-history-table td:nth-child(2),
-.payment-history-table td:nth-child(3),
-.payment-history-table td:nth-child(4),
-.payment-history-table td:nth-child(6),
-.payment-history-table td:nth-child(7) { white-space: nowrap; }
 .payment-history-table tr:last-child td { border-bottom: none; }
+@media (min-width: 721px) {
+  .payment-history-table td:nth-child(1),
+  .payment-history-table td:nth-child(2),
+  .payment-history-table td:nth-child(3),
+  .payment-history-table td:nth-child(4),
+  .payment-history-table td:nth-child(6),
+  .payment-history-table td:nth-child(7) { white-space: nowrap; }
+}
 
 /* --------------------------------------------------------------------------
    16. Monthly report
@@ -2327,6 +2329,44 @@ input[type="datetime-local"]::-webkit-datetime-edit {
   .monthly-table-wrap tbody td.empty { display: block; text-align: center; }
   .patients-table-wrap tbody td.empty::before,
   .monthly-table-wrap tbody td.empty::before { content: none; }
+
+  .payment-history-table { min-width: 0; }
+  .payment-history-table thead { display: none; }
+  .payment-history-table tbody tr {
+    display: block;
+    margin-bottom: 12px;
+    padding: 6px 15px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--surface);
+  }
+  .payment-history-table tbody td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 10px 0;
+    text-align: right;
+    white-space: normal;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .payment-history-table tbody td:last-child { border-bottom: 0; }
+  .payment-history-table tbody td::before {
+    flex: none;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: left;
+  }
+  .payment-history-table tbody td:nth-child(1)::before { content: "No."; }
+  .payment-history-table tbody td:nth-child(2)::before { content: "Date"; }
+  .payment-history-table tbody td:nth-child(3)::before { content: "Amount"; }
+  .payment-history-table tbody td:nth-child(4)::before { content: "Ticket"; }
+  .payment-history-table tbody td:nth-child(5)::before { content: "Note"; }
+  .payment-history-table tbody td:nth-child(6)::before { content: "Recorded"; }
+  .payment-history-table tbody td:nth-child(7)::before { content: "Actions"; }
   tbody tr:hover td { background: transparent; }
   .monthly-action-cell { flex-wrap: wrap; }
   .empty { padding: 20px 0; }
@@ -2335,6 +2375,7 @@ input[type="datetime-local"]::-webkit-datetime-edit {
 @media (max-width: 560px) {
   .patients-toolbar { gap: 9px 10px; }
   .doctor-grid { grid-template-columns: 1fr; }
+  .payment-summary-box { grid-template-columns: 1fr; gap: 8px; }
 }
 
 /* --------------------------------------------------------------------------

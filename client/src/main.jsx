@@ -1998,10 +1998,10 @@ function PaymentHistoryModal({patient,treatment,onClose,onChanged}){
                           style={{maxWidth:150}}
                         />
                       ):(
-                        <>
+                        <span>
                           <b>{p.ethDate||p.date}</b>
                           {p.ethDate&&p.date&&<small style={{display:'block',color:'var(--muted)',fontSize:'11px'}}>{p.date}</small>}
-                        </>
+                        </span>
                       )}
                     </td>
                     <td>
