@@ -1,4 +1,4 @@
-import React,{useEffect,useState,useRef,useCallback,lazy,Suspense}from'react';import{createRoot}from'react-dom/client';import{createPortal}from'react-dom';import{BrowserRouter,useNavigate,useLocation,Routes,Route,Link,Navigate}from'react-router-dom';import{LayoutDashboard,Users,UserRoundCog,CalendarDays,Settings,LogOut,Plus,Search,Menu,X,Stethoscope,ShieldCheck,ArrowUpRight,Trash2,Edit3,CheckCircle2,ReceiptText,ClipboardList,Database,Send,Download,Upload,RefreshCw,KeyRound,UserCog,Palette,Sun,Moon,Monitor,Bell,Clock,ChevronDown,ChevronLeft,ChevronRight,FileText,Eye,EyeOff,CornerDownLeft,Sparkles,TrendingUp,Activity,BarChart3,Check,Lock}from'lucide-react';import{api}from'./api';import{ethiopianDate,ETH_MONTHS,ethWeekday,ethMonthLength,ethPrevMonth,ethNextMonth}from'./ethiopian.js';import'./styles.css';import doctorLogo from './assets/aa-logo.svg';
+import React,{useEffect,useState,useRef,useCallback,lazy,Suspense,useMemo}from'react';import{createRoot}from'react-dom/client';import{createPortal}from'react-dom';import{BrowserRouter,useNavigate,useLocation,Routes,Route,Link,Navigate}from'react-router-dom';import{LayoutDashboard,Users,UserRoundCog,CalendarDays,Settings,LogOut,Plus,Search,Menu,X,Stethoscope,ShieldCheck,ArrowUpRight,Trash2,Edit3,CheckCircle2,ReceiptText,ClipboardList,Database,Send,Download,Upload,RefreshCw,KeyRound,UserCog,Palette,Sun,Moon,Monitor,Bell,Clock,ChevronDown,ChevronLeft,ChevronRight,FileText,Eye,EyeOff,CornerDownLeft,Sparkles,TrendingUp,Activity,BarChart3,Check,Lock}from'lucide-react';import{api}from'./api';import{ethiopianDate,ETH_MONTHS,ethWeekday,ethMonthLength,ethPrevMonth,ethNextMonth}from'./ethiopian.js';import'./styles.css';import doctorLogo from './assets/aa-logo.svg';
 const money=n=>`${Number(n||0).toFixed(2)} ETB`;
 const EarningsChart=lazy(()=>import('./components/EarningsChart.jsx'));
 function PageHead({title,subtitle,action}){return <div className="page-head"><div><p className="eyebrow">HAKIM</p><h1>{title}</h1><p>{subtitle}</p></div>{action}</div>}
@@ -514,16 +514,19 @@ function ResetPassword({clinic}){
 
      <p className="auth-foot"><Link to="/login">{done?'Back to sign in':'Cancel'}</Link></p>
  </AuthLayout>
-}function PatientTable({rows,onEdit,onDelete,onDeleteTreatment,onNewTreatment,perTreatment=false,treatmentFilter=null}){
+}const PatientTable=React.memo(function PatientTable({rows,onEdit,onDelete,onDeleteTreatment,onNewTreatment,perTreatment=false,treatmentFilter=null}){
   const[deleting,setDeleting]=useState(null);
   const hasActions=!!(onEdit||onDelete||onDeleteTreatment||onNewTreatment);
-  const items=[];
-  (rows||[]).forEach(p=>{
-    let list=perTreatment&&p.treatments&&p.treatments.length?p.treatments:[null];
-    if(perTreatment&&treatmentFilter)list=list.filter(t=>treatmentFilter(t,p));
-    if(!list.length)list=[null];
-    list.forEach((t,i)=>items.push({key:String(p._id)+':'+(t?String(t._id??i):i),patient:p,treatment:t,isFirst:i===0,isOriginal:i===list.length-1}));
-  });
+  const items=useMemo(()=>{
+    const out=[];
+    (rows||[]).forEach(p=>{
+      let list=perTreatment&&p.treatments&&p.treatments.length?p.treatments:[null];
+      if(perTreatment&&treatmentFilter)list=list.filter(t=>treatmentFilter(t,p));
+      if(!list.length)list=[null];
+      list.forEach((t,i)=>out.push({key:String(p._id)+':'+(t?String(t._id??i):i),patient:p,treatment:t,isFirst:i===0,isOriginal:i===list.length-1}));
+    });
+    return out;
+  },[rows,perTreatment,treatmentFilter]);
   return <div className="table-wrap"><table>
 <thead><tr><th scope="col">Patient</th><th scope="col">Card</th><th scope="col">Ticket</th><th scope="col">Procedure</th><th scope="col">Fee</th>{perTreatment&&<th scope="col">Paid</th>}{perTreatment&&<th scope="col">Balance</th>}<th scope="col">Cut</th>{hasActions&&<th scope="col">Actions</th>}</tr></thead>
 <tbody>{items.length?items.map(it=>{
@@ -571,7 +574,8 @@ function ResetPassword({clinic}){
   </span>
 </td>}
 </tr>;
-}):<tr><td colSpan={(perTreatment?8:6)+(hasActions?1:0)} className="empty">No records found.</td></tr>}</tbody></table></div>}
+}):<tr><td colSpan={(perTreatment?8:6)+(hasActions?1:0)} className="empty">No records found.</td></tr>}</tbody></table></div>});
+PatientTable.displayName='PatientTable';
 function Dashboard({clinic}){
   const[d,setD]=useState();
   const[err,setErr]=useState('');
@@ -863,8 +867,9 @@ function Patients(){
   const[to,setTo]=useState('');
   const[balance,setBalance]=useState('');
   const[busy,setBusy]=useState('');
-  const[hideFilters,setHideFilters]=useState(false);
+  const filtersRef=useRef(null);
   const lastScrollY=useRef(0);
+  const loadRef=useRef(()=>{});
 
   useEffect(()=>{
     let ticking=false;
@@ -874,9 +879,10 @@ function Patients(){
       requestAnimationFrame(()=>{
         const y=window.scrollY;
         const delta=y-lastScrollY.current;
-        const threshold=window.innerHeight*.5;
-        if(Math.abs(delta)>12){
-          setHideFilters(delta>0&&y>threshold);
+        const threshold=window.innerHeight*.4;
+        if(Math.abs(delta)>10&&filtersRef.current){
+          const shouldHide=delta>0&&y>threshold;
+          filtersRef.current.classList.toggle('filters-hidden',shouldHide);
           lastScrollY.current=y;
         }
         ticking=false;
@@ -896,6 +902,8 @@ function Patients(){
     return api.get(buildQuery(over)).then(setRows).finally(()=>setBusy(''));
   };
 
+  useEffect(()=>{loadRef.current=load});
+
   const changeBalance=value=>{
     setBalance(value);
     load({balance:value});
@@ -914,35 +922,38 @@ function Patients(){
     api.get('/patients?q=&from=&to=&balance=').then(setRows).finally(()=>setBusy(''));
   };
 
-  const del=async r=>{
+  const del=useCallback(async r=>{
     const count=(r.treatments&&r.treatments.length)||1;
-    if(confirm(`Delete ${r.patientName}${count>1?` and all ${count} treatments`:''}? This cannot be undone.`)){
+    if(window.confirm(`Delete ${r.patientName}${count>1?` and all ${count} treatments`:''}? This cannot be undone.`)){
       await api.del('/patients/'+r._id);
-      load();
+      loadRef.current();
     }
-  };
+  },[]);
 
-  const delTreatment=async(r,t)=>{
+  const delTreatment=useCallback(async(r,t)=>{
     if(!t)return;
     const label=t.procedure||'this treatment';
-    if(!confirm(`Delete the treatment "${label}" for ${r.patientName}? This cannot be undone.`))return;
+    if(!window.confirm(`Delete the treatment "${label}" for ${r.patientName}? This cannot be undone.`))return;
     try{
       await api.del('/patients/'+r._id+'/treatments/'+t._id);
-      load();
+      loadRef.current();
     }catch(e){
       alert(e.message||'Unable to delete treatment.');
     }
-  };
+  },[]);
 
-  const totalFees=rows.reduce((a,r)=>a+Number(r.totalFee||0),0);
-  const totalCut=rows.reduce((a,r)=>a+Number(r.myEarning||0),0);
-  const totalBal=rows.reduce((a,r)=>a+Number(r.balance||0),0);
+  const editPatient=useCallback(r=>{window.location.href='/patients/edit/'+r._id},[]);
+  const newTreatment=useCallback(r=>nav('/patients/'+r._id+'/treatment/new'),[nav]);
+
+  const totalFees=useMemo(()=>rows.reduce((a,r)=>a+Number(r.totalFee||0),0),[rows]);
+  const totalCut=useMemo(()=>rows.reduce((a,r)=>a+Number(r.myEarning||0),0),[rows]);
+  const totalBal=useMemo(()=>rows.reduce((a,r)=>a+Number(r.balance||0),0),[rows]);
   const activeFilters=!!(q.trim()||from||to||balance);
-  const treatmentFilter=balance==='due'
+  const treatmentFilter=useMemo(()=>balance==='due'
     ?t=>Number(t.balance||0)>0
     :balance==='paid'
       ?t=>Number(t.balance||0)<=0
-      :null;
+      :null,[balance]);
 
   return <>
     <PageHead
@@ -964,7 +975,7 @@ function Patients(){
 
     <section className="patients-workspace">
 
-      <div className={'patients-toolbar'+(hideFilters?' filters-hidden':'')}>
+      <div ref={filtersRef} className="patients-toolbar">
 
         <div className="patients-search">
           <Search size={18}/>
@@ -1052,8 +1063,8 @@ function Patients(){
           rows={rows}
           perTreatment
           treatmentFilter={treatmentFilter}
-          onEdit={r=>window.location.href='/patients/edit/'+r._id}
-          onNewTreatment={r=>nav('/patients/'+r._id+'/treatment/new')}
+          onEdit={editPatient}
+          onNewTreatment={newTreatment}
           onDelete={del}
           onDeleteTreatment={delTreatment}
         />
