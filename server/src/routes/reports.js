@@ -792,6 +792,7 @@ return `<!doctype html>
         <th>Eth date</th>
         <th>Patient</th>
         <th>Card</th>
+        <th>Ticket</th>
         <th>Procedure</th>
         <th class="number">Income</th>
         <th class="number">%</th>
@@ -805,6 +806,7 @@ return `<!doctype html>
           <td class="muted">${escapeHtml(row.ethDate)}</td>
           <td class="patient">${escapeHtml(row.patientName)}</td>
           <td>${escapeHtml(row.cardNumber)}</td>
+          <td>${escapeHtml(row.ticketNo)}</td>
           <td>${escapeHtml(row.procedure)}</td>
           <td class="number">${money(row.totalFee)}</td>
           <td class="number">${Number(row.doctorPct || 0).toFixed(2)}%</td>
@@ -812,7 +814,7 @@ return `<!doctype html>
         </tr>
       `).join('') : `
         <tr>
-          <td colspan="7" class="muted" style="text-align:center;padding:24px">
+          <td colspan="8" class="muted" style="text-align:center;padding:24px">
             No payments recorded for this Ethiopian month.
           </td>
         </tr>

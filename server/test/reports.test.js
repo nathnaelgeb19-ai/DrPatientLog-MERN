@@ -78,3 +78,9 @@ test('monthly report renders both payment status states', () => {
   assert.ok(source.includes('class="status-box status-pending"'));
   assert.ok(source.includes('Payment status'));
 });
+
+test('monthly report lists a ticket number column', () => {
+  assert.ok(source.includes('<th>Ticket</th>'), 'report header should include Ticket');
+  assert.ok(source.includes('escapeHtml(row.ticketNo)'), 'report rows should render the ticket number');
+  assert.ok(source.includes('colspan="8"'), 'empty state should span the eight columns');
+});
