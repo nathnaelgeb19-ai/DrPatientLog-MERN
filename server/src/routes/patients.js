@@ -6,6 +6,8 @@ import {
   normalizePatient,
   buildPatientPayload,
   addPayment,
+  updatePayment,
+  removePayment,
   recomputePatientTotals,
   orderTreatments,
   removeTreatment
@@ -331,6 +333,112 @@ const handlePayment=async(q,s,treatmentId)=>{
 
 r.post('/:id/treatments/:treatmentId/pay',(q,s)=>handlePayment(q,s,q.params.treatmentId));
 r.post('/:id/pay',(q,s)=>handlePayment(q,s));
+
+const loadTreatment=async(q,s)=>{
+  const p=await Patient.findOne({_id:q.params.id,doctorId:q.doctor._id});
+  if(!p){
+    s.status(404).json({message:'Patient not found'});
+    return null;
+  }
+
+  const data=ensureTreatments(p.toObject());
+  const t=data.treatments?.find(x=>String(x._id)===String(q.params.treatmentId));
+
+  if(!t){
+    s.status(404).json({message:'Treatment not found'});
+    return null;
+  }
+
+  return {p,data,t};
+};
+
+const persistTreatment=async(p,data)=>{
+  p.treatments=data.treatments;
+  p.totalFee=data.totalFee;
+  p.paidAmount=data.paidAmount;
+  p.balance=data.balance;
+  p.myEarning=data.myEarning;
+  p.procedure=data.procedure;
+  await p.save();
+};
+
+r.put('/:id/treatments/:treatmentId/payments/:paymentId',async(q,s)=>{
+  try{
+    const found=await loadTreatment(q,s);
+    if(!found)return;
+
+    const {p,data,t}=found;
+
+    const date=q.body.date;
+    const ethDate=q.body.ethDate||(date?ethiopianDate(date):undefined);
+
+    const result=updatePayment(t,q.params.paymentId,{
+      amount:q.body.amount,
+      date,
+      ethDate,
+      ticketNo:q.body.ticketNo!=null?String(q.body.ticketNo).trim():undefined,
+      note:q.body.note!=null?String(q.body.note).trim():undefined,
+      ref:q.body.ref
+    });
+
+    if(!result.ok)return s.status(400).json({message:result.error});
+
+    recomputePatientTotals(data);
+    await persistTreatment(p,data);
+
+    await AuditLog.create({
+      doctorId:q.doctor._id,
+      doctorName:q.doctor.name,
+      action:'payment-update',
+      entity:'treatment',
+      entityId:String(t._id),
+      detail:`Updated payment of ${result.payment.amount.toFixed(2)} ETB for ${t.procedure} (${p.patientName}). Remaining balance: ${t.balance.toFixed(2)} ETB`
+    });
+
+    s.json({
+      ok:true,
+      patient:orderTreatments(ensureTreatments(p.toObject())),
+      treatment:t,
+      payment:result.payment
+    });
+  }catch(e){
+    s.status(400).json({message:e.message});
+  }
+});
+
+r.delete('/:id/treatments/:treatmentId/payments/:paymentId',async(q,s)=>{
+  try{
+    const found=await loadTreatment(q,s);
+    if(!found)return;
+
+    const {p,data,t}=found;
+
+    const result=removePayment(t,q.params.paymentId);
+
+    if(!result.ok)return s.status(400).json({message:result.error});
+
+    recomputePatientTotals(data);
+    await persistTreatment(p,data);
+
+    await AuditLog.create({
+      doctorId:q.doctor._id,
+      doctorName:q.doctor.name,
+      action:'payment-delete',
+      entity:'treatment',
+      entityId:String(t._id),
+      detail:`Removed payment of ${Number(result.removed.amount||0).toFixed(2)} ETB for ${t.procedure} (${p.patientName}). Remaining balance: ${t.balance.toFixed(2)} ETB`
+    });
+
+    s.json({
+      ok:true,
+      patient:orderTreatments(ensureTreatments(p.toObject())),
+      treatment:t,
+      removed:result.removed
+    });
+  }catch(e){
+    s.status(400).json({message:e.message});
+  }
+});
 
 r.delete('/:id/treatments/:treatmentId',async(q,s)=>{
   try{

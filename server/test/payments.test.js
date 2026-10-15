@@ -11,6 +11,8 @@ import {
   removeTreatment,
   findTreatment,
   addPayment,
+  updatePayment,
+  removePayment,
   buildPatientPayload,
   flattenPayments,
   summarizePayments,
@@ -1084,5 +1086,84 @@ test('flattened payment rows prefer the payment ticket over the treatment ticket
   const rows = flattenPayments({ _id: 'p1', patientName: 'Abebe', treatments: [t] });
   assert.equal(rows[0].ticketNo, 'T-1');
   assert.equal(rows[1].ticketNo, 'R-2');
+});
+
+test('a recorded payment can be edited and the treatment totals follow', () => {
+  const t = normalizeTreatment({ _id: 't1', procedure: 'Filling', totalFee: 1000, doctorPct: 10, paidAmount: 200, balance: 800, ticketNo: 'T-1' });
+
+  const result = updatePayment(t, '0', { amount: 400, date: '2026-04-01', ticketNo: 'R-9', note: 'Cash' });
+
+  assert.equal(result.ok, true);
+  assert.equal(t.payments[0].amount, 400);
+  assert.equal(t.payments[0].commission, 40);
+  assert.equal(t.payments[0].date, '2026-04-01');
+  assert.equal(t.payments[0].ticketNo, 'R-9');
+  assert.equal(t.payments[0].note, 'Cash');
+  assert.equal(t.paidAmount, 400);
+  assert.equal(t.balance, 600);
+  assert.equal(t.myEarning, 40);
+});
+
+test('a payment is addressed by its stored id when present', () => {
+  const t = normalizeTreatment({ totalFee: 1000, doctorPct: 10, paidAmount: 0, balance: 1000 });
+  t.payments = [{ _id: 'pay1', date: '2026-01-01', amount: 200, commission: 20, ticketNo: 'A' }];
+  t.paidAmount = 200;
+  t.balance = 800;
+  t.myEarning = 20;
+
+  const result = updatePayment(t, 'pay1', { amount: 250 });
+
+  assert.equal(result.ok, true);
+  assert.equal(t.payments[0].amount, 250);
+  assert.equal(t.payments[0].commission, 25);
+  assert.equal(t.balance, 750);
+  assert.equal(t.myEarning, 25);
+});
+
+test('editing a payment cannot push the total received past the fee', () => {
+  const t = normalizeTreatment({ totalFee: 1000, doctorPct: 10, paidAmount: 300, balance: 700 });
+  addPayment(t, { amount: 200, date: '2026-03-01' });
+
+  const result = updatePayment(t, '0', { amount: 900 });
+
+  assert.equal(result.ok, false);
+  assert.match(result.error, /cannot exceed/i);
+  assert.equal(t.paidAmount, 500);
+  assert.equal(t.balance, 500);
+});
+
+test('editing an unknown payment is refused', () => {
+  const t = normalizeTreatment({ totalFee: 1000, doctorPct: 10, paidAmount: 200, balance: 800 });
+  const result = updatePayment(t, 'missing', { amount: 100 });
+  assert.equal(result.ok, false);
+  assert.equal(result.error, 'Payment not found.');
+});
+
+test('removing a payment rolls the balance back up and drops its commission', () => {
+  const t = normalizeTreatment({ totalFee: 1000, doctorPct: 10, paidAmount: 200, balance: 800 });
+  addPayment(t, { amount: 300, date: '2026-03-01' });
+
+  const result = removePayment(t, '1');
+
+  assert.equal(result.ok, true);
+  assert.equal(result.removed.amount, 300);
+  assert.equal(t.payments.length, 1);
+  assert.equal(t.paidAmount, 200);
+  assert.equal(t.balance, 800);
+  assert.equal(t.myEarning, 20);
+  assert.equal(t.paymentType, 'partial');
+});
+
+test('removing the only payment leaves the treatment fully outstanding', () => {
+  const t = normalizeTreatment({ totalFee: 1000, doctorPct: 10, paidAmount: 400, balance: 600 });
+
+  const result = removePayment(t, '0');
+
+  assert.equal(result.ok, true);
+  assert.equal(t.payments.length, 0);
+  assert.equal(t.paidAmount, 0);
+  assert.equal(t.balance, 1000);
+  assert.equal(t.myEarning, 0);
+  assert.equal(t.paymentType, 'partial');
 });
 

@@ -1862,8 +1862,76 @@ function ReceivePaymentModal({patient,treatment,onClose,onSuccess}){
   </Modal>;
 }
 
-function PaymentHistoryModal({patient,treatment,onClose}){
-  const payments=treatment.payments||[];
+function PaymentHistoryModal({patient,treatment,onClose,onChanged}){
+  const[tx,setTx]=useState(treatment);
+  const[editKey,setEditKey]=useState(null);
+  const[form,setForm]=useState({amount:'',date:'',ticketNo:'',note:''});
+  const[busy,setBusy]=useState('');
+  const[err,setErr]=useState('');
+
+  const payments=tx.payments||[];
+
+  useEffect(()=>{setTx(treatment);setEditKey(null);},[treatment]);
+
+  const startEdit=(p,idx)=>{
+    if(busy)return;
+    setErr('');
+    setEditKey(p._id||('idx:'+idx));
+    setForm({
+      amount:String(p.amount??''),
+      date:p.date||'',
+      ticketNo:p.ticketNo||'',
+      note:p.note||''
+    });
+  };
+
+  const cancelEdit=()=>{
+    setEditKey(null);
+    setErr('');
+  };
+
+  const saveEdit=async(p,idx)=>{
+    const amt=Number(form.amount);
+    if(!(amt>0)){
+      setErr('Payment amount must be greater than 0.');
+      return;
+    }
+    setBusy('save:'+idx);
+    setErr('');
+    try{
+      const res=await api.put(`/patients/${patient._id}/treatments/${treatment._id}/payments/${p._id||idx}`,{
+        amount:amt,
+        date:form.date,
+        ethDate:form.date?ethiopianDate(form.date):undefined,
+        ticketNo:form.ticketNo.trim(),
+        note:form.note.trim()
+      });
+      setTx(res.treatment);
+      setEditKey(null);
+      onChanged&&onChanged(res.patient);
+    }catch(x){
+      setErr(x.message||'Could not update payment.');
+    }finally{
+      setBusy('');
+    }
+  };
+
+  const removePayment=async(p,idx)=>{
+    if(busy)return;
+    if(!confirm(`Delete this ${money(p.amount)} payment? This cannot be undone.`))return;
+    setBusy('del:'+idx);
+    setErr('');
+    try{
+      const res=await api.del(`/patients/${patient._id}/treatments/${treatment._id}/payments/${p._id||idx}`);
+      setTx(res.treatment);
+      onChanged&&onChanged(res.patient);
+    }catch(x){
+      setErr(x.message||'Could not delete payment.');
+    }finally{
+      setBusy('');
+    }
+  };
+
   return <Modal
     open={true}
     onClose={onClose}
@@ -1874,19 +1942,21 @@ function PaymentHistoryModal({patient,treatment,onClose}){
       <div className="payment-summary-box">
         <div className="payment-summary-metric">
           <span>Total fee</span>
-          <b>{money(treatment.totalFee)}</b>
+          <b>{money(tx.totalFee)}</b>
         </div>
         <div className="payment-summary-metric">
           <span>Total paid</span>
-          <b style={{color:'var(--mint-text)'}}>{money(treatment.paidAmount)}</b>
+          <b style={{color:'var(--mint-text)'}}>{money(tx.paidAmount)}</b>
         </div>
         <div className="payment-summary-metric">
           <span>Remaining balance</span>
-          <b style={{color:Number(treatment.balance||0)>0?'var(--danger-text)':'inherit'}}>
-            {money(treatment.balance)}
+          <b style={{color:Number(tx.balance||0)>0?'var(--danger-text)':'inherit'}}>
+            {money(tx.balance)}
           </b>
         </div>
       </div>
+
+      {err&&<div className="error" style={{marginTop:14}}>{err}</div>}
 
       {payments.length===0?(
         <div className="card" style={{padding:'28px',textAlign:'center',marginTop:16}}>
@@ -1905,28 +1975,128 @@ function PaymentHistoryModal({patient,treatment,onClose}){
                 <th>Ticket</th>
                 <th>Note / Method</th>
                 <th>Recorded at</th>
+                <th style={{textAlign:'right'}}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {payments.map((p,idx)=>(
-                <tr key={p._id||idx}>
-                  <td>{idx+1}</td>
-                  <td>
-                    <b>{p.ethDate||p.date}</b>
-                    {p.ethDate&&p.date&&<small style={{display:'block',color:'var(--muted)',fontSize:'11px'}}>{p.date}</small>}
-                  </td>
-                  <td>
-                    <b style={{color:'var(--mint-text)'}}>{money(p.amount)}</b>
-                  </td>
-                  <td>{p.ticketNo||treatment.ticketNo||'—'}</td>
-                  <td>{p.note||'—'}</td>
-                  <td>
-                    <small style={{color:'var(--muted)'}}>
-                      {p.receivedAt?new Date(p.receivedAt).toLocaleString():'—'}
-                    </small>
-                  </td>
-                </tr>
-              ))}
+              {payments.map((p,idx)=>{
+                const key=p._id||('idx:'+idx);
+                const editing=editKey===key;
+                const rowBusy=busy.endsWith(':'+idx);
+
+                return (
+                  <tr key={key}>
+                    <td>{idx+1}</td>
+                    <td>
+                      {editing?(
+                        <input
+                          type="date"
+                          required
+                          value={form.date}
+                          onChange={e=>setForm(f=>({...f,date:e.target.value}))}
+                          style={{maxWidth:150}}
+                        />
+                      ):(
+                        <>
+                          <b>{p.ethDate||p.date}</b>
+                          {p.ethDate&&p.date&&<small style={{display:'block',color:'var(--muted)',fontSize:'11px'}}>{p.date}</small>}
+                        </>
+                      )}
+                    </td>
+                    <td>
+                      {editing?(
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0.01"
+                          value={form.amount}
+                          onChange={e=>setForm(f=>({...f,amount:e.target.value}))}
+                          style={{maxWidth:110}}
+                          autoFocus
+                        />
+                      ):(
+                        <b style={{color:'var(--mint-text)'}}>{money(p.amount)}</b>
+                      )}
+                    </td>
+                    <td>
+                      {editing?(
+                        <input
+                          placeholder="Ticket"
+                          value={form.ticketNo}
+                          onChange={e=>setForm(f=>({...f,ticketNo:e.target.value}))}
+                          style={{maxWidth:110}}
+                        />
+                      ):(
+                        p.ticketNo||treatment.ticketNo||'—'
+                      )}
+                    </td>
+                    <td>
+                      {editing?(
+                        <input
+                          placeholder="Note / method"
+                          value={form.note}
+                          onChange={e=>setForm(f=>({...f,note:e.target.value}))}
+                        />
+                      ):(
+                        p.note||'—'
+                      )}
+                    </td>
+                    <td>
+                      <small style={{color:'var(--muted)'}}>
+                        {p.receivedAt?new Date(p.receivedAt).toLocaleString():'—'}
+                      </small>
+                    </td>
+                    <td style={{textAlign:'right'}}>
+                      <div style={{display:'inline-flex',gap:6,alignItems:'center'}}>
+                        {editing?(
+                          <>
+                            <button
+                              type="button"
+                              className="primary small"
+                              disabled={rowBusy}
+                              onClick={()=>saveEdit(p,idx)}
+                              title="Save payment"
+                            >
+                              <Check size={13}/>
+                              {rowBusy?'Saving…':'Save'}
+                            </button>
+                            <button
+                              type="button"
+                              className="ghost small"
+                              disabled={rowBusy}
+                              onClick={cancelEdit}
+                              title="Cancel"
+                            >
+                              <X size={13}/>
+                            </button>
+                          </>
+                        ):(
+                          <>
+                            <button
+                              type="button"
+                              className="icon"
+                              disabled={!!busy}
+                              onClick={()=>startEdit(p,idx)}
+                              title="Edit payment"
+                            >
+                              <Edit3 size={15}/>
+                            </button>
+                            <button
+                              type="button"
+                              className={'icon danger'+(busy==='del:'+idx?' is-loading':'')}
+                              disabled={!!busy}
+                              onClick={()=>removePayment(p,idx)}
+                              title="Delete payment"
+                            >
+                              <Trash2 size={15}/>
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -2176,6 +2346,13 @@ function OutstandingBalances(){
         patient={historyTarget.patient}
         treatment={historyTarget.treatment}
         onClose={()=>setHistoryTarget(null)}
+        onChanged={updated=>{
+          if(updated){
+            const t=(updated.treatments||[]).find(x=>String(x._id)===String(historyTarget.treatment._id));
+            if(t)setHistoryTarget({patient:updated,treatment:t});
+          }
+          load();
+        }}
       />
     )}
   </>;

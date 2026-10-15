@@ -42,6 +42,7 @@ const normalizePayment = (payment, pct = DEFAULT_PCT) => {
     : commissionFor(amount, pct);
 
   return {
+    _id: payment?._id,
     date: payment?.date || '',
     ethDate: payment?.ethDate || '',
     amount,
@@ -247,6 +248,18 @@ const findTreatment = (patient, treatmentId) => {
   return list.find(t => String(t._id) === String(treatmentId)) || null;
 };
 
+const recomputeTreatmentTotals = treatment => {
+  const fee = round2(treatment.totalFee);
+  const payments = treatment.payments || [];
+
+  treatment.paidAmount = round2(payments.reduce((sum, p) => sum + round2(p.amount), 0));
+  treatment.balance = round2(Math.max(0, fee - treatment.paidAmount));
+  treatment.myEarning = round2(payments.reduce((sum, p) => sum + round2(p.commission), 0));
+  treatment.paymentType = treatment.balance <= 0 ? 'full' : 'partial';
+
+  return treatment;
+};
+
 const addPayment = (treatment, input = {}) => {
   const pct = Number(treatment.doctorPct ?? DEFAULT_PCT);
   const fee = round2(treatment.totalFee);
@@ -290,16 +303,89 @@ const addPayment = (treatment, input = {}) => {
   }, pct);
 
   treatment.payments = [...(treatment.payments || []), payment];
-  treatment.paidAmount = round2(
-    treatment.payments.reduce((sum, p) => sum + p.amount, 0)
-  );
-  treatment.balance = round2(Math.max(0, fee - treatment.paidAmount));
-  treatment.myEarning = round2(
-    treatment.payments.reduce((sum, p) => sum + p.commission, 0)
-  );
-  treatment.paymentType = treatment.balance <= 0 ? 'full' : 'partial';
+  recomputeTreatmentTotals(treatment);
 
   return { ok: true, payment };
+};
+
+const findPaymentIndex = (payments, paymentId) => {
+  const byId = payments.findIndex(p => p._id && String(p._id) === String(paymentId));
+  if (byId >= 0) return byId;
+
+  const index = Number(paymentId);
+  if (Number.isInteger(index) && index >= 0 && index < payments.length) return index;
+
+  return -1;
+};
+
+const updatePayment = (treatment, paymentId, input = {}) => {
+  const pct = Number(treatment.doctorPct ?? DEFAULT_PCT);
+  const fee = round2(treatment.totalFee);
+  const payments = (treatment.payments || []).map(toPlain);
+
+  const idx = findPaymentIndex(payments, paymentId);
+  if (idx < 0) return { ok: false, error: 'Payment not found.' };
+
+  const current = payments[idx];
+  const amount = input.amount != null && input.amount !== ''
+    ? round2(input.amount)
+    : round2(current.amount);
+
+  if (!(amount > 0)) {
+    return { ok: false, error: 'Payment amount must be greater than 0.' };
+  }
+
+  const others = payments.reduce(
+    (sum, p, i) => (i === idx ? sum : round2(sum + round2(p.amount))),
+    0
+  );
+
+  if (round2(others + amount) > fee + 0.001) {
+    return {
+      ok: false,
+      error: `Total received (${round2(others + amount).toFixed(2)} ETB) cannot exceed the treatment fee (${fee.toFixed(2)} ETB).`
+    };
+  }
+
+  const ref = String(input.ref ?? current.ref ?? '').trim();
+
+  if (ref && payments.some((p, i) => i !== idx && String(p.ref || '') === ref)) {
+    return {
+      ok: false,
+      duplicate: true,
+      error: 'This payment was already recorded.'
+    };
+  }
+
+  payments[idx] = normalizePayment({
+    _id: current._id,
+    date: input.date ?? current.date,
+    ethDate: input.ethDate ?? current.ethDate,
+    amount,
+    ticketNo: input.ticketNo ?? current.ticketNo,
+    note: input.note ?? current.note,
+    ref,
+    receivedAt: current.receivedAt
+  }, pct);
+
+  treatment.payments = payments;
+  recomputeTreatmentTotals(treatment);
+
+  return { ok: true, payment: payments[idx] };
+};
+
+const removePayment = (treatment, paymentId) => {
+  const payments = (treatment.payments || []).map(toPlain);
+
+  const idx = findPaymentIndex(payments, paymentId);
+  if (idx < 0) return { ok: false, error: 'Payment not found.' };
+
+  const [removed] = payments.splice(idx, 1);
+
+  treatment.payments = payments;
+  recomputeTreatmentTotals(treatment);
+
+  return { ok: true, removed };
 };
 
 const adjustTreatmentPayments = (treatment, targetPaid, options = {}) => {
@@ -308,6 +394,7 @@ const adjustTreatmentPayments = (treatment, targetPaid, options = {}) => {
   const target = Math.min(fee, Math.max(0, round2(targetPaid)));
 
   const payments = (treatment?.payments || []).map(p => ({
+    _id: p._id,
     date: p.date || '',
     ethDate: p.ethDate || '',
     amount: round2(p.amount),
@@ -348,6 +435,7 @@ const adjustTreatmentPayments = (treatment, targetPaid, options = {}) => {
         payments.splice(i, 1);
       } else {
         payments[i] = normalizePayment({
+          _id: payment._id,
           date: payment.date,
           ethDate: payment.ethDate,
           amount: round2(payment.amount - excess),
@@ -601,6 +689,8 @@ export {
   removeTreatment,
   findTreatment,
   addPayment,
+  updatePayment,
+  removePayment,
   adjustTreatmentPayments,
   buildPatientPayload,
   flattenPayments,
