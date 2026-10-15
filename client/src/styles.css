@@ -2262,6 +2262,7 @@ input[type="datetime-local"]::-webkit-datetime-edit {
     gap: 10px 12px;
   }
   .patients-search { grid-column: 1 / -1; flex-basis: auto; min-width: 0; }
+  .patients-date, .patients-date select, .patients-date input { min-width: 0; width: 100%; }
   .patients-filter-button { grid-column: 1 / -1; }
   .patients-filter-button, .patients-clear-button, .patients-export-button { width: 100%; }
   .patients-table-wrap table,
