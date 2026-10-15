@@ -263,11 +263,13 @@ const handlePayment=async(q,s,treatmentId)=>{
     const ethDate=q.body.ethDate||ethiopianDate(date);
     const note=(q.body.note||'').trim();
     const ref=(q.body.ref||'').trim();
+    const ticketNo=(q.body.ticketNo||'').trim();
 
     const result=addPayment(t,{
       amount:Number(q.body.amount||0),
       date,
       ethDate,
+      ticketNo,
       note,
       ref,
       receivedAt:new Date()
@@ -308,7 +310,7 @@ const handlePayment=async(q,s,treatmentId)=>{
       ethDate,
       patientName:p.patientName,
       cardNumber:p.cardNumber,
-      ticketNo:t.ticketNo||p.ticketNo,
+      ticketNo:result.payment.ticketNo||t.ticketNo||p.ticketNo,
       treatment:t,
       payment:result.payment
     });

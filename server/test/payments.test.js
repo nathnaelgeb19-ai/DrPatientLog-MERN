@@ -1065,3 +1065,24 @@ test('legacy patients carry their existing ticket onto the synthetic treatment',
   assert.equal(flattenPayments(normalized)[0].ticketNo, 'L-1');
 });
 
+test('each received payment records its own ticket number', () => {
+  const t = normalizeTreatment({ _id: 't1', procedure: 'Filling', totalFee: 1000, doctorPct: 10, paidAmount: 200, balance: 800, ticketNo: 'T-1' });
+
+  addPayment(t, { amount: 300, date: '2026-03-01', ticketNo: 'R-2' });
+  addPayment(t, { amount: 200, date: '2026-04-01' });
+
+  assert.equal(t.payments[0].ticketNo, 'T-1');
+  assert.equal(t.payments[1].ticketNo, 'R-2');
+  assert.equal(t.payments[2].ticketNo, '');
+  assert.deepEqual(t.payments.map(p => p.ticketNo), ['T-1', 'R-2', '']);
+});
+
+test('flattened payment rows prefer the payment ticket over the treatment ticket', () => {
+  const t = normalizeTreatment({ _id: 't1', procedure: 'Filling', totalFee: 1000, doctorPct: 10, paidAmount: 200, balance: 800, ticketNo: 'T-1' });
+  addPayment(t, { amount: 300, date: '2026-03-01', ticketNo: 'R-2' });
+
+  const rows = flattenPayments({ _id: 'p1', patientName: 'Abebe', treatments: [t] });
+  assert.equal(rows[0].ticketNo, 'T-1');
+  assert.equal(rows[1].ticketNo, 'R-2');
+});
+

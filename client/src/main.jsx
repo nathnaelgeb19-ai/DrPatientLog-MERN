@@ -1713,6 +1713,7 @@ function ReceivePaymentModal({patient,treatment,onClose,onSuccess}){
   const[amount,setAmount]=useState('');
   const[date,setDate]=useState(()=>new Date().toLocaleDateString('en-CA',{timeZone:'Africa/Addis_Ababa'}));
   const[note,setNote]=useState('');
+  const[ticketNo,setTicketNo]=useState(()=>treatment.ticketNo||patient.ticketNo||'');
   const[busy,setBusy]=useState(false);
   const[err,setErr]=useState('');
   const ref=useRef(`${Date.now().toString(36)}-${Math.random().toString(36).slice(2,10)}`);
@@ -1740,6 +1741,7 @@ function ReceivePaymentModal({patient,treatment,onClose,onSuccess}){
         amount:numAmount,
         date,
         ethDate:ethiopianDate(date),
+        ticketNo:ticketNo.trim(),
         note:note.trim(),
         ref:ref.current
       });
@@ -1824,6 +1826,15 @@ function ReceivePaymentModal({patient,treatment,onClose,onSuccess}){
         </label>
 
         <label className="patient-form-wide">
+          <span>Ticket number <em>Optional</em></span>
+          <input
+            placeholder="e.g. 1024"
+            value={ticketNo}
+            onChange={e=>setTicketNo(e.target.value)}
+          />
+        </label>
+
+        <label className="patient-form-wide">
           <span>Payment note / method <em>Optional</em></span>
           <input
             placeholder="e.g. Cash, CBE Birr, Telebirr, Installment"
@@ -1891,6 +1902,7 @@ function PaymentHistoryModal({patient,treatment,onClose}){
                 <th>#</th>
                 <th>Date</th>
                 <th>Amount</th>
+                <th>Ticket</th>
                 <th>Note / Method</th>
                 <th>Recorded at</th>
               </tr>
@@ -1906,6 +1918,7 @@ function PaymentHistoryModal({patient,treatment,onClose}){
                   <td>
                     <b style={{color:'var(--mint-text)'}}>{money(p.amount)}</b>
                   </td>
+                  <td>{p.ticketNo||treatment.ticketNo||'—'}</td>
                   <td>{p.note||'—'}</td>
                   <td>
                     <small style={{color:'var(--muted)'}}>

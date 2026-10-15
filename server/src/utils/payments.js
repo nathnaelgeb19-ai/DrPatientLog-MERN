@@ -19,6 +19,7 @@ const makeInitialPayment = ({
   date,
   ethDate,
   note,
+  ticketNo,
   receivedAt
 } = {}) => {
   const value = round2(amount);
@@ -27,6 +28,7 @@ const makeInitialPayment = ({
     ethDate: ethDate || '',
     amount: value,
     commission: commissionFor(value, pct),
+    ticketNo: (ticketNo || '').trim(),
     note: note || 'Initial payment',
     ref: '',
     receivedAt: receivedAt || null
@@ -44,6 +46,7 @@ const normalizePayment = (payment, pct = DEFAULT_PCT) => {
     ethDate: payment?.ethDate || '',
     amount,
     commission,
+    ticketNo: (payment?.ticketNo || '').trim(),
     note: payment?.note || '',
     ref: payment?.ref || '',
     receivedAt: payment?.receivedAt || null
@@ -82,6 +85,7 @@ const normalizeTreatment = (treatment, defaults = {}) => {
       date: defaults.date,
       ethDate: defaults.ethDate,
       note: defaults.note || 'Initial payment',
+      ticketNo: t.ticketNo,
       receivedAt: defaults.receivedAt
     })];
   }
@@ -279,6 +283,7 @@ const addPayment = (treatment, input = {}) => {
     date: input.date,
     ethDate: input.ethDate,
     amount,
+    ticketNo: input.ticketNo,
     note: input.note,
     ref,
     receivedAt: input.receivedAt
@@ -307,6 +312,7 @@ const adjustTreatmentPayments = (treatment, targetPaid, options = {}) => {
     ethDate: p.ethDate || '',
     amount: round2(p.amount),
     commission: round2(p.commission),
+    ticketNo: p.ticketNo || '',
     note: p.note || '',
     ref: p.ref || '',
     receivedAt: p.receivedAt || null
@@ -326,6 +332,7 @@ const adjustTreatmentPayments = (treatment, targetPaid, options = {}) => {
         date: options.date,
         ethDate: options.ethDate,
         amount: delta,
+        ticketNo: options.ticketNo,
         note: options.note || 'Payment recorded on edit',
         receivedAt: options.receivedAt || new Date()
       }, pct));
@@ -344,6 +351,7 @@ const adjustTreatmentPayments = (treatment, targetPaid, options = {}) => {
           date: payment.date,
           ethDate: payment.ethDate,
           amount: round2(payment.amount - excess),
+          ticketNo: payment.ticketNo,
           note: payment.note,
           ref: payment.ref,
           receivedAt: payment.receivedAt
@@ -405,7 +413,7 @@ const buildPatientPayload = (body, doctorId, existingDoc = null) => {
         payments = adjustTreatmentPayments(
           { payments: existingPayments, doctorPct: pct, totalFee: fee },
           submittedPaid,
-          { date: today, ethDate: ethiopianDate(today), note: 'Payment recorded on edit' }
+          { date: today, ethDate: ethiopianDate(today), note: 'Payment recorded on edit', ticketNo: existing.ticketNo }
         );
 
         paidAmount = round2(payments.reduce((sum, p) => sum + Number(p.amount || 0), 0));
@@ -458,6 +466,7 @@ const buildPatientPayload = (body, doctorId, existingDoc = null) => {
             pct,
             date: tDate,
             ethDate: tEth,
+            ticketNo: t.ticketNo,
             note: paymentType === 'full'
               ? 'Initial full payment'
               : 'Initial partial payment',
@@ -511,7 +520,7 @@ const flattenNormalized = normalized => {
         patientId: normalized._id,
         patientName: normalized.patientName,
         cardNumber: normalized.cardNumber,
-        ticketNo: treatment.ticketNo || normalized.ticketNo,
+        ticketNo: payment.ticketNo || treatment.ticketNo || normalized.ticketNo,
         procedure: treatment.procedure,
         doctorPct: treatment.doctorPct,
         treatmentId: treatment._id,
