@@ -1,5 +1,9 @@
-import React,{useEffect,useState,useRef,useCallback,lazy,Suspense,useMemo}from'react';import{createRoot}from'react-dom/client';import{createPortal}from'react-dom';import{BrowserRouter,useNavigate,useLocation,Routes,Route,Link,Navigate}from'react-router-dom';import{LayoutDashboard,Users,UserRoundCog,CalendarDays,Settings,LogOut,Plus,Search,Menu,X,Stethoscope,ShieldCheck,ArrowUpRight,Trash2,Edit3,CheckCircle2,ReceiptText,ClipboardList,Database,Send,Download,Upload,RefreshCw,KeyRound,UserCog,Palette,Sun,Moon,Monitor,Bell,Clock,ChevronDown,ChevronLeft,ChevronRight,FileText,Eye,EyeOff,CornerDownLeft,Sparkles,TrendingUp,Activity,BarChart3,Check,Lock}from'lucide-react';import{api}from'./api';import{ethiopianDate,ETH_MONTHS,ethWeekday,ethMonthLength,ethPrevMonth,ethNextMonth}from'./ethiopian.js';import'./styles.css';import doctorLogo from './assets/aa-logo.svg';
+import React,{useEffect,useState,useRef,useCallback,lazy,Suspense,useMemo}from'react';import{createRoot}from'react-dom/client';import{createPortal}from'react-dom';import{BrowserRouter,useNavigate,useLocation,Routes,Route,Link,Navigate}from'react-router-dom';import{LayoutDashboard,Users,UserRoundCog,CalendarDays,Settings,LogOut,Plus,Search,Menu,X,Stethoscope,ShieldCheck,ArrowUpRight,Trash2,Edit3,CheckCircle2,ReceiptText,ClipboardList,Database,Send,Download,Upload,RefreshCw,KeyRound,UserCog,Palette,Sun,Moon,Monitor,Bell,Clock,ChevronDown,ChevronLeft,ChevronRight,FileText,Eye,EyeOff,CornerDownLeft,Sparkles,TrendingUp,Activity,BarChart3,Check,Lock,MoreVertical}from'lucide-react';import{api}from'./api';import{ethiopianDate,ETH_MONTHS,ethWeekday,ethMonthLength,ethPrevMonth,ethNextMonth}from'./ethiopian.js';import'./styles.css';import doctorLogo from './assets/aa-logo.svg';
 const money=n=>`${Number(n||0).toFixed(2)} ETB`;
+const ethDateSortKey=ethDate=>{const parts=String(ethDate||'').trim().split(/\s+/);if(parts.length<3)return'';const year=Number(parts[parts.length-1]);const day=Number(parts[parts.length-2]);const mi=ETH_MONTHS.indexOf(parts.slice(0,-2).join(' ')||parts[0]);if(!Number.isInteger(year)||!Number.isInteger(day)||mi<0)return'';return`${year}-${String(mi+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`};
+const paymentDateKey=p=>(/^\d{4}-\d{2}-\d{2}$/.test(p?.date||'')?p.date:ethDateSortKey(p?.ethDate));
+const sortedPayments=payments=>{const undated='9999-99-99';return[...(payments||[])].sort((a,b)=>{const ak=paymentDateKey(a)||undated,bk=paymentDateKey(b)||undated;return ak===bk?0:ak<bk?-1:1})};
+const paymentTimeKey=p=>{const t=p&&p.receivedAt?new Date(p.receivedAt).getTime():0;return Number.isFinite(t)?t:0};
 const EarningsChart=lazy(()=>import('./components/EarningsChart.jsx'));
 function PageHead({title,subtitle,action}){return <div className="page-head"><div><p className="eyebrow">HAKIM</p><h1>{title}</h1><p>{subtitle}</p></div>{action}</div>}
 function Loading(){return <div className="loading"><div/><div/><div/></div>}
@@ -514,67 +518,124 @@ function ResetPassword({clinic}){
 
      <p className="auth-foot"><Link to="/login">{done?'Back to sign in':'Cancel'}</Link></p>
  </AuthLayout>
-}const PatientTable=React.memo(function PatientTable({rows,onEdit,onDelete,onDeleteTreatment,onNewTreatment,perTreatment=false,treatmentFilter=null}){
-  const[deleting,setDeleting]=useState(null);
-  const hasActions=!!(onEdit||onDelete||onDeleteTreatment||onNewTreatment);
+}const PatientTable=React.memo(function PatientTable({rows,onEdit,onDelete,onDeleteTreatment,onDeletePayment,onNewTreatment,perTreatment=false,treatmentFilter=null}){
+  const[menu,setMenu]=useState(null);
+  const hasActions=!!(onEdit||onDelete||onDeleteTreatment||onDeletePayment||onNewTreatment);
   const items=useMemo(()=>{
     const out=[];
     (rows||[]).forEach(p=>{
-      let list=perTreatment&&p.treatments&&p.treatments.length?p.treatments:[null];
-      if(perTreatment&&treatmentFilter)list=list.filter(t=>treatmentFilter(t,p));
+      if(!perTreatment){
+        out.push({key:String(p._id),patient:p,treatment:null,payment:null,isFirstInTreatment:true,isLastInTreatment:true,isFirstPatient:true,isLastPatient:true,isOriginal:true});
+        return;
+      }
+      let list=p.treatments&&p.treatments.length?p.treatments:[null];
+      if(treatmentFilter)list=list.filter(t=>treatmentFilter(t,p));
       if(!list.length)list=[null];
-      list.forEach((t,i)=>out.push({key:String(p._id)+':'+(t?String(t._id??i):i),patient:p,treatment:t,isFirst:i===0,isOriginal:i===list.length-1}));
+      list.forEach((t,i)=>{
+        const rawPayments=(t&&t.payments)||[];
+        const payments=sortedPayments(rawPayments);
+        const treatLast=i===list.length-1;
+        if(t&&payments.length){
+          let running=0;
+          const feeAmt=Number(t.totalFee||0);
+          const chronological=payments.map(pay=>{
+            running=Math.min(feeAmt,running+Number(pay.amount||0));
+            return {payment:pay,paymentIndex:rawPayments.indexOf(pay),runningBalance:Math.max(0,Number((feeAmt-running).toFixed(2)))};
+          });
+          const ordered=[...chronological].reverse();
+          ordered.forEach((entry,j)=>{
+            out.push({
+              key:String(p._id)+':'+String(t._id??i)+':'+(entry.payment._id||j),
+              patient:p,treatment:t,payment:entry.payment,
+              paymentIndex:entry.paymentIndex,
+              runningBalance:entry.runningBalance,
+              sortKey:paymentDateKey(entry.payment)||'',
+              sortTime:paymentTimeKey(entry.payment),
+              isFirstInTreatment:j===0,
+              isLastInTreatment:j===ordered.length-1,
+              isFirstPatient:i===0&&j===0,
+              isLastPatient:treatLast&&j===ordered.length-1,
+              isOriginal:treatLast&&j===0
+            });
+          });
+        }else{
+          const fallback={date:t?t.date:p.gregDate,ethDate:t?t.ethDate:p.ethDate};
+          out.push({
+            key:String(p._id)+':'+(t?String(t._id??i):i),
+            patient:p,treatment:t,payment:null,
+            runningBalance:t?Number(t.balance||0):0,
+            sortKey:paymentDateKey(fallback)||'',
+            sortTime:0,
+            isFirstInTreatment:true,isLastInTreatment:true,
+            isFirstPatient:i===0,isLastPatient:treatLast,isOriginal:treatLast
+          });
+        }
+      });
     });
+    if(perTreatment){
+      out.sort((a,b)=>{
+        const ak=a.sortKey||'', bk=b.sortKey||'';
+        if(ak!==bk){ if(!ak)return 1; if(!bk)return -1; return ak<bk?1:-1; }
+        return (b.sortTime||0)-(a.sortTime||0);
+      });
+    }
     return out;
   },[rows,perTreatment,treatmentFilter]);
+  useEffect(()=>{
+    if(!menu)return;
+    const close=()=>setMenu(null);
+    const onKey=e=>e.key==='Escape'&&close();
+    const onClick=e=>{if(e.target.closest&&e.target.closest('.row-menu'))return;close()};
+    window.addEventListener('scroll',close,true);
+    window.addEventListener('resize',close);
+    window.addEventListener('keydown',onKey);
+    document.addEventListener('click',onClick);
+    return()=>{window.removeEventListener('scroll',close,true);window.removeEventListener('resize',close);window.removeEventListener('keydown',onKey);document.removeEventListener('click',onClick)};
+  },[menu]);
+  const openMenu=(it,e)=>{e.stopPropagation();const r=e.currentTarget.getBoundingClientRect();const up=window.innerHeight-r.bottom<250;const right=Math.min(Math.max(window.innerWidth-r.right,8),window.innerWidth-8);setMenu(menu&&menu.key===it.key?null:{key:it.key,it,rect:{top:r.bottom,right,up,menuBottom:window.innerHeight-r.top}})};
   return <div className="table-wrap"><table>
 <thead><tr><th scope="col">Patient</th><th scope="col">Card</th><th scope="col">Ticket</th><th scope="col">Procedure</th><th scope="col">Fee</th>{perTreatment&&<th scope="col">Paid</th>}{perTreatment&&<th scope="col">Balance</th>}<th scope="col">Cut</th>{hasActions&&<th scope="col">Actions</th>}</tr></thead>
 <tbody>{items.length?items.map(it=>{
   const p=it.patient;
   const t=it.treatment;
+  const pay=it.payment;
   const procedure=t?t.procedure:p.procedure;
   const fee=t?Number(t.totalFee||0):Number(p.totalFee||0);
-  const paid=t?Number(t.paidAmount||0):Number(p.paidAmount||0);
-  const bal=t?Number(t.balance||0):Number(p.balance||0);
-  const cut=t?Number(t.myEarning||0):Number(p.myEarning||0);
-  return <tr key={it.key}>
+  const paid=pay?Number(pay.amount||0):(t?Number(t.paidAmount||0):Number(p.paidAmount||0));
+  const bal=pay?Number(it.runningBalance||0):(t?Number(t.balance||0):Number(p.balance||0));
+  const cut=pay?Number(pay.commission||0):(t?Number(t.myEarning||0):Number(p.myEarning||0));
+  const rowMenuKey=it.key;
+  const rowDate=pay?(pay.ethDate||pay.date):(perTreatment&&t?(t.ethDate||t.date||p.ethDate):p.ethDate);
+  return <tr key={it.key} className={perTreatment&&!it.isFirstInTreatment?'payment-continuation-row':''}>
 <td>
   <b>{p.patientName}</b>
-  <small>{perTreatment&&t?(t.ethDate||t.date||p.ethDate):p.ethDate}</small>
-  <small>{p.createdAt?new Date(p.createdAt).toLocaleString():''}</small>
+  <small>{rowDate}</small>
+  <small>{pay&&pay.receivedAt?new Date(pay.receivedAt).toLocaleString():(p.createdAt?new Date(p.createdAt).toLocaleString():'')}</small>
 </td>
 <td>{p.cardNumber||' '}</td>
 <td>{(t&&t.ticketNo)||p.ticketNo||' '}</td>
 <td>{procedure}</td>
-<td>{money(fee)}{!perTreatment&&bal>0&&<span className="pill warn small" style={{marginLeft:6,fontSize:'10px'}} title="Outstanding balance">Bal: {money(bal)}</span>}</td>
+<td>{it.isFirstInTreatment?money(fee):<span style={{color:'var(--muted)'}}>—</span>}{!perTreatment&&bal>0&&<span className="pill warn small" style={{marginLeft:6,fontSize:'10px'}} title="Outstanding balance">Bal: {money(bal)}</span>}</td>
 {perTreatment&&<td>{money(paid)}</td>}
 {perTreatment&&<td>{bal>0?<b style={{color:'var(--danger-text)'}}>{money(bal)}</b>:<span style={{color:'var(--muted)'}}>{money(0)}</span>}</td>}
 <td><b>{money(cut)}</b></td>
-{hasActions&&<td className="row-actions">
-  <span className="row-actions-inner">
-  {onEdit&&<button className="icon patient-row-action-edit" title="Edit patient" onClick={()=>onEdit(p)}>
-    <Edit3 size={15}/>
-    <span>Edit</span>
-  </button>}
-
-  {onNewTreatment&&<button className="icon patient-row-action-new" title="New treatment for this patient" onClick={()=>onNewTreatment(p)}>
-    <Plus size={15}/>
-    <span>Treatment</span>
-  </button>}
-
-  {onDeleteTreatment&&t&&<button className={'icon danger patient-row-action-delete patient-row-action-delete-treatment'+(deleting==='t:'+t._id?' is-loading':'')} title={`Delete treatment: ${procedure}`} disabled={deleting==='t:'+t._id} onClick={async()=>{setDeleting('t:'+t._id);try{await onDeleteTreatment(p,t)}finally{setDeleting(null)}}}>
-    {deleting==='t:'+t._id?<Spinner/>:<Trash2 size={15}/>}
-    <span>Del</span>
-  </button>}
-
-  {onDelete&&it.isOriginal&&<button className={'icon danger patient-row-action-delete patient-row-action-delete-patient'+(deleting==='p:'+p._id?' is-loading':'')} title={`Delete ${p.patientName} and all treatments`} disabled={deleting==='p:'+p._id} onClick={async()=>{setDeleting('p:'+p._id);try{await onDelete(p)}finally{setDeleting(null)}}}>
-    {deleting==='p:'+p._id?<Spinner/>:<Trash2 size={15}/>}
-    <span>Patient</span>
-  </button>}
-  </span>
-</td>}
+{hasActions?<td className="row-actions">
+  <button type="button" className={'icon row-menu-toggle'+(menu&&menu.key===rowMenuKey?' is-open':'')} title="More actions" aria-label="More actions" aria-haspopup="menu" aria-expanded={menu&&menu.key===rowMenuKey?'true':'false'} onClick={e=>openMenu(it,e)}>
+    <MoreVertical size={16}/>
+  </button>
+</td>:null}
 </tr>;
-}):<tr><td colSpan={(perTreatment?8:6)+(hasActions?1:0)} className="empty">No records found.</td></tr>}</tbody></table></div>});
+}):<tr><td colSpan={(perTreatment?8:6)+(hasActions?1:0)} className="empty">No records found.</td></tr>}</tbody></table>
+{menu&&createPortal((
+  <div className="row-menu" role="menu" style={menu.rect.up?{bottom:menu.rect.menuBottom-4,right:menu.rect.right}:{top:menu.rect.top+6,right:menu.rect.right}}>
+    {onEdit&&<button type="button" role="menuitem" className="row-menu-item" onClick={()=>{setMenu(null);onEdit(menu.it.patient)}}><Edit3 size={15}/><span>Edit patient</span></button>}
+    {onNewTreatment&&<button type="button" role="menuitem" className="row-menu-item" onClick={()=>{setMenu(null);onNewTreatment(menu.it.patient)}}><Plus size={15}/><span>New treatment</span></button>}
+    {menu.it.payment&&onDeletePayment&&<button type="button" role="menuitem" className="row-menu-item danger" onClick={()=>{const{patient,treatment,payment,paymentIndex}=menu.it;setMenu(null);onDeletePayment(patient,treatment,payment,paymentIndex)}}><Trash2 size={15}/><span>Delete this payment</span></button>}
+    {menu.it.treatment&&onDeleteTreatment&&<button type="button" role="menuitem" className="row-menu-item danger" onClick={()=>{setMenu(null);onDeleteTreatment(menu.it.patient,menu.it.treatment)}}><Trash2 size={15}/><span>Delete treatment</span></button>}
+    {onDelete&&<button type="button" role="menuitem" className="row-menu-item danger" onClick={()=>{setMenu(null);onDelete(menu.it.patient)}}><Trash2 size={15}/><span>Delete patient</span></button>}
+  </div>
+),document.body)}
+</div>});
 PatientTable.displayName='PatientTable';
 function Dashboard({clinic}){
   const[d,setD]=useState();
@@ -944,6 +1005,18 @@ function Patients(){
   const editPatient=useCallback(r=>{window.location.href='/patients/edit/'+r._id},[]);
   const newTreatment=useCallback(r=>nav('/patients/'+r._id+'/treatment/new'),[nav]);
 
+  const delPayment=useCallback(async(r,t,pay,index)=>{
+    if(!t||!pay)return;
+    const when=pay.ethDate||pay.date||'';
+    if(!window.confirm(`Delete this ${money(pay.amount)} payment${when?` (${when})`:''} for ${r.patientName}? The treatment and its other payments stay. This cannot be undone.`))return;
+    try{
+      await api.del('/patients/'+r._id+'/treatments/'+t._id+'/payments/'+(pay._id||index));
+      loadRef.current();
+    }catch(e){
+      alert(e.message||'Unable to delete payment.');
+    }
+  },[]);
+
   const totalFees=useMemo(()=>rows.reduce((a,r)=>a+Number(r.totalFee||0),0),[rows]);
   const totalCut=useMemo(()=>rows.reduce((a,r)=>a+Number(r.myEarning||0),0),[rows]);
   const totalBal=useMemo(()=>rows.reduce((a,r)=>a+Number(r.balance||0),0),[rows]);
@@ -1066,6 +1139,7 @@ function Patients(){
           onNewTreatment={newTreatment}
           onDelete={del}
           onDeleteTreatment={delTreatment}
+          onDeletePayment={delPayment}
         />
       </div>
 

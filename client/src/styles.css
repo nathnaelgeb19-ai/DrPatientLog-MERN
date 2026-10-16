@@ -842,10 +842,7 @@ nav a.active .nav-icon { color: var(--accent); transform: translateY(-1px) scale
   transition: background var(--dur-1) ease, color var(--dur-1) ease, transform var(--dur-1) ease;
 }
 .icon:hover { background: var(--surface-2); color: var(--ink); }
-.icon.danger:hover, .patient-row-action-delete:hover { background: var(--danger-soft); color: var(--danger); }
-.patient-row-action-new:hover { background: var(--mint-soft); color: var(--mint-text); }
-.patient-row-action-delete-patient { background: var(--danger-soft); color: var(--danger); }
-.patient-row-action-delete-patient:hover { background: var(--danger); color: #fff; }
+.icon.danger:hover { background: var(--danger-soft); color: var(--danger); }
 .mobile { display: none; }
 
 button:disabled, .primary:disabled, .ghost:disabled {
@@ -979,8 +976,52 @@ tbody tr:hover td { background: var(--surface-2); }
 tbody tr:last-child td { border-bottom: 0; }
 td b { color: var(--ink); }
 td small { display: block; font-size: 11px; color: var(--faint); margin-top: 3px; }
+tr.payment-continuation-row td { border-bottom: 1px dashed var(--line-2); }
+tr.payment-continuation-row td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+tr.payment-continuation-row td:first-child b { color: var(--muted); }
 .row-actions { text-align: right; white-space: nowrap; }
 .row-actions-inner { display: inline-flex; align-items: center; gap: 6px; vertical-align: middle; }
+.row-menu-toggle { padding: 7px; border-radius: 10px; color: var(--muted); }
+.row-menu-toggle:hover, .row-menu-toggle.is-open { background: var(--surface-2); color: var(--ink); }
+.row-menu-toggle.is-open { color: var(--accent); }
+.row-menu {
+  position: fixed;
+  z-index: 91;
+  min-width: 210px;
+  max-width: calc(100vw - 24px);
+  padding: 6px;
+  display: grid;
+  gap: 2px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow-pop);
+  animation: popIn var(--dur-1) var(--ease-out) both;
+}
+.row-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--dur-1) ease, color var(--dur-1) ease;
+}
+.row-menu-item:hover { background: var(--surface-2); color: var(--ink); }
+.row-menu-item svg { flex: none; color: var(--muted); }
+.row-menu-item.danger { color: var(--danger); }
+.row-menu-item.danger svg { color: var(--danger); }
+.row-menu-item.danger:hover { background: var(--danger-soft); color: var(--danger); }
 .empty { text-align: center; color: var(--muted); padding: 28px; }
 
 /* --------------------------------------------------------------------------
@@ -2213,12 +2254,6 @@ input[type="datetime-local"]::-webkit-datetime-edit {
 @media (max-width: 1024px) {
   .app { grid-template-columns: 232px minmax(0, 1fr); }
   .content { padding: 28px 26px 60px; }
-}
-
-@media (max-width: 900px) {
-  .patient-row-action-edit span,
-  .patient-row-action-new span,
-  .patient-row-action-delete span { display: none; }
 }
 
 @media (max-width: 860px) {
