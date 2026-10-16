@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {sortRowsByPaymentDate} from '../src/routes/reports.js';
 
 // Reads the report source directly so the CSS structure can be checked without
 // a database. The regression this guards against: the base `.status-*` rules
@@ -83,4 +84,42 @@ test('monthly report lists a ticket number column', () => {
   assert.ok(source.includes('<th>Ticket</th>'), 'report header should include Ticket');
   assert.ok(source.includes('escapeHtml(row.ticketNo)'), 'report rows should render the ticket number');
   assert.ok(source.includes('colspan="8"'), 'empty state should span the eight columns');
+});
+
+test('monthly report orders rows by payment date, not visit date', () => {
+  assert.ok(
+    source.includes('sortRowsByPaymentDate(monthSum.rows)'),
+    'rows should be sorted by the date the payment was received'
+  );
+
+  const rows = [
+    { patientName: 'Visit day', gregDate: '2026-02-03', ethDate: 'ጥር 25 2018' },
+    { patientName: 'Later balance payment', gregDate: '2026-02-27', ethDate: 'ጥር 19 2018' },
+    { patientName: 'Same day recorded later', gregDate: '2026-02-03', ethDate: 'ጥር 25 2018' },
+    { patientName: 'Undated legacy payment', gregDate: '', ethDate: '' }
+  ];
+
+  const sorted = sortRowsByPaymentDate(rows).map(r => r.patientName);
+
+  assert.deepEqual(sorted, [
+    'Visit day',
+    'Same day recorded later',
+    'Later balance payment',
+    'Undated legacy payment'
+  ]);
+  assert.deepEqual(
+    rows.map(r => r.patientName),
+    ['Visit day', 'Later balance payment', 'Same day recorded later', 'Undated legacy payment'],
+    'sorting must not mutate the source array'
+  );
+});
+
+test('monthly report falls back to the Ethiopian date when the Gregorian date is missing', () => {
+  const sorted = sortRowsByPaymentDate([
+    { gregDate: '', ethDate: 'ጥር 20 2018' },
+    { gregDate: '', ethDate: 'ጥር 5 2018' },
+    { gregDate: '', ethDate: 'ህዳር 30 2017' }
+  ]);
+
+  assert.deepEqual(sorted.map(r => r.ethDate), ['ህዳር 30 2017', 'ጥር 5 2018', 'ጥር 20 2018']);
 });

@@ -22,6 +22,38 @@ const money = value => Number(value || 0).toLocaleString('en-US', {
   maximumFractionDigits: 2
 });
 
+const ethDateSortKey = ethDate => {
+  const parts = String(ethDate || '').trim().split(/\s+/);
+  if (parts.length < 3) return '';
+
+  const year = Number(parts[parts.length - 1]);
+  const day = Number(parts[parts.length - 2]);
+  const monthIndex = ETH_MONTHS.indexOf(parts.slice(0, -2).join(' ') || parts[0]);
+
+  if (!Number.isInteger(year) || !Number.isInteger(day) || monthIndex < 0) return '';
+
+  return `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+};
+
+const paymentDateKey = row =>
+  (/^\d{4}-\d{2}-\d{2}$/.test(row?.gregDate || '')
+    ? row.gregDate
+    : ethDateSortKey(row?.ethDate));
+
+// Rows arrive grouped by visit date, so a later payment of an outstanding
+// balance would sit under the original visit instead of its own date. Order
+// every row by the date the money was actually received; undated legacy rows
+// go last and same-date rows keep their recorded order.
+export const sortRowsByPaymentDate = rows => {
+  const undated = '9999-99-99';
+
+  return [...(rows || [])].sort((a, b) => {
+    const aKey = paymentDateKey(a) || undated;
+    const bKey = paymentDateKey(b) || undated;
+    return aKey === bKey ? 0 : aKey < bKey ? -1 : 1;
+  });
+};
+
 export async function buildMonthlyHtml(doctor, query = {}) {
   const q = { doctor, query };
   const requestedMonth = q.query.month;
@@ -45,7 +77,7 @@ if (requestedMonth && Number.isInteger(requestedYear) && requestedYear > 1900) {
 
     const normalized = patients.map(normalizePatient);
     const monthSum = summarizeNormalized(normalized, {ethPattern: new RegExp(monthPattern)});
-    const rows = monthSum.rows;
+    const rows = sortRowsByPaymentDate(monthSum.rows);
     const income = monthSum.income;
     const earnings = monthSum.cut;
 
