@@ -1,5 +1,6 @@
 import React,{useEffect,useState,useRef,useCallback,lazy,Suspense,useMemo}from'react';import{createRoot}from'react-dom/client';import{createPortal}from'react-dom';import{BrowserRouter,useNavigate,useLocation,Routes,Route,Link,Navigate}from'react-router-dom';import{LayoutDashboard,Users,UserRoundCog,CalendarDays,Settings,LogOut,Plus,Search,Menu,X,Stethoscope,ShieldCheck,ArrowUpRight,Trash2,Edit3,CheckCircle2,ReceiptText,ClipboardList,Database,Send,Download,Upload,RefreshCw,KeyRound,UserCog,Palette,Sun,Moon,Monitor,Bell,Clock,ChevronDown,ChevronLeft,ChevronRight,FileText,Eye,EyeOff,CornerDownLeft,Sparkles,TrendingUp,Activity,BarChart3,Check,Lock,MoreVertical}from'lucide-react';import{api}from'./api';import{ethiopianDate,ETH_MONTHS,ethWeekday,ethMonthLength,ethPrevMonth,ethNextMonth}from'./ethiopian.js';import'./styles.css';import doctorLogo from './assets/aa-logo.svg';
 const money=n=>`${Number(n||0).toFixed(2)} ETB`;
+const titleCase=v=>String(v||'').replace(/\b[\p{L}]/gu,c=>c.toUpperCase());
 const ethDateSortKey=ethDate=>{const parts=String(ethDate||'').trim().split(/\s+/);if(parts.length<3)return'';const year=Number(parts[parts.length-1]);const day=Number(parts[parts.length-2]);const mi=ETH_MONTHS.indexOf(parts.slice(0,-2).join(' ')||parts[0]);if(!Number.isInteger(year)||!Number.isInteger(day)||mi<0)return'';return`${year}-${String(mi+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`};
 const paymentDateKey=p=>(/^\d{4}-\d{2}-\d{2}$/.test(p?.date||'')?p.date:ethDateSortKey(p?.ethDate));
 const sortedPayments=payments=>{const undated='9999-99-99';return[...(payments||[])].sort((a,b)=>{const ak=paymentDateKey(a)||undated,bk=paymentDateKey(b)||undated;return ak===bk?0:ak<bk?-1:1})};
@@ -608,7 +609,7 @@ function ResetPassword({clinic}){
   const rowDate=pay?(pay.ethDate||pay.date):(perTreatment&&t?(t.ethDate||t.date||p.ethDate):p.ethDate);
   return <tr key={it.key} className={perTreatment&&!it.isFirstInTreatment?'payment-continuation-row':''}>
 <td>
-  <b>{p.patientName}</b>
+  <b>{p.patientName||'Untitled draft'}{p.status==='draft'&&<span className="pill draft" style={{marginLeft:6,fontSize:'10px'}} title="Incomplete draft record">Draft</span>}</b>
   <small>{rowDate}</small>
   <small>{pay&&pay.receivedAt?new Date(pay.receivedAt).toLocaleString():(p.createdAt?new Date(p.createdAt).toLocaleString():'')}</small>
 </td>
@@ -926,6 +927,7 @@ function Patients(){
   const[from,setFrom]=useState('');
   const[to,setTo]=useState('');
   const[balance,setBalance]=useState('');
+  const[status,setStatus]=useState('all');
   const[busy,setBusy]=useState('');
   const filtersRef=useRef(null);
   const lastScrollY=useRef(0);
@@ -953,8 +955,8 @@ function Patients(){
   },[]);
 
   const buildQuery=(over={})=>{
-    const v=k=>over[k]!==undefined?over[k]:{q,from,to,balance}[k];
-    return `/patients?q=${encodeURIComponent(v('q'))}&from=${v('from')}&to=${v('to')}&balance=${v('balance')}`;
+    const v=k=>over[k]!==undefined?over[k]:{q,from,to,balance,status}[k];
+    return `/patients?q=${encodeURIComponent(v('q'))}&from=${v('from')}&to=${v('to')}&balance=${v('balance')}&status=${v('status')}`;
   };
 
   const load=(over={})=>{
@@ -969,6 +971,11 @@ function Patients(){
     load({balance:value});
   };
 
+  const changeStatus=value=>{
+    setStatus(value);
+    load({status:value});
+  };
+
   useEffect(()=>{
     load();
   },[]);
@@ -978,8 +985,9 @@ function Patients(){
     setFrom('');
     setTo('');
     setBalance('');
+    setStatus('all');
     setBusy('clear');
-    api.get('/patients?q=&from=&to=&balance=').then(setRows).finally(()=>setBusy(''));
+    api.get('/patients?q=&from=&to=&balance=&status=all').then(setRows).finally(()=>setBusy(''));
   };
 
   const del=useCallback(async r=>{
@@ -1020,7 +1028,7 @@ function Patients(){
   const totalFees=useMemo(()=>rows.reduce((a,r)=>a+Number(r.totalFee||0),0),[rows]);
   const totalCut=useMemo(()=>rows.reduce((a,r)=>a+Number(r.myEarning||0),0),[rows]);
   const totalBal=useMemo(()=>rows.reduce((a,r)=>a+Number(r.balance||0),0),[rows]);
-  const activeFilters=!!(q.trim()||from||to||balance);
+  const activeFilters=!!(q.trim()||from||to||balance||status==='draft');
   const treatmentFilter=useMemo(()=>balance==='due'
     ?t=>Number(t.balance||0)>0
     :balance==='paid'
@@ -1065,6 +1073,15 @@ function Patients(){
             <option value="">All patients</option>
             <option value="due">With outstanding balance</option>
             <option value="paid">Fully settled</option>
+          </select>
+        </div>
+
+        <div className="patients-date">
+          <label>Record</label>
+          <select value={status} onChange={e=>changeStatus(e.target.value)}>
+            <option value="all">All records</option>
+            <option value="active">Active records</option>
+            <option value="draft">Drafts</option>
           </select>
         </div>
 
@@ -1149,6 +1166,7 @@ function Patients(){
 function PatientForm(){
   const nav=useNavigate();
   const loc=useLocation();
+  const toast=useToast();
   const addingTreatment=loc.pathname.includes('/treatment/new');
   const editing=loc.pathname.includes('/edit/');
   const id=addingTreatment?loc.pathname.split('/')[2]:loc.pathname.split('/').pop();
@@ -1175,7 +1193,8 @@ function PatientForm(){
     lastName:'',
     cardNumber:'',
     ticketNo:'',
-    doctorPct:4
+    doctorPct:4,
+    status:'active'
   });
 
   const[treatments,setTreatments]=useState([makeTreatment()]);
@@ -1184,6 +1203,7 @@ function PatientForm(){
   const[err,setErr]=useState('');
   const[busy,setBusy]=useState(false);
   const[sugBusy,setSugBusy]=useState(null);
+  const[showBreakdown,setShowBreakdown]=useState(false);
 
   useEffect(()=>{
     api.get('/patients/presets/list').then(setPresets);
@@ -1339,34 +1359,36 @@ function PatientForm(){
     if(i>-1&&i<fields.length-1){e.preventDefault();fields[i+1].focus();}
   };
 
-  const save=async e=>{
-    e.preventDefault();
+  const submitSave=async({draft=false}={})=>{
     setBusy(true);
     setErr('');
 
     try{
       const validTreatments=treatments.filter(t=>t.procedure.trim()||Number(t.totalFee)>0);
-      if(!validTreatments.length){
-        throw new Error('Please add at least one treatment procedure.');
-      }
-      for(let i=0;i<validTreatments.length;i++){
-        const t=validTreatments[i];
-        if(!t.procedure.trim()){
-          throw new Error(`${treatmentNo(i)} requires a procedure name.`);
+      if(!draft){
+        if(!validTreatments.length){
+          throw new Error('Please add at least one treatment procedure.');
         }
-        if(t.totalFee===''||isNaN(Number(t.totalFee))||Number(t.totalFee)<0){
-          throw new Error(`${treatmentNo(i)} requires a valid fee.`);
-        }
-        if(t.paymentType==='partial'){
-          const paid=Number(t.paidToday||0);
-          if(paid>Number(t.totalFee)){
-            throw new Error(`${treatmentNo(i)}: Amount paid today cannot exceed treatment fee.`);
+        for(let i=0;i<validTreatments.length;i++){
+          const t=validTreatments[i];
+          if(!t.procedure.trim()){
+            throw new Error(`${treatmentNo(i)} requires a procedure name.`);
+          }
+          if(t.totalFee===''||isNaN(Number(t.totalFee))||Number(t.totalFee)<0){
+            throw new Error(`${treatmentNo(i)} requires a valid fee.`);
+          }
+          if(t.paymentType==='partial'){
+            const paid=Number(t.paidToday||0);
+            if(paid>Number(t.totalFee)){
+              throw new Error(`${treatmentNo(i)}: Amount paid today cannot exceed treatment fee.`);
+            }
           }
         }
       }
 
       const data={
         ...f,
+        status:draft?'draft':(addingTreatment?f.status||'active':'active'),
         patientName:fullName,
         doctorPct:Number(f.doctorPct||4),
         totalFee,
@@ -1407,7 +1429,14 @@ function PatientForm(){
         ]
       };
 
-      await((editing||addingTreatment)?api.put('/patients/'+id,data):api.post('/patients',data));
+      const saved=(editing||addingTreatment)?await api.put('/patients/'+id,data):await api.post('/patients',data);
+      if(draft){
+        toast('Draft saved. It stays hidden from active records until you finalize it.');
+        if(!editing&&!addingTreatment&&saved&&saved._id){
+          nav('/patients/edit/'+saved._id,{replace:true});
+        }
+        return;
+      }
       nav('/patients');
     }catch(x){
       setErr(x.message);
@@ -1415,11 +1444,18 @@ function PatientForm(){
       setBusy(false);
     }
   };
+  const save=e=>{e.preventDefault();return submitSave();};
 
   return <>
     <PageHead
       title={addingTreatment?'New treatment':editing?'Edit patient':'New patient'}
-      subtitle={addingTreatment?`Record an additional treatment for ${fullName||'this patient'}.`:editing?'Update the patient visit record.':'Record a new patient visit.'}
+      subtitle={addingTreatment?`Record an additional treatment for ${fullName||'this patient'}.`:editing?(f.status==='draft'?'This is a draft — complete the details and save to finalize it.':'Update the patient visit record.'):'Record a new patient visit.'}
+      action={
+        <button type="button" className="ghost page-head-back" onClick={()=>nav('/patients')}>
+          <ChevronLeft size={16}/>
+          Cancel
+        </button>
+      }
     />
 
     <div className="patient-form-layout">
@@ -1443,20 +1479,35 @@ function PatientForm(){
           <div className="patient-form-grid">
 
             <label>
-              <span>Gregorian date</span>
+              <span>Ethiopian date</span>
               <input
-                type="date"
-                required
-                value={f.gregDate||''}
-                onChange={e=>set('gregDate',e.target.value)}
+                placeholder="e.g. ጥቅምት 9 2019"
+                value={f.ethDate||''}
+                onChange={e=>set('ethDate',e.target.value)}
               />
             </label>
 
             <label>
-              <span>Ethiopian date</span>
+              <span className="card-label-row">
+                Card number
+                <span className="date-tag">
+                  {f.gregDate?new Date(f.gregDate+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'Pick date'}
+                  <input
+                    type="date"
+                    required
+                    aria-label="Gregorian date"
+                    value={f.gregDate||''}
+                    onChange={e=>set('gregDate',e.target.value)}
+                  />
+                </span>
+              </span>
               <input
-                value={f.ethDate||'Calculated automatically'}
-                readOnly
+                required={!addingTreatment}
+                placeholder="Patient card number"
+                value={f.cardNumber||''}
+                readOnly={addingTreatment}
+                className={addingTreatment?'input-readonly-soft':undefined}
+                onChange={e=>set('cardNumber',e.target.value)}
               />
             </label>
 
@@ -1468,7 +1519,7 @@ function PatientForm(){
                 value={f.firstName||''}
                 readOnly={addingTreatment}
                 className={addingTreatment?'input-readonly-soft':undefined}
-                onChange={e=>set('firstName',e.target.value)}
+                onChange={e=>set('firstName',titleCase(e.target.value))}
               />
             </label>
 
@@ -1479,19 +1530,7 @@ function PatientForm(){
                 value={f.lastName||''}
                 readOnly={addingTreatment}
                 className={addingTreatment?'input-readonly-soft':undefined}
-                onChange={e=>set('lastName',e.target.value)}
-              />
-            </label>
-
-            <label>
-              <span>Card number</span>
-              <input
-                required={!addingTreatment}
-                placeholder="Patient card number"
-                value={f.cardNumber||''}
-                readOnly={addingTreatment}
-                className={addingTreatment?'input-readonly-soft':undefined}
-                onChange={e=>set('cardNumber',e.target.value)}
+                onChange={e=>set('lastName',titleCase(e.target.value))}
               />
             </label>
 
@@ -1531,7 +1570,7 @@ function PatientForm(){
                 </div>
 
                 <div className="patient-form-grid">
-                  <label className="patient-form-wide">
+                  <label>
                     <span>Procedure</span>
                     <input
                       list="presets"
@@ -1539,15 +1578,6 @@ function PatientForm(){
                       placeholder="Select or enter procedure"
                       value={t.procedure||''}
                       onChange={e=>updateTreatment(idx,'procedure',e.target.value)}
-                    />
-                  </label>
-
-                  <label>
-                    <span>Ticket number <em>Optional</em></span>
-                    <input
-                      placeholder="Ticket number"
-                      value={t.ticketNo||''}
-                      onChange={e=>updateTreatment(idx,'ticketNo',e.target.value)}
                     />
                   </label>
 
@@ -1574,70 +1604,81 @@ function PatientForm(){
                       </Btn>
                     </div>
                   </label>
+                </div>
 
-                  <label>
-                    <span>Payment type</span>
-                    <div className="payment-type-selector">
-                      <button
-                        type="button"
-                        className={'payment-type-btn'+(t.paymentType==='full'?' active':'')}
-                        onClick={()=>updateTreatment(idx,'paymentType','full')}
-                      >
-                        Full Payment
-                      </button>
-                      <button
-                        type="button"
-                        className={'payment-type-btn'+(t.paymentType==='partial'?' active':'')}
-                        onClick={()=>updateTreatment(idx,'paymentType','partial')}
-                      >
-                        Partial Payment
-                      </button>
-                    </div>
-                  </label>
-
-                  {t.paymentType==='partial'?(
+                <div className="patient-form-grid treatment-pay-details">
                     <label>
-                      <span>Amount received (ETB)</span>
+                      <span>Ticket number <em>Optional</em></span>
                       <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        max={t.totalFee||undefined}
-                        placeholder="0.00"
-                        value={t.paidToday??''}
-                        title={t._id?'Total received for this treatment. Changing it replaces the recorded amount.':'Initial payment received today'}
-                        onChange={e=>updateTreatment(idx,'paidToday',e.target.value)}
+                        placeholder="Ticket number"
+                        value={t.ticketNo||''}
+                        onChange={e=>updateTreatment(idx,'ticketNo',e.target.value)}
                       />
                     </label>
-                  ):(
-                    <label>
-                      <span>Amount received (ETB)</span>
-                      <input
-                        value={t.totalFee?`${money(t.totalFee)} (Full)`:'0.00 ETB'}
-                        readOnly
-                        className="input-readonly-soft"
-                      />
-                    </label>
-                  )}
 
-                  <div className="treatment-balance-badge-wrap">
-                    <span>Outstanding balance</span>
-                    <div className={'treatment-balance-badge'+(t.balance>0?' has-balance':'')}>
-                      {t.balance>0?(
-                        <>
-                          <span className="balance-dot"/>
-                          <strong>{money(t.balance)}</strong>
-                          <small>Pending later settlement</small>
-                        </>
-                      ):(
-                        <>
-                          <Check size={14} className="balance-check"/>
-                          <span>Fully paid (0.00 ETB)</span>
-                        </>
-                      )}
+                    <label>
+                      <span>Payment type</span>
+                      <div className="payment-type-selector">
+                        <button
+                          type="button"
+                          className={'payment-type-btn'+(t.paymentType==='full'?' active':'')}
+                          onClick={()=>updateTreatment(idx,'paymentType','full')}
+                        >
+                          Full Payment
+                        </button>
+                        <button
+                          type="button"
+                          className={'payment-type-btn'+(t.paymentType==='partial'?' active':'')}
+                          onClick={()=>updateTreatment(idx,'paymentType','partial')}
+                        >
+                          Partial Payment
+                        </button>
+                      </div>
+                    </label>
+
+                    {t.paymentType==='partial'?(
+                      <label>
+                        <span>Amount received (ETB)</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max={t.totalFee||undefined}
+                          placeholder="0.00"
+                          value={t.paidToday??''}
+                          title={t._id?'Total received for this treatment. Changing it replaces the recorded amount.':'Initial payment received today'}
+                          onChange={e=>updateTreatment(idx,'paidToday',e.target.value)}
+                        />
+                      </label>
+                    ):(
+                      <label>
+                        <span>Amount received (ETB)</span>
+                        <input
+                          value={t.totalFee?`${money(t.totalFee)} (Full)`:'0.00 ETB'}
+                          readOnly
+                          className="input-readonly-soft"
+                        />
+                      </label>
+                    )}
+
+                    <div className="treatment-balance-badge-wrap">
+                      <span>Outstanding balance</span>
+                      <div className={'treatment-balance-badge'+(t.balance>0?' has-balance':'')}>
+                        {t.balance>0?(
+                          <>
+                            <span className="balance-dot"/>
+                            <strong>{money(t.balance)}</strong>
+                            <small>Pending later settlement</small>
+                          </>
+                        ):(
+                          <>
+                            <Check size={14} className="balance-check"/>
+                            <span>Fully paid (0.00 ETB)</span>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
               </div>
             ))}
           </div>
@@ -1694,7 +1735,10 @@ function PatientForm(){
       </form>
 
       <aside className="patient-summary">
-        <h3>{fullName||(addingTreatment?'New treatment':editing?'Editing record':'New visit')}</h3>
+        <h3>
+          {fullName||(addingTreatment?'New treatment':editing?'Editing record':'New visit')}
+          {editing&&f.status==='draft'&&<span className="pill draft" style={{marginLeft:8,verticalAlign:'middle'}}>Draft</span>}
+        </h3>
         <p className="summary-sub">{treatments.map(t=>t.procedure).filter(Boolean).join(', ')||'Fill in the treatment details to preview the summary.'}</p>
 
         {addingTreatment&&baseTreatments.length>0&&(
@@ -1721,26 +1765,36 @@ function PatientForm(){
 
         {breakdownRows.length>0&&(
           <div className="patient-breakdown">
-            <span className="patient-existing-title">Per-treatment breakdown</span>
-            <div className="patient-breakdown-list">
-              {breakdownRows.map(r=>(
-                <div key={r.key} className="patient-breakdown-item">
-                  <div className="patient-breakdown-head">
-                    <div className="patient-breakdown-title">
-                      <b>{r.procedure}</b>
-                      {r.ticket&&<span className="patient-breakdown-ticket">Ticket #{r.ticket}</span>}
+            <button
+              type="button"
+              className="patient-breakdown-toggle"
+              onClick={()=>setShowBreakdown(v=>!v)}
+              aria-expanded={showBreakdown}
+            >
+              <span className="patient-existing-title">Per-treatment breakdown ({breakdownRows.length})</span>
+              <ChevronDown size={14} style={{transform:showBreakdown?'rotate(180deg)':'none',flex:'none'}}/>
+            </button>
+            {showBreakdown&&(
+              <div className="patient-breakdown-list">
+                {breakdownRows.map(r=>(
+                  <div key={r.key} className="patient-breakdown-item">
+                    <div className="patient-breakdown-head">
+                      <div className="patient-breakdown-title">
+                        <b>{r.procedure}</b>
+                        {r.ticket&&<span className="patient-breakdown-ticket">Ticket #{r.ticket}</span>}
+                      </div>
+                      {r.existing&&<span className="patient-breakdown-tag">recorded</span>}
                     </div>
-                    {r.existing&&<span className="patient-breakdown-tag">recorded</span>}
+                    <div className="patient-breakdown-money">
+                      <span>Fee <b>{money(r.fee)}</b></span>
+                      <span>Received <b>{money(r.received)}</b></span>
+                      <span>Balance <b style={{color:r.balance>0?'var(--danger-text)':'inherit'}}>{money(r.balance)}</b></span>
+                      <span>Earnings <b>{money(Math.round(r.received*pct)/100)}</b></span>
+                    </div>
                   </div>
-                  <div className="patient-breakdown-money">
-                    <span>Fee <b>{money(r.fee)}</b></span>
-                    <span>Received <b>{money(r.received)}</b></span>
-                    <span>Balance <b style={{color:r.balance>0?'var(--danger-text)':'inherit'}}>{money(r.balance)}</b></span>
-                    <span>Earnings <b>{money(Math.round(r.received*pct)/100)}</b></span>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -1774,17 +1828,22 @@ function PatientForm(){
         </div>
 
         <div className="patient-form-actions">
-          <button
-            type="button"
-            className="ghost"
-            onClick={()=>nav('/patients')}
-          >
-            Cancel
-          </button>
+          {!addingTreatment&&(
+            <Btn
+              className="patient-draft-button"
+              loading={busy}
+              loadingText="Saving…"
+              disabled={busy}
+              type="button"
+              onClick={()=>submitSave({draft:true})}
+            >
+              Save as draft
+            </Btn>
+          )}
 
-          <Btn className="primary patient-save-button" loading={busy} loadingText={addingTreatment?'Adding…':editing?'Updating…':'Saving…'} disabled={busy} type="submit" onClick={save}>
+          <Btn className="primary patient-save-button" loading={busy} loadingText={addingTreatment?'Adding…':editing?(f.status==='draft'?'Finalizing…':'Updating…'):'Saving…'} disabled={busy} type="submit" onClick={save}>
             <CheckCircle2 size={18}/>
-            {addingTreatment?'Add treatment':editing?'Update record':'Save patient record'}
+            {addingTreatment?'Add treatment':editing?(f.status==='draft'?'Save & finalize record':'Update record'):'Save patient record'}
           </Btn>
         </div>
       </aside>

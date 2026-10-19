@@ -55,17 +55,19 @@ const sendOrQueue=async(doctorId,message)=>{
 
 r.get('/',async(q,s)=>{
   const filter={doctorId:q.doctor._id};
-  const {q:term,from,to,hasBalance,balance}=q.query;
+  const {q:term,from,to,hasBalance,balance,status}=q.query;
   if(from||to)filter.gregDate={...(from?{$gte:from}:{}),...(to?{$lte:to}:{})};
   if(term)filter.$or=['patientName','cardNumber','ticketNo','treatments.ticketNo','procedure'].map(k=>({[k]:{$regex:term,$options:'i'}}));
   if(balance==='due'||hasBalance==='true')filter.balance={$gt:0};
   else if(balance==='paid')filter.balance={$lte:0};
+  if(status==='draft')filter.status='draft';
+  else if(status==='active')filter.status={$ne:'draft'};
   const list=await Patient.find(filter).sort({gregDate:-1,createdAt:-1}).limit(500).lean();
   s.json(list.map(ensureTreatments).map(orderTreatments));
 });
 
 r.get('/balances',async(q,s)=>{
-  const filter={doctorId:q.doctor._id,balance:{$gt:0}};
+  const filter={doctorId:q.doctor._id,balance:{$gt:0},status:{$ne:'draft'}};
   const {q:term,from,to}=q.query;
   if(from||to)filter.gregDate={...(from?{$gte:from}:{}),...(to?{$lte:to}:{})};
   if(term)filter.$or=['patientName','cardNumber','ticketNo','treatments.ticketNo','procedure'].map(k=>({[k]:{$regex:term,$options:'i'}}));
@@ -97,7 +99,10 @@ r.get('/:id',async(q,s)=>{
 
 r.post('/',async(q,s)=>{
   try{
-    const p=await Patient.create(payload(q.body,q.doctor));
+    const isDraft=q.body.status==='draft';
+    const doc=new Patient(payload(q.body,q.doctor));
+    await doc.save({validateBeforeSave:!isDraft});
+    const p=doc;
 
     await AuditLog.create({
       doctorId:q.doctor._id,
@@ -105,24 +110,28 @@ r.post('/',async(q,s)=>{
       action:'create',
       entity:'patient',
       entityId:String(p._id),
-      detail:p.patientName
+      detail:p.patientName||(isDraft?'Untitled draft':'')
     });
 
-    const message=await buildEarningMessage({
-      title:'New patient record',
-      ethDate:p.ethDate,
-      ticketNo:p.ticketNo,
-      patientName:p.patientName,
-      cardNumber:p.cardNumber,
-      procedure:p.procedure,
-      fee:p.totalFee,
-      cut:p.myEarning,
-      paid:p.paidAmount,
-      balance:p.balance,
-      paymentType:Number(p.balance||0)>0?'partial':'full'
-    });
+    let telegram={skipped:true,reason:'Draft records are not sent to Telegram'};
 
-    const telegram=await sendOrQueue(p.doctorId,message);
+    if(!isDraft){
+      const message=await buildEarningMessage({
+        title:'New patient record',
+        ethDate:p.ethDate,
+        ticketNo:p.ticketNo,
+        patientName:p.patientName,
+        cardNumber:p.cardNumber,
+        procedure:p.procedure,
+        fee:p.totalFee,
+        cut:p.myEarning,
+        paid:p.paidAmount,
+        balance:p.balance,
+        paymentType:Number(p.balance||0)>0?'partial':'full'
+      });
+
+      telegram=await sendOrQueue(p.doctorId,message);
+    }
 
     s.status(201).json({
       ...ensureTreatments(p.toObject()),
@@ -175,7 +184,7 @@ r.put('/:id',async(q,s)=>{
     }
 
     Object.assign(p,data);
-    await p.save();
+    await p.save({validateBeforeSave:p.status!=='draft'});
 
     await AuditLog.create({
       doctorId:q.doctor._id,
@@ -190,7 +199,9 @@ r.put('/:id',async(q,s)=>{
 
     let telegram;
 
-    if(added.length){
+    if(p.status==='draft'){
+      telegram={skipped:true,reason:'Draft records are not sent to Telegram'};
+    }else if(added.length){
       const results=[];
       for(const t of added){
         const message=await buildTreatmentMessage({
@@ -524,8 +535,12 @@ r.delete('/:id',async(q,s)=>{
       detail:p.patientName
     });
 
-    const message=await buildDeleteMessage(p.patientName);
-    const telegram=await sendOrQueue(p.doctorId,message);
+    let telegram={skipped:true,reason:'Draft records are not sent to Telegram'};
+
+    if(p.status!=='draft'){
+      const message=await buildDeleteMessage(p.patientName);
+      telegram=await sendOrQueue(p.doctorId,message);
+    }
 
     s.json({
       ok:true,

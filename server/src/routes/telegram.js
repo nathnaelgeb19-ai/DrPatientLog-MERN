@@ -20,7 +20,7 @@ r.post('/daily',async(q,s)=>{
   const iso=isoToday();
   const e=ethiopianParts(iso);
 
-  const patients=await Patient.find({doctorId:d._id}).lean();
+  const patients=await Patient.find({doctorId:d._id,status:{$ne:'draft'}}).lean();
   const sum=summarizePayments(patients,{date:iso});
   const rows=sum.rows;
   const income=sum.income;
@@ -48,7 +48,7 @@ r.post('/monthly',async(q,s)=>{
   const d=await Doctor.findById(q.doctor._id);
   const e=ethiopianParts(isoToday());
 
-  const patients=await Patient.find({doctorId:d._id}).lean();
+  const patients=await Patient.find({doctorId:d._id,status:{$ne:'draft'}}).lean();
   const normalized=patients.map(normalizePatient);
   const monthPattern=new RegExp(`^${e.month.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')} \\d{1,2} ${e.year}$`);
   const sum=summarizeNormalized(normalized,{ethPattern:monthPattern});
@@ -123,7 +123,7 @@ r.post('/monthly-period',async(q,s)=>{
     });
   }
 
-  const patients=await Patient.find({doctorId:d._id}).lean();
+  const patients=await Patient.find({doctorId:d._id,status:{$ne:'draft'}}).lean();
   const normalized=patients.map(normalizePatient);
   const sum=summarizeNormalized(normalized,{ethPattern:new RegExp(`^${month} \\d{1,2} ${year}$`)});
   const rows=sum.rows;

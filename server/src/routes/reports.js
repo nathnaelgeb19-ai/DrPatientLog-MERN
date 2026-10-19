@@ -73,7 +73,7 @@ if (requestedMonth && Number.isInteger(requestedYear) && requestedYear > 1900) {
 
     const monthPattern = `^${escapeRegex(e.month)} \\d{1,2} ${e.year}$`;
 
-    const patients = await Patient.find({doctorId: q.doctor._id}).sort({gregDate: 1, createdAt: 1}).lean();
+    const patients = await Patient.find({doctorId: q.doctor._id, status: {$ne: 'draft'}}).sort({gregDate: 1, createdAt: 1}).lean();
 
     const normalized = patients.map(normalizePatient);
     const monthSum = summarizeNormalized(normalized, {ethPattern: new RegExp(monthPattern)});

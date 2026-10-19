@@ -452,7 +452,77 @@ const adjustTreatmentPayments = (treatment, targetPaid, options = {}) => {
   return payments;
 };
 
+// Lightweight payload for draft records: keeps whatever partial data the user
+// entered without seeding payment records or applying finalization assumptions.
+// Mongoose validation is skipped for drafts at save time, so incomplete
+// treatments (missing procedure or fee) can be stored and finished later.
+const buildDraftPayload = (body, doctorId, existingDoc = null) => {
+  const gregDate = (body.gregDate || '').trim();
+  const ethDate = (body.ethDate || '').trim() || (gregDate ? ethiopianDate(gregDate) : '');
+  const patientName = (body.patientName || '').trim();
+  const cardNumber = (body.cardNumber || '').trim();
+  const ticketNo = (body.ticketNo || '').trim();
+  const defaultPct = Number(body.doctorPct ?? DEFAULT_PCT);
+
+  const rawList = Array.isArray(body.treatments) ? body.treatments : [];
+  const existingList = existingDoc?.treatments || [];
+
+  const treatments = rawList
+    .filter(t => t && ((t.procedure || '').trim() || Number(t.totalFee) > 0))
+    .map(t => {
+      const existing = existingList.find(x => String(x._id) === String(t._id));
+      const pct = Number(t.doctorPct ?? defaultPct) || 0;
+      const fee = round2(t.totalFee);
+      const payments = Array.isArray(t.payments) && t.payments.length
+        ? t.payments.map(p => normalizePayment(p, pct))
+        : [];
+      const paidAmount = payments.length
+        ? round2(payments.reduce((sum, p) => sum + p.amount, 0))
+        : round2(t.paidToday ?? t.paidAmount ?? 0);
+
+      return {
+        _id: existing?._id,
+        date: (t.date || gregDate || ''),
+        ethDate: (t.ethDate || ethDate || ''),
+        ticketNo: (t.ticketNo || '').trim(),
+        procedure: (t.procedure || '').trim(),
+        totalFee: fee,
+        doctorPct: pct,
+        myEarning: 0,
+        paymentType: t.paymentType === 'partial' ? 'partial' : 'full',
+        paidAmount,
+        balance: Math.max(0, fee - paidAmount),
+        payments
+      };
+    });
+
+  // Adding a treatment to an existing draft must never rewrite its original
+  // registration date (same rule as the active path above).
+  const anyNew = treatments.some(t => !t._id);
+
+  const patient = {
+    gregDate: existingDoc && anyNew ? (existingDoc.gregDate || gregDate) : gregDate,
+    ethDate: existingDoc && anyNew ? (existingDoc.ethDate || ethDate) : ethDate,
+    patientName,
+    cardNumber,
+    ticketNo: ticketNo || (treatments.find(t => t.ticketNo)?.ticketNo || ''),
+    doctorId,
+    status: 'draft',
+    treatments
+  };
+
+  return recomputePatientTotals(patient);
+};
+
 const buildPatientPayload = (body, doctorId, existingDoc = null) => {
+  const status = body.status === 'draft'
+    ? 'draft'
+    : body.status === 'active'
+      ? 'active'
+      : (existingDoc?.status === 'draft' ? 'draft' : 'active');
+
+  if (status === 'draft') return buildDraftPayload(body, doctorId, existingDoc);
+
   const gregDate = body.gregDate;
   const ethDate = body.ethDate || ethiopianDate(body.gregDate);
   const patientName = (body.patientName || '').trim();
@@ -593,6 +663,7 @@ const buildPatientPayload = (body, doctorId, existingDoc = null) => {
     cardNumber,
     ticketNo: ticketNo || existingDoc?.ticketNo || (treatments.find(t => t.ticketNo)?.ticketNo || ''),
     doctorId,
+    status: 'active',
     treatments
   };
 

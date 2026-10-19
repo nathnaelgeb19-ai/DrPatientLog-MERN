@@ -162,7 +162,7 @@ async function daily() {
       'telegram.enabled': true
     }).lean()
   ) {
-    const patients = await Patient.find({doctorId: d._id}).lean();
+    const patients = await Patient.find({doctorId: d._id, status: {$ne: 'draft'}}).lean();
     const sum = summarizePayments(patients, {date: iso});
     const rows = sum.rows;
     const income = sum.income;
@@ -236,7 +236,7 @@ async function monthly() {
   for (const d of await Doctor.find({
     'telegram.enabled': true
   }).lean()) {
-    const patients = await Patient.find({doctorId: d._id}).lean();
+    const patients = await Patient.find({doctorId: d._id, status: {$ne: 'draft'}}).lean();
     const sum = summarizePayments(patients, {ethPattern: new RegExp(pattern)});
     const rows = sum.rows;
     const income = sum.income;

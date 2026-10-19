@@ -13,7 +13,7 @@ function esc(v){
 }
 
 r.get('/patients.csv',async(q,s)=>{
-  const rows=await Patient.find({doctorId:q.doctor._id}).sort({gregDate:-1}).lean();
+  const rows=await Patient.find({doctorId:q.doctor._id,status:{$ne:'draft'}}).sort({gregDate:-1}).lean();
   const head=['id','greg_date','eth_date','patient_name','card_number','ticket_no','procedure','total_fee','doctor_pct','my_earning'];
   const lines=[head.join(',')];
   for(const p of rows){

@@ -7,7 +7,7 @@ import {normalizePatient,summarizeNormalized,summarizePayments} from '../utils/p
 const r=Router();
 r.use(auth);
 
-const allPatients=doctorId=>Patient.find({doctorId}).lean();
+const allPatients=doctorId=>Patient.find({doctorId,status:{$ne:'draft'}}).lean();
 
 const ethRegex=(month,year)=>new RegExp(`^${month} \\d+ ${year}$`);
 
@@ -51,7 +51,7 @@ r.get('/',async(q,s)=>{
     normalized.reduce((sum,p)=>sum+Number(p.balance||0),0).toFixed(2)
   );
 
-  const recent=(await Patient.find({doctorId:q.doctor._id})
+  const recent=(await Patient.find({doctorId:q.doctor._id,status:{$ne:'draft'}})
     .sort({createdAt:-1})
     .limit(8)
     .lean()).map(normalizePatient);

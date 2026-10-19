@@ -203,6 +203,7 @@ html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
   min-height: 100vh;
+  min-height: 100dvh;
   font-family: var(--font);
   font-size: 15px;
   line-height: 1.55;
@@ -284,6 +285,7 @@ h1, h2, h3, p { overflow-wrap: anywhere; }
    -------------------------------------------------------------------------- */
 .app {
   min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   grid-template-columns: 272px minmax(0, 1fr);
 }
@@ -295,6 +297,7 @@ h1, h2, h3, p { overflow-wrap: anywhere; }
   position: sticky;
   top: 0;
   height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -1113,6 +1116,9 @@ input[type="datetime-local"]::-webkit-datetime-edit {
     padding: 0;
     opacity: 0;
   }
+
+  /* iOS Safari auto-zooms the viewport when a control under 16px is focused. */
+  input:not([type="checkbox"]):not([type="radio"]), select, textarea { font-size: 16px; }
 }
 
 .password-field { position: relative; display: block; }
@@ -1189,6 +1195,7 @@ input[type="datetime-local"]::-webkit-datetime-edit {
   color: var(--ink-2);
 }
 .pill.success { background: var(--success-soft); color: var(--success-text); }
+.pill.draft { background: rgba(213, 139, 50, .16); color: #d58b32; }
 
 /* Loading skeleton */
 .loading { padding: 6vh 0; display: grid; gap: 16px; max-width: 1000px; margin: 0 auto; }
@@ -1658,6 +1665,13 @@ input[type="datetime-local"]::-webkit-datetime-edit {
 .patient-price-field, .patient-percent-field { display: flex; align-items: center; gap: 8px; }
 .patient-price-field input, .patient-percent-field input { flex: 1; min-width: 0; }
 .patient-percent-field b { color: var(--muted); }
+.card-label-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.date-tag { position: relative; font-weight: 700; font-size: 10.5px; letter-spacing: .02em; color: var(--accent); background: var(--accent-soft); border: 1px solid var(--line-2); border-radius: 999px; padding: 3px 10px; white-space: nowrap; cursor: pointer; }
+.date-tag input[type="date"] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; border: 0; padding: 0; cursor: pointer; }
+.date-tag:focus-within { outline: 2px solid var(--accent); outline-offset: 1px; }
+@media (hover: none) and (pointer: coarse) {
+  .date-tag { padding: 7px 12px; font-size: 11.5px; }
+}
 .patient-suggest-button {
   flex: none;
   height: 46px;
@@ -1737,6 +1751,16 @@ input[type="datetime-local"]::-webkit-datetime-edit {
 .patient-breakdown-money { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 14px; }
 .patient-breakdown-money span { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; min-width: 0; font-size: 11.5px; color: var(--muted); }
 .patient-breakdown-money b { min-width: 0; font-size: 12.5px; color: var(--ink); overflow-wrap: anywhere; text-align: right; }
+.patient-breakdown-toggle { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 0; border: none; background: none; cursor: pointer; color: inherit; }
+.patient-breakdown-toggle .patient-existing-title { margin-bottom: 0; }
+.patient-breakdown-toggle:hover { color: var(--accent); }
+.patient-breakdown-list { margin-top: 10px; }
+
+/* Quiet registration actions */
+.page-head-back { flex: none; }
+.patient-draft-button { border: none; background: none; color: var(--muted); font-weight: 600; }
+.patient-draft-button:hover { background: none; color: var(--accent); }
+.treatment-pay-details { margin-top: 16px; }
 .summary-rows { display: grid; gap: 14px; }
 .summary-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; min-width: 0; }
 .summary-row span { flex: none; font-size: 12.5px; color: var(--muted); }
