@@ -3017,8 +3017,8 @@ html[data-theme="dark"] button.primary { box-shadow: 0 14px 34px -16px rgba(124,
   background: linear-gradient(150deg, var(--accent), var(--accent-2));
   box-shadow: 0 20px 40px -26px rgba(52, 120, 200, .9);
 }
-.pulse-cell-accent span, .pulse-cell-accent small { color: rgba(255, 255, 255, .86); }
-.pulse-cell-accent strong { color: #fff; }
+.pulse-cell-accent span, .pulse-cell-accent small { color: color-mix(in srgb, var(--accent-contrast) 86%, transparent); }
+.pulse-cell-accent strong { color: var(--accent-contrast); }
 .pulse-share {
   grid-column: 1 / -1;
   display: flex;
