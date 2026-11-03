@@ -547,6 +547,14 @@ nav a.active .nav-icon { color: var(--accent); transform: translateY(-1px) scale
   border: 1px solid var(--line);
   box-shadow: var(--shadow-pop);
 }
+.theme-menu::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -10px;
+  height: 10px;
+}
 .theme-control:hover .theme-menu,
 .theme-control:focus-within .theme-menu { display: grid; animation: popIn var(--dur-1) var(--ease-out) both; }
 .theme-menu button {

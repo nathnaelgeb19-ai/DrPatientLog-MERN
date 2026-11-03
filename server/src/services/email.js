@@ -14,17 +14,21 @@ export async function sendPasswordResetEmail({to,name,token}){
   const clinicSetting = await Setting.findOne({ key: 'clinic_name' }).lean();
   const clinicName = clinicSetting?.value || 'NathDent Hakim Log';
 
-  const from=process.env.EMAIL_FROM||`${clinicName} <onboarding@resend.dev>`;
+  const configuredFrom = (process.env.EMAIL_FROM || '').trim();
+  const fromEmail =
+    configuredFrom.match(/<([^>]+)>/)?.[1] ||
+    (/^[^\s<>]+@[^\s<>]+$/.test(configuredFrom) ? configuredFrom : 'onboarding@resend.dev');
+  const from = `${clinicName} <${fromEmail}>`;
 
   await resend.emails.send({
     from,
     to,
-    subject:'Reset your Hakim password',
+    subject:`Reset your ${clinicName} password`,
     html:`
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:24px">
         <h2>${clinicName}</h2>
         <p>Hello ${String(name||'there').replace(/[<>&"]/g,'')}</p>
-        <p>We received a request to reset your Hakim password.</p>
+        <p>We received a request to reset your ${clinicName} password.</p>
         <p>
           <a href="${resetUrl}"
              style="display:inline-block;padding:12px 20px;background:#111827;color:#fff;text-decoration:none;border-radius:8px">
