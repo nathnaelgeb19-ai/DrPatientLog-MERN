@@ -55,6 +55,7 @@
   --accent-soft: rgba(83, 103, 125, .08);
   --accent-soft-2: rgba(83, 103, 125, .04);
   --accent-contrast: #f5f7fb;
+  --accent-on-light: #101b2a;
 
   --mint: #5c7d81;
   --mint-2: #7fa5a9;
@@ -104,7 +105,7 @@ html[data-theme="dark"] {
 
   --accent: #b0b9c8;
   --accent-2: #8ea0b5;
-  --accent-ink: #101b2a;
+  --accent-ink: #eaeaec;
   --accent-soft: rgba(176, 185, 200, .16);
   --accent-soft-2: rgba(176, 185, 200, .08);
   --accent-contrast: #101b2a;
@@ -181,7 +182,7 @@ html[data-theme="dark"] {
 html[data-theme="dark"] .primary,
 html[data-theme="dark"] .patients-filter-button {
   background: var(--accent-surface);
-  color: var(--accent-ink);
+  color: var(--accent-on-light);
 }
 html[data-theme="dark"] .auth-visual {
   background:
@@ -197,7 +198,7 @@ html[data-theme="dark"] .auth-visual::after {
   html:not([data-theme]) .primary,
   html:not([data-theme]) .patients-filter-button {
     background: var(--accent-surface);
-    color: var(--accent-ink);
+    color: var(--accent-on-light);
   }
   html:not([data-theme]) .auth-visual {
     background:

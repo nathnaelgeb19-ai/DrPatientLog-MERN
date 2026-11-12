@@ -31,7 +31,10 @@
   --accent-soft: rgba(83, 103, 125, 0.09);
   --accent-soft-2: rgba(83, 103, 125, 0.05);
   --accent-contrast: #f5f7fb;
+  --accent-on-light: #101b2a;
   --accent-surface: linear-gradient(145deg, #edf1f6 0%, #dfe8f2 52%, #cdd9e8 100%);
+  --accent-surface-hover: linear-gradient(145deg, #f4f7fb 0%, #e8eef6 52%, #d8e2ee 100%);
+  --accent-surface-active: linear-gradient(145deg, #e2e9f2 0%, #d4dfeb 52%, #c2d1e2 100%);
 
   --glass: rgba(255, 255, 255, 0.72);
   --glass-bar: rgba(255, 255, 255, 0.72);
@@ -127,14 +130,14 @@ html[data-theme="dark"] {
   --surface-input: rgba(17, 20, 27, 0.92);
   --ink: #e9ebf2;
   --ink-2: #a5adbf;
-  --ink-3: #77819a;
-  --muted: #77819a;
-  --faint: #77819a;
+  --ink-3: #939aa8;
+  --muted: #939aa8;
+  --faint: #858fa2;
   --line: rgba(255, 255, 255, 0.08);
   --line-2: rgba(255, 255, 255, 0.13);
   --accent: #b0b9c8;
   --accent-2: #8ea0b5;
-  --accent-ink: #101b2a;
+  --accent-ink: #eaeaec;
   --accent-soft: rgba(176, 185, 200, 0.16);
   --accent-soft-2: rgba(176, 185, 200, 0.08);
   --accent-contrast: #101b2a;
@@ -155,6 +158,9 @@ html[data-theme="dark"] {
   --danger: #c98a8a;
   --danger-soft: rgba(201, 138, 138, 0.15);
   --danger-text: #f2d2d2;
+  --amber: #e0b062;
+  --orange: #e8926a;
+  --violet: #b3a8ff;
   --shadow-1: 0 2px 10px -2px rgba(0, 0, 0, 0.45);
   --shadow-2: 0 8px 26px -8px rgba(0, 0, 0, 0.55);
   --shadow-pop: 0 18px 48px -14px rgba(0, 0, 0, 0.65);
@@ -180,14 +186,14 @@ html[data-theme="dark"] {
     --surface-input: rgba(17, 20, 27, 0.92);
     --ink: #e9ebf2;
     --ink-2: #a5adbf;
-    --ink-3: #77819a;
-    --muted: #77819a;
-    --faint: #77819a;
+    --ink-3: #939aa8;
+    --muted: #939aa8;
+    --faint: #858fa2;
     --line: rgba(255, 255, 255, 0.08);
     --line-2: rgba(255, 255, 255, 0.13);
     --accent: #b0b9c8;
     --accent-2: #8ea0b5;
-    --accent-ink: #101b2a;
+    --accent-ink: #eaeaec;
     --accent-soft: rgba(176, 185, 200, 0.16);
     --accent-soft-2: rgba(176, 185, 200, 0.08);
     --accent-contrast: #101b2a;
@@ -208,15 +214,18 @@ html[data-theme="dark"] {
     --danger: #c98a8a;
     --danger-soft: rgba(201, 138, 138, 0.15);
     --danger-text: #f2d2d2;
+    --amber: #e0b062;
+    --orange: #e8926a;
+    --violet: #b3a8ff;
     --shadow-1: 0 2px 10px -2px rgba(0, 0, 0, 0.45);
     --shadow-2: 0 8px 26px -8px rgba(0, 0, 0, 0.55);
     --shadow-pop: 0 18px 48px -14px rgba(0, 0, 0, 0.65);
     --sidebar-bg: rgba(14, 16, 22, 0.72);
     --top-bg: rgba(13, 15, 20, 0.72);
-    --ring: 0 0 0 3px rgba(176, 185, 200, 0.28);
-    --blue-strong: #b0b9c8;
-    --blue-glass: #a5b7cc;
-    --shadow-blue: 0 8px 22px -6px rgba(165, 183, 204, 0.24);
+    --ring: 0 0 0 3px rgba(116, 177, 252, 0.28);
+    --blue-strong: #8aa7c8;
+    --blue-glass: #7ea5d5;
+    --shadow-blue: 0 8px 22px -6px rgba(126, 165, 213, 0.24);
     --green-soft: var(--success-soft);
     --red-soft: var(--danger-soft);
     color-scheme: dark;
@@ -525,15 +534,15 @@ html[data-theme="dark"] .bottom-nav {
 .bottom-nav .bn-add:active .bn-add-disc { transform: scale(0.95); }
 html[data-theme="dark"] .bn-add-disc {
   background: var(--accent-surface);
-  color: var(--accent-ink);
+  color: var(--accent-on-light);
   box-shadow: 0 10px 24px -6px rgba(112, 124, 142, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.28);
 }
 html[data-theme="dark"] .bn-add-disc svg {
-  color: var(--accent-ink);
-  stroke: var(--accent-ink);
+  color: var(--accent-on-light);
+  stroke: var(--accent-on-light);
 }
 html[data-theme="dark"] .bottom-nav .bn-add:hover .bn-add-disc {
-  background: linear-gradient(135deg, rgba(255,255,255,0.14), rgba(151, 166, 188, 0.2));
+  background: var(--accent-surface-hover);
   box-shadow: 0 14px 28px -6px rgba(112, 124, 142, 0.32), inset 0 1px 0 rgba(255,255,255,0.22);
 }
 
@@ -699,7 +708,7 @@ html[data-theme="dark"] a.primary,
 html[data-theme="dark"] .patients-filter-button,
 html[data-theme="dark"] .patient-save-button {
   background: var(--accent-surface) !important;
-  color: var(--accent-ink) !important;
+  color: var(--accent-on-light) !important;
   border: 1px solid rgba(255, 255, 255, 0.18) !important;
   box-shadow: 0 8px 22px -6px rgba(125, 139, 156, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
   font-weight: 600;
@@ -713,8 +722,8 @@ html[data-theme="dark"] button.primary svg,
 html[data-theme="dark"] a.primary svg,
 html[data-theme="dark"] .patients-filter-button svg,
 html[data-theme="dark"] .patient-save-button svg {
-  color: var(--accent-ink) !important;
-  stroke: var(--accent-ink) !important;
+  color: var(--accent-on-light) !important;
+  stroke: var(--accent-on-light) !important;
 }
 html[data-theme="dark"] .primary:hover,
 html[data-theme="dark"] .btn-primary:hover,
@@ -722,8 +731,8 @@ html[data-theme="dark"] button.primary:hover,
 html[data-theme="dark"] a.primary:hover,
 html[data-theme="dark"] .patients-filter-button:hover,
 html[data-theme="dark"] .patient-save-button:hover {
-  background: linear-gradient(135deg, rgba(255,255,255,0.18), rgba(164, 177, 194, 0.24)) !important;
-  color: var(--accent-ink) !important;
+  background: var(--accent-surface-hover) !important;
+  color: var(--accent-on-light) !important;
   box-shadow: 0 12px 28px -6px rgba(125, 139, 156, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
   transform: translateY(-1px);
 }
@@ -733,8 +742,8 @@ html[data-theme="dark"] button.primary:active,
 html[data-theme="dark"] a.primary:active,
 html[data-theme="dark"] .patients-filter-button:active,
 html[data-theme="dark"] .patient-save-button:active {
-  background: linear-gradient(135deg, rgba(255,255,255,0.12), rgba(144, 158, 179, 0.18)) !important;
-  color: var(--accent-ink) !important;
+  background: var(--accent-surface-active) !important;
+  color: var(--accent-on-light) !important;
   transform: scale(0.985);
   box-shadow: 0 4px 14px -4px rgba(125, 139, 156, 0.2) !important;
 }
@@ -742,8 +751,8 @@ html[data-theme="dark"] .primary:disabled,
 html[data-theme="dark"] .btn-primary:disabled,
 html[data-theme="dark"] button.primary:disabled,
 html[data-theme="dark"] .patients-filter-button:disabled {
-  background: rgba(176, 185, 200, 0.2) !important;
-  color: rgba(16, 27, 42, 0.62) !important;
+  background: var(--accent-surface) !important;
+  color: rgba(16, 27, 42, 0.72) !important;
   box-shadow: none !important;
   cursor: not-allowed;
   transform: none;
@@ -757,7 +766,7 @@ html[data-theme="dark"] .patients-filter-button:disabled {
   html:not([data-theme]) .patients-filter-button,
   html:not([data-theme]) .patient-save-button {
     background: var(--accent-surface) !important;
-    color: var(--accent-ink) !important;
+    color: var(--accent-on-light) !important;
     border: 1px solid rgba(255, 255, 255, 0.18) !important;
     box-shadow: 0 8px 22px -6px rgba(125, 139, 156, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
     font-weight: 600;
@@ -771,8 +780,8 @@ html[data-theme="dark"] .patients-filter-button:disabled {
   html:not([data-theme]) a.primary svg,
   html:not([data-theme]) .patients-filter-button svg,
   html:not([data-theme]) .patient-save-button svg {
-    color: var(--accent-ink) !important;
-    stroke: var(--accent-ink) !important;
+    color: var(--accent-on-light) !important;
+    stroke: var(--accent-on-light) !important;
   }
   html:not([data-theme]) .primary:hover,
   html:not([data-theme]) .btn-primary:hover,
@@ -780,8 +789,8 @@ html[data-theme="dark"] .patients-filter-button:disabled {
   html:not([data-theme]) a.primary:hover,
   html:not([data-theme]) .patients-filter-button:hover,
   html:not([data-theme]) .patient-save-button:hover {
-    background: linear-gradient(135deg, rgba(255,255,255,0.18), rgba(164, 177, 194, 0.24)) !important;
-    color: var(--accent-ink) !important;
+    background: var(--accent-surface-hover) !important;
+    color: var(--accent-on-light) !important;
     box-shadow: 0 12px 28px -6px rgba(125, 139, 156, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
     transform: translateY(-1px);
   }
@@ -791,8 +800,8 @@ html[data-theme="dark"] .patients-filter-button:disabled {
   html:not([data-theme]) a.primary:active,
   html:not([data-theme]) .patients-filter-button:active,
   html:not([data-theme]) .patient-save-button:active {
-    background: linear-gradient(135deg, rgba(255,255,255,0.12), rgba(144, 158, 179, 0.18)) !important;
-    color: var(--accent-ink) !important;
+    background: var(--accent-surface-active) !important;
+    color: var(--accent-on-light) !important;
     transform: scale(0.985);
     box-shadow: 0 4px 14px -4px rgba(125, 139, 156, 0.2) !important;
   }
@@ -800,8 +809,8 @@ html[data-theme="dark"] .patients-filter-button:disabled {
   html:not([data-theme]) .btn-primary:disabled,
   html:not([data-theme]) button.primary:disabled,
   html:not([data-theme]) .patients-filter-button:disabled {
-    background: rgba(176, 185, 200, 0.2) !important;
-    color: rgba(16, 27, 42, 0.62) !important;
+    background: var(--accent-surface) !important;
+    color: rgba(16, 27, 42, 0.72) !important;
     box-shadow: none !important;
     cursor: not-allowed;
     transform: none;
@@ -891,17 +900,15 @@ html[data-theme="dark"] .patients-filter-button:disabled {
 .pill::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: 0.8; }
 .pill.no-dot::before { display: none; }
 .pill.tone-green,
-.pill.success { background: var(--green-soft); color: #0d7d55; }
+.pill.success { background: var(--green-soft); color: var(--success-text); }
 .pill.tone-blue { background: var(--blue-soft); color: var(--blue-ink); }
-.pill.tone-cyan { background: var(--cyan-soft); color: #0679a0; }
-.pill.tone-violet { background: var(--violet-soft); color: #5746d1; }
+.pill.tone-cyan { background: var(--cyan-soft); color: var(--mint-text); }
+.pill.tone-violet { background: var(--violet-soft); color: var(--violet); }
 .pill.tone-amber,
-.pill.draft { background: var(--amber-soft); color: #9a6714; }
-.pill.tone-orange { background: var(--orange-soft); color: #bb4212; }
+.pill.draft { background: var(--amber-soft); color: var(--amber); }
+.pill.tone-orange { background: var(--orange-soft); color: var(--orange); }
 .pill.tone-red { background: var(--red-soft); color: var(--red); }
 .pill.tone-muted { background: var(--surface-3); color: var(--ink-3); }
-html[data-theme="dark"] .pill.tone-green,
-html[data-theme="dark"] .pill.success { color: var(--success-text); }
 
 .chip {
   height: 30px;
@@ -1065,7 +1072,7 @@ html[data-theme="dark"] .dd-menu { background: rgba(19, 22, 29, 0.92); }
   padding: 0 11px;
   border-radius: var(--r-full);
   background: var(--green-soft);
-  color: #0d7d55;
+  color: var(--success-text);
   font-size: var(--fs-xs);
   font-weight: 700;
 }
@@ -1082,7 +1089,6 @@ html[data-theme="dark"] .dd-menu { background: rgba(19, 22, 29, 0.92); }
   70% { box-shadow: 0 0 0 6px rgba(18, 153, 106, 0); }
   100% { box-shadow: 0 0 0 0 rgba(18, 153, 106, 0); }
 }
-html[data-theme="dark"] .live-dot { color: var(--success-text); }
 
 .empty-state {
   display: grid;
@@ -1647,21 +1653,21 @@ html[data-theme="dark"] .ring-center small { color: #74d7ab; }
     box-shadow: 0 24px 54px -20px rgba(0, 0, 0, 0.7), 0 10px 24px -12px rgba(0, 0, 0, 0.45);
   }
   html:not([data-theme]) .bn-add-disc {
-    background: linear-gradient(135deg, #82b9fc 0%, #5b9ef6 100%);
-    color: #07152d;
+    background: var(--accent-surface);
+    color: var(--accent-on-light);
     box-shadow:
-      0 10px 24px -6px rgba(100, 162, 248, 0.45),
-      inset 0 1px 0 rgba(255, 255, 255, 0.45);
+      0 10px 24px -6px rgba(112, 124, 142, 0.25),
+      inset 0 1px 0 rgba(255, 255, 255, 0.28);
   }
   html:not([data-theme]) .bn-add-disc svg {
-    color: #07152d;
-    stroke: #07152d;
+    color: var(--accent-on-light);
+    stroke: var(--accent-on-light);
   }
   html:not([data-theme]) .bottom-nav .bn-add:hover .bn-add-disc {
-    background: linear-gradient(135deg, #96c6fd 0%, #6eb0fb 100%);
+    background: var(--accent-surface-hover);
     box-shadow:
-      0 14px 28px -6px rgba(100, 162, 248, 0.55),
-      inset 0 1px 0 rgba(255, 255, 255, 0.55);
+      0 14px 28px -6px rgba(112, 124, 142, 0.32),
+      inset 0 1px 0 rgba(255, 255, 255, 0.22);
   }
   html:not([data-theme]) .nav-float {
     color: #9dbcff;
@@ -1672,7 +1678,6 @@ html[data-theme="dark"] .ring-center small { color: #74d7ab; }
       rgba(19, 22, 29, 0) 100%);
   }
   html:not([data-theme]) .dd-menu { background: rgba(19, 22, 29, 0.92); }
-  html:not([data-theme]) .live-dot { color: var(--success-text); }
   html:not([data-theme]) .dash-callout {
     background:
       radial-gradient(90% 140% at 88% 20%, rgba(29, 139, 255, 0.16) 0%, transparent 60%),
@@ -1693,8 +1698,6 @@ html[data-theme="dark"] .ring-center small { color: #74d7ab; }
     border-color: rgba(255, 255, 255, 0.1);
   }
   html:not([data-theme]) .ring-center small { color: #74d7ab; }
-  html:not([data-theme]) .pill.tone-green,
-  html:not([data-theme]) .pill.success { color: var(--success-text); }
 }
 
 /* Dashboard responsive */
