@@ -176,11 +176,12 @@ html[data-theme="dark"] {
   }
 }
 
-/* Dark mode: buttons invert to the light graphite gradient with dark text;
+/* Dark mode: buttons use soft, uniform light blue with dark text;
    the auth hero panel keeps white text on its own dark graphite gradient. */
 html[data-theme="dark"] .primary,
 html[data-theme="dark"] .patients-filter-button {
-  background: var(--accent-surface);
+  background: linear-gradient(135deg, #82b9fc 0%, #5b9ef6 100%);
+  color: #07152d;
 }
 html[data-theme="dark"] .auth-visual {
   background:
@@ -195,7 +196,8 @@ html[data-theme="dark"] .auth-visual::after {
 @media (prefers-color-scheme: dark) {
   html:not([data-theme]) .primary,
   html:not([data-theme]) .patients-filter-button {
-    background: var(--accent-surface);
+    background: linear-gradient(135deg, #82b9fc 0%, #5b9ef6 100%);
+    color: #07152d;
   }
   html:not([data-theme]) .auth-visual {
     background:

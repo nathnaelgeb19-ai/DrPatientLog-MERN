@@ -1326,7 +1326,11 @@ function Dashboard({clinic}){
   const stepCal=n=>{if(!cal)return;setCalDay(null);setCalRef(n<0?ethPrevMonth(cal.monthIndex,cal.year):ethNextMonth(cal.monthIndex,cal.year));};
   const todayCal=()=>{setCalDay(null);setCalRef(null);};
   const pickDay=day=>setCalDay(cur=>cur===day?null:day);
-  const rangeLabel={today:'Today',week:'Last 7 days',eth_month:'Ethiopian month',all:'All time'}[range];
+  const rangeLabel={today:'Today',week:'Last 7 days',eth_month:'This month',all:'All time'}[range] || 'This month';
+  const curPeriod = d.periods ? d.periods[range === 'eth_month' ? 'month' : range] : null;
+  const curIncome = curPeriod ? curPeriod.income : (d.rangeIncome || 0);
+  const curCut = curPeriod ? curPeriod.cut : (d.rangeCut || 0);
+  const curVisits = curPeriod ? curPeriod.count : (d.count || 0);
 
   return <div className="dash">
     <div className="dash-grid">
@@ -1380,7 +1384,7 @@ function Dashboard({clinic}){
             <select className="dash-range" value={range} onChange={e=>setRange(e.target.value)} aria-label="Dashboard range">
               <option value="today">Today</option>
               <option value="week">Last 7 days</option>
-              <option value="eth_month">Ethiopian month</option>
+              <option value="eth_month">This month</option>
               <option value="all">All time</option>
             </select>
             <span className="live-dot">Stable</span>
@@ -1388,20 +1392,20 @@ function Dashboard({clinic}){
         </header>
         <div className="pulse-wave"><PulseWave/></div>
         <div className="pulse-metrics">
-          <div className="pulse-metric">
+          <div className="pulse-metric" title={`Visits: ${curVisits}`}>
             <span className="pm-icon blue"><Users size={16}/></span>
-            <b>{d.count}</b>
+            <b>{curVisits}</b>
             <small>Visits</small>
           </div>
-          <div className="pulse-metric">
-            <span className="pm-icon cyan"><Timer size={16}/></span>
-            <b>{shortMoney(d.outstanding)}</b>
-            <small>ETB due</small>
+          <div className="pulse-metric" title={`Money made: ${money(curIncome)}`}>
+            <span className="pm-icon cyan"><ReceiptText size={16}/></span>
+            <b>{shortMoney(curIncome)}</b>
+            <small>Money made</small>
           </div>
-          <div className="pulse-metric">
-            <span className="pm-icon amber"><AlertCircle size={16}/></span>
-            <b>{pendingClosures.length}</b>
-            <small>To close</small>
+          <div className="pulse-metric" title={`Doctor's cut: ${money(curCut)}`}>
+            <span className="pm-icon amber"><TrendingUp size={16}/></span>
+            <b>{shortMoney(curCut)}</b>
+            <small>Doctor's cut</small>
           </div>
         </div>
       </section>

@@ -22,31 +22,39 @@ const monthOfEth=ethDate=>{
 r.get('/',async(q,s)=>{
   const iso=isoToday();
   const e=ethiopianParts(iso);
-  const range=q.query.range;
+  const range=q.query.range||'eth_month';
 
-  let payFilter={};
-  let patientInRange=()=>true;
-
-  if(range==='today'){
-    payFilter={date:iso};
-    patientInRange=p=>p.gregDate===iso;
-  }else if(range==='week'){
-    const d=new Date(`${iso}T00:00:00`);
-    d.setDate(d.getDate()-6);
-    const from=d.toISOString().slice(0,10);
-    payFilter={dateFrom:from,dateTo:iso};
-    patientInRange=p=>p.gregDate>=from&&p.gregDate<=iso;
-  }else if(range!=='all'){
-    const rx=ethRegex(e.month,e.year);
-    payFilter={ethPattern:rx};
-    patientInRange=p=>rx.test(p.ethDate||'');
-  }
+  const dWeek=new Date(`${iso}T00:00:00`);
+  dWeek.setDate(dWeek.getDate()-6);
+  const fromWeek=dWeek.toISOString().slice(0,10);
+  const monthRx=ethRegex(e.month,e.year);
 
   const patients=await allPatients(q.doctor._id);
   const normalized=patients.map(normalizePatient);
-  const today=summarizeNormalized(normalized,{date:iso});
-  const rangeSum=summarizeNormalized(normalized,payFilter);
-  const count=patients.filter(patientInRange).length;
+
+  const todaySum=summarizeNormalized(normalized,{date:iso});
+  const weekSum=summarizeNormalized(normalized,{dateFrom:fromWeek,dateTo:iso});
+  const monthSum=summarizeNormalized(normalized,{ethPattern:monthRx});
+  const allSum=summarizeNormalized(normalized,{});
+
+  const todayCount=patients.filter(p=>p.gregDate===iso).length;
+  const weekCount=patients.filter(p=>p.gregDate>=fromWeek&&p.gregDate<=iso).length;
+  const monthCount=patients.filter(p=>monthRx.test(p.ethDate||'')).length;
+  const allCount=patients.length;
+
+  let rangeSum=monthSum;
+  let count=monthCount;
+  if(range==='today'){
+    rangeSum=todaySum;
+    count=todayCount;
+  }else if(range==='week'){
+    rangeSum=weekSum;
+    count=weekCount;
+  }else if(range==='all'){
+    rangeSum=allSum;
+    count=allCount;
+  }
+
   const outstanding=Number(
     normalized.reduce((sum,p)=>sum+Number(p.balance||0),0).toFixed(2)
   );
@@ -57,11 +65,18 @@ r.get('/',async(q,s)=>{
     .lean()).map(normalizePatient);
 
   s.json({
-    todayCut:today.cut,
+    todayCut:todaySum.cut,
+    todayIncome:todaySum.income,
     rangeCut:rangeSum.cut,
     rangeIncome:rangeSum.income,
-    outstanding,
     count,
+    periods:{
+      today:{income:todaySum.income,cut:todaySum.cut,count:todayCount,label:'Today'},
+      week:{income:weekSum.income,cut:weekSum.cut,count:weekCount,label:'Last 7 days'},
+      month:{income:monthSum.income,cut:monthSum.cut,count:monthCount,label:'This month'},
+      all:{income:allSum.income,cut:allSum.cut,count:allCount,label:'All time'}
+    },
+    outstanding,
     recent,
     ethToday:e
   });
