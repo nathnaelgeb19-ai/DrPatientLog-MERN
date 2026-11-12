@@ -6,7 +6,7 @@ const paymentDateKey=p=>(/^\d{4}-\d{2}-\d{2}$/.test(p?.date||'')?p.date:ethDateS
 const sortedPayments=payments=>{const undated='9999-99-99';return[...(payments||[])].sort((a,b)=>{const ak=paymentDateKey(a)||undated,bk=paymentDateKey(b)||undated;return ak===bk?0:ak<bk?-1:1})};
 const paymentTimeKey=p=>{const t=p&&p.receivedAt?new Date(p.receivedAt).getTime():0;return Number.isFinite(t)?t:0};
 const EarningsChart=lazy(()=>import('./components/EarningsChart.jsx'));
-function PageHead({title,subtitle,action}){return <div className="page-head"><div><p className="eyebrow">HAKIM</p><h1>{title}</h1><p>{subtitle}</p></div>{action}</div>}
+function PageHead({title,subtitle,action}){return <div className="page-head"><div><p className="eyebrow">HAKIM</p><h1>{title}</h1>{subtitle&&<p>{subtitle}</p>}</div>{action}</div>}
 function Loading(){return <div className="loading"><div/><div/><div/></div>}
 function Spinner(){return <span className="spinner" aria-hidden="true"/>}
 function Btn({className='',loading=false,loadingText,children,disabled=false,...rest}){return <button className={loading?className+' is-loading':className} disabled={loading||disabled} aria-busy={loading?'true':undefined} {...rest}>{loading?<><Spinner/>{loadingText??children}</>:children}</button>}
@@ -1343,7 +1343,6 @@ function Dashboard({clinic}){
           </div>
           <div className="dph-side">
             <span className="live-dot">Live</span>
-            <Link className="dash-link" to="/patients">All patients <ArrowUpRight size={13}/></Link>
             <Link className="primary small" to="/patients/new"><Plus size={14}/> Add patient</Link>
           </div>
         </header>
@@ -1428,7 +1427,6 @@ function Dashboard({clinic}){
           :<div className="empty-state"><div className="es-icon"><BarChart3 size={21}/></div><b>No monthly data</b><p>Monthly visits will appear once visits are recorded.</p></div>}
         <footer className="rhythm-foot">
           <span className="rhythm-chip"><Sparkles size={13}/> Busiest · {busiest?busiest._id.month:'—'}</span>
-          <Link className="dash-link" to="/monthly">Reports <ArrowUpRight size={13}/></Link>
         </footer>
       </section>
 
@@ -1440,7 +1438,6 @@ function Dashboard({clinic}){
           </div>
           <div className="dph-side">
             <span className="attn-count">{attentionAll}</span>
-            <Link className="dash-link" to="/balances">All balances <ArrowUpRight size={13}/></Link>
           </div>
         </header>
         <div className="attention-list">
@@ -1452,9 +1449,6 @@ function Dashboard({clinic}){
                 <small>{item.meta}</small>
               </div>
               <Pill tone={item.tone}>{item.pill}</Pill>
-              <div className="attention-actions">
-                <Link className="icon-btn sm" to={item.to} aria-label={`Open ${item.name}`}><ChevronRight size={16}/></Link>
-              </div>
             </div>
           ):<div className="empty-state"><div className="es-icon"><ShieldCheck size={21}/></div><b>All clear</b><p>No balances or closures need attention today.</p></div>}
         </div>
@@ -1493,29 +1487,6 @@ function Dashboard({clinic}){
         </div>
       </section>
       </div>
-    </div>
-
-    <div className="dash-lower">
-    <section className="dash-callout">
-      <div className="callout-mesh" aria-hidden="true"/>
-      <div className="callout-copy">
-        <div className="hero-eyebrow">Monthly close</div>
-        <h3>{pendingClosures.length?`Close ${pendingClosures.length} month${pendingClosures.length===1?'':'s'} with confidence.`:'Close the month with confidence.'}</h3>
-        <p>{pendingClosures.length
-          ?`${money(pendingTotal)} is ready to be marked paid across ${pendingClosures.length} month${pendingClosures.length===1?'':'s'}. Review percentages, salary closures and reports in one place.`
-          :'Review clinic income, your percentage and salary closures — everything is up to date.'}</p>
-        <div className="callout-actions">
-          <Link className="primary" to="/monthly"><Sparkles size={15}/> Open monthly report</Link>
-          <Link className="dash-link" to="/monthly">Review closures <ArrowUpRight size={13}/></Link>
-        </div>
-      </div>
-      <div className="callout-art" aria-hidden="true">
-        <IsoClinic className="iso-clinic"/>
-        <span className="callout-chip c1"><ToothMini className="chip-tooth"/> Ethiopian calendar</span>
-        <span className="callout-chip c2"><HeartPulse size={14}/> Live ledger</span>
-      </div>
-    </section>
-
     </div>
 
     <Modal open={!!calDay} onClose={()=>setCalDay(null)}
@@ -4132,7 +4103,7 @@ function SettingsPage(){
  };
 
  return <>
-   <PageHead title="Settings" subtitle="Profile, login, clinic branding, theme, font, and options."/>
+   <PageHead title="Settings"/>
 
    <div className="tabs" role="tablist" aria-label="Settings sections">
      {[['profile','Profile'],['login','Login credentials'],['clinic','Appearance & clinic']].map(([k,l])=>

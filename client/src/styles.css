@@ -29,8 +29,8 @@
    1. Design tokens
    -------------------------------------------------------------------------- */
 :root {
-  --font: "Figtree", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-display: "Sora", "Figtree", system-ui, sans-serif;
+  --font: "DM Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "DM Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 
   --bg: #e9edf5;
   --bg-glow: rgba(30, 58, 95, .18);
@@ -49,25 +49,25 @@
   --line: rgba(15, 23, 42, .11);
   --line-2: rgba(15, 23, 42, .06);
 
-  --accent: #1e3a5f;
-  --accent-2: #2b4d7a;
-  --accent-ink: #162f4e;
-  --accent-soft: rgba(30, 58, 95, .14);
-  --accent-soft-2: rgba(30, 58, 95, .07);
-  --accent-contrast: #ffffff;
+  --accent: #53677d;
+  --accent-2: #758aa3;
+  --accent-ink: #1d2d3b;
+  --accent-soft: rgba(83, 103, 125, .08);
+  --accent-soft-2: rgba(83, 103, 125, .04);
+  --accent-contrast: #f5f7fb;
 
-  --mint: #5aa2e0;
-  --mint-2: #8ac4ef;
-  --mint-soft: rgba(90, 162, 224, .16);
-  --mint-text: #2f78bd;
+  --mint: #5c7d81;
+  --mint-2: #7fa5a9;
+  --mint-soft: rgba(92, 125, 129, .11);
+  --mint-text: #2f4f52;
 
-  --success: #5aa2e0;
-  --success-soft: rgba(90, 162, 224, .16);
-  --success-text: #2f78bd;
+  --success: #5a7d68;
+  --success-soft: rgba(90, 125, 104, .12);
+  --success-text: #2f4d3f;
 
-  --danger: #e2382a;
-  --danger-soft: rgba(226, 56, 42, .13);
-  --danger-text: #a72318;
+  --danger: #a86363;
+  --danger-soft: rgba(168, 99, 99, .11);
+  --danger-text: #704040;
 
   --shadow-1: 0 1px 2px rgba(13, 20, 40, .05), 0 6px 18px -8px rgba(13, 20, 40, .10);
   --shadow-2: 0 12px 30px -12px rgba(13, 20, 40, .22), 0 30px 60px -30px rgba(13, 20, 40, .28);
@@ -102,26 +102,26 @@ html[data-theme="dark"] {
   --line: rgba(255, 255, 255, .10);
   --line-2: rgba(255, 255, 255, .055);
 
-  --accent: #b9b9bf;
-  --accent-2: #d9d9de;
-  --accent-ink: #eaeaec;
-  --accent-soft: rgba(255, 255, 255, .12);
-  --accent-soft-2: rgba(255, 255, 255, .06);
-  --accent-contrast: #141417;
-  --accent-surface: linear-gradient(155deg, #e6e6ea, #cfcfd5 60%, #b8b8bf);
+  --accent: #b0b9c8;
+  --accent-2: #8ea0b5;
+  --accent-ink: #101b2a;
+  --accent-soft: rgba(176, 185, 200, .16);
+  --accent-soft-2: rgba(176, 185, 200, .08);
+  --accent-contrast: #101b2a;
+  --accent-surface: linear-gradient(155deg, #dfe7f2, #c2cfdf 60%, #b1bfd1);
 
-  --mint: #a8a8ae;
-  --mint-2: #c6c6cc;
-  --mint-soft: rgba(255, 255, 255, .12);
-  --mint-text: #d8d8dc;
+  --mint: #6c9ba2;
+  --mint-2: #8fb9bd;
+  --mint-soft: rgba(108, 155, 162, .13);
+  --mint-text: #d7ebee;
 
-  --success: #a8a8ae;
-  --success-soft: rgba(255, 255, 255, .12);
-  --success-text: #d8d8dc;
+  --success: #7c9f8b;
+  --success-soft: rgba(124, 159, 139, .14);
+  --success-text: #deefe5;
 
-  --danger: #e8756a;
-  --danger-soft: rgba(232, 117, 106, .16);
-  --danger-text: #f0a79c;
+  --danger: #c98a8a;
+  --danger-soft: rgba(201, 138, 138, .15);
+  --danger-text: #f2d2d2;
 
   --shadow-1: 0 1px 2px rgba(0, 0, 0, .5), 0 8px 22px -12px rgba(0, 0, 0, .6);
   --shadow-2: 0 18px 44px -18px rgba(0, 0, 0, .72), 0 40px 80px -40px rgba(0, 0, 0, .8);
@@ -180,8 +180,8 @@ html[data-theme="dark"] {
    the auth hero panel keeps white text on its own dark graphite gradient. */
 html[data-theme="dark"] .primary,
 html[data-theme="dark"] .patients-filter-button {
-  background: linear-gradient(135deg, #82b9fc 0%, #5b9ef6 100%);
-  color: #07152d;
+  background: var(--accent-surface);
+  color: var(--accent-ink);
 }
 html[data-theme="dark"] .auth-visual {
   background:
@@ -196,8 +196,8 @@ html[data-theme="dark"] .auth-visual::after {
 @media (prefers-color-scheme: dark) {
   html:not([data-theme]) .primary,
   html:not([data-theme]) .patients-filter-button {
-    background: linear-gradient(135deg, #82b9fc 0%, #5b9ef6 100%);
-    color: #07152d;
+    background: var(--accent-surface);
+    color: var(--accent-ink);
   }
   html:not([data-theme]) .auth-visual {
     background:
@@ -2241,7 +2241,7 @@ input[type="datetime-local"]::-webkit-datetime-edit {
   cursor: pointer;
   transition: background var(--dur-2) var(--ease-out), color var(--dur-2) ease, box-shadow var(--dur-2) ease;
 }
-.tabs button.active { background: var(--surface); color: var(--accent-ink); box-shadow: var(--shadow-1); }
+.tabs button.active { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-1); }
 .tab-panel { animation: fadeUp var(--dur-2) var(--ease-out) both; }
 
 /* --------------------------------------------------------------------------
