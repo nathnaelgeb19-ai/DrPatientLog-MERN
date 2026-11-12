@@ -1,4 +1,4 @@
-import React,{useEffect,useState,useRef,useCallback,lazy,Suspense,useMemo}from'react';import{createRoot}from'react-dom/client';import{createPortal}from'react-dom';import{BrowserRouter,useNavigate,useLocation,Routes,Route,Link,Navigate}from'react-router-dom';import{LayoutDashboard,Users,UserRoundCog,CalendarDays,Settings,LogOut,Plus,Search,Menu,X,Stethoscope,ShieldCheck,ArrowUpRight,Trash2,Edit3,CheckCircle2,ReceiptText,ClipboardList,Database,Send,Download,Upload,RefreshCw,KeyRound,UserCog,Palette,Sun,Moon,Monitor,Bell,Clock,ChevronDown,ChevronLeft,ChevronRight,FileText,Eye,EyeOff,CornerDownLeft,Sparkles,TrendingUp,Activity,BarChart3,Check,Lock,MoreVertical}from'lucide-react';import{api}from'./api';import{ethiopianDate,ETH_MONTHS,ethWeekday,ethMonthLength,ethPrevMonth,ethNextMonth}from'./ethiopian.js';import'./styles.css';import doctorLogo from './assets/aa-logo.svg';
+import React,{useEffect,useState,useRef,useCallback,lazy,Suspense,useMemo,useLayoutEffect}from'react';import{createRoot}from'react-dom/client';import{createPortal}from'react-dom';import{BrowserRouter,useNavigate,useLocation,Routes,Route,Link,Navigate}from'react-router-dom';import{LayoutDashboard,House,Users,UserRoundCog,CalendarDays,Settings,LogOut,Plus,Search,Menu,X,Stethoscope,ShieldCheck,ArrowUpRight,Trash2,Edit3,CheckCircle2,ReceiptText,ClipboardList,Database,Send,Download,Upload,RefreshCw,KeyRound,UserCog,Palette,Sun,Moon,Monitor,Bell,Clock,ChevronDown,ChevronLeft,ChevronRight,FileText,Eye,EyeOff,CornerDownLeft,Sparkles,TrendingUp,Activity,BarChart3,Check,Lock,MoreVertical,Timer,HeartPulse,AlertCircle}from'lucide-react';import{api}from'./api';import{ethiopianDate,ETH_MONTHS,ethWeekday,ethMonthLength,ethPrevMonth,ethNextMonth}from'./ethiopian.js';import'./styles.css';import'./orthoflow.css';import{ActivityRing,IsoClinic,PulseWave,ToothMini,WeeklyRhythm}from'./components/DentalVisuals.jsx';import doctorLogo from './assets/aa-logo.svg';
 const money=n=>`${Number(n||0).toFixed(2)} ETB`;
 const titleCase=v=>String(v||'').replace(/\b[\p{L}]/gu,c=>c.toUpperCase());
 const ethDateSortKey=ethDate=>{const parts=String(ethDate||'').trim().split(/\s+/);if(parts.length<3)return'';const year=Number(parts[parts.length-1]);const day=Number(parts[parts.length-2]);const mi=ETH_MONTHS.indexOf(parts.slice(0,-2).join(' ')||parts[0]);if(!Number.isInteger(year)||!Number.isInteger(day)||mi<0)return'';return`${year}-${String(mi+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`};
@@ -20,7 +20,27 @@ function Modal({open,onClose,title,subtitle,children,wide}){useEffect(()=>{if(!o
 function Switch({checked,onChange,label}){return <label className="switch"><input type="checkbox" checked={checked} onChange={e=>onChange(e.target.checked)} aria-label={label}/><span className="track"/><span className="thumb"/></label>}
 function ScrollProgress(){const ref=useRef(null);useEffect(()=>{let raf;const on=()=>{if(raf)return;raf=requestAnimationFrame(()=>{raf=0;const h=document.documentElement,max=h.scrollHeight-h.clientHeight;if(ref.current)ref.current.style.transform=`scaleX(${max>0?h.scrollTop/max:0})`})};window.addEventListener('scroll',on,{passive:true});window.addEventListener('resize',on);on();return()=>{window.removeEventListener('scroll',on);window.removeEventListener('resize',on)}},[]);return <div className="scroll-progress" ref={ref}/>}
 function CommandPalette({open,onClose,nav}){const[q,setQ]=useState(''),[idx,setIdx]=useState(0),inputRef=useRef(null),go=useNavigate();useEffect(()=>{if(open){setQ('');setIdx(0);const t=setTimeout(()=>inputRef.current?.focus(),40);return()=>clearTimeout(t)}},[open]);const actions=nav.flatMap(([to,label,I])=>({label,to,icon:I}));const f=q.trim()?actions.filter(a=>a.label.toLowerCase().includes(q.toLowerCase())):actions;useEffect(()=>setIdx(0),[q]);const choose=a=>{if(!a)return;go(a.to);onClose()};if(!open)return null;return <div className="cmd-overlay" onMouseDown={e=>e.target===e.currentTarget&&onClose()}><div className="cmd-panel" role="dialog" aria-modal="true" aria-label="Command palette"><div className="cmd-search"><Search size={18}/><input ref={inputRef} value={q} placeholder="Search pages and actions…" onChange={e=>setQ(e.target.value)} onKeyDown={e=>{if(e.key==='ArrowDown'){e.preventDefault();setIdx(i=>Math.min(i+1,f.length-1))}else if(e.key==='ArrowUp'){e.preventDefault();setIdx(i=>Math.max(i-1,0))}else if(e.key==='Enter'){e.preventDefault();choose(f[idx])}else if(e.key==='Escape'){e.preventDefault();onClose()}}}/><kbd>ESC</kbd></div><div className="cmd-list">{f.length?f.map((a,i)=><button key={a.to} className={'cmd-item'+(i===idx?' active':'')} onMouseEnter={()=>setIdx(i)} onClick={()=>choose(a)}><a.icon size={17}/><span>{a.label}</span>{i===idx&&<CornerDownLeft size={14}/>}</button>):<div className="cmd-empty">{`No matches for "${q}".`}</div>}</div></div></div>}
-function Shell({doctor,onLogout,children,clinic}){
+const initialsOf=name=>String(name||'').split(' ').filter(Boolean).map(x=>x[0]).join('').slice(0,1).toUpperCase();
+const toneFromName=name=>{let h=0;const s=String(name||'');for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return h%7};
+function Avatar({name,size=36}){return <span className={'avatar a'+size+' avatar-'+toneFromName(name)}><span className="avatar-letter">{initialsOf(name)}</span></span>}
+function Pill({tone='muted',children,className=''}){return <span className={'pill tone-'+tone+(className?' '+className:'')}>{children}</span>}
+function Dropdown({trigger,children,menuClass=''}){
+  const[open,setOpen]=useState(false);
+  const ref=useRef(null);
+  useEffect(()=>{
+    if(!open)return;
+    const onDoc=e=>{if(ref.current&&!ref.current.contains(e.target))setOpen(false)};
+    const onKey=e=>{if(e.key==='Escape')setOpen(false)};
+    document.addEventListener('mousedown',onDoc);
+    document.addEventListener('keydown',onKey);
+    return()=>{document.removeEventListener('mousedown',onDoc);document.removeEventListener('keydown',onKey)};
+  },[open]);
+  return <div className="dropdown" ref={ref}>
+    {React.cloneElement(trigger,{onClick:()=>setOpen(o=>!o)})}
+    {open&&<div className={'dd-menu '+menuClass}>{typeof children==='function'?children(()=>setOpen(false)):children}</div>}
+  </div>;
+}
+function LegacyShell({doctor,onLogout,children,clinic}){
   const loc=useLocation();
   const[open,setOpen]=useState(false);
   const[loggingOut,setLoggingOut]=useState(false);
@@ -397,6 +417,267 @@ function Shell({doctor,onLogout,children,clinic}){
 
   </div>
 }
+function Shell({doctor,onLogout,children,clinic}){
+  const loc=useLocation();
+  const[loggingOut,setLoggingOut]=useState(false);
+  const[theme,setTheme]=useState(()=>localStorage.getItem('hakim-theme')||'system');
+  const[cmdOpen,setCmdOpen]=useState(false);
+  const navRef=useRef(null);
+  const floatCurrent=useRef(0);
+  const floatRaf=useRef(0);
+  const[navTick,setNavTick]=useState(0);
+  const toast=useToast();
+  const navigate=useNavigate();
+  const remindSent=useRef(false);
+
+  useEffect(()=>{
+    if(remindSent.current)return;
+    let cancelled=false;
+    let idle;
+    let timer;
+    const load=()=>{
+      if(cancelled||remindSent.current)return;
+      api.get('/dashboard/monthly')
+        .then(m=>{
+          if(cancelled||remindSent.current)return;
+          const pending=(m.months||[]).filter(x=>x.canClose&&!x.closed);
+          if(!pending.length)return;
+          remindSent.current=true;
+          const total=pending.reduce((a,x)=>a+Number(x.payable||0),0);
+          toast(
+            pending.map(x=>`${x._id.month} ${x._id.year}: ${money(x.payable)}`).join('\n')+'\nTap to mark it paid and close the month.',
+            'warn',
+            {
+              title:`Payment reminder: ${money(total)}`,
+              className:'toast-reminder',
+              duration:8000,
+              position:'top',
+              onClick:()=>navigate('/monthly')
+            }
+          );
+        })
+        .catch(()=>{});
+    };
+    if(typeof window!=='undefined'&&'requestIdleCallback' in window){
+      idle=window.requestIdleCallback(load,{timeout:2500});
+    }else{
+      timer=setTimeout(load,1200);
+    }
+    return()=>{
+      cancelled=true;
+      if(idle!==undefined&&'cancelIdleCallback' in window)window.cancelIdleCallback(idle);
+      if(timer)clearTimeout(timer);
+    };
+  },[]);
+
+  const applyTheme=value=>{
+    setTheme(value);
+    localStorage.setItem('hakim-theme',value);
+
+    if(value==='system'){
+      document.documentElement.removeAttribute('data-theme');
+    }else{
+      document.documentElement.setAttribute('data-theme',value);
+    }
+  };
+
+  useEffect(()=>{
+    applyTheme(localStorage.getItem('hakim-theme')||'system');
+  },[]);
+
+  useEffect(()=>{
+    if(theme!=='system')return;
+
+    const media=window.matchMedia('(prefers-color-scheme: dark)');
+    const update=()=>{
+      document.documentElement.removeAttribute('data-theme');
+    };
+
+    media.addEventListener?.('change',update);
+    return()=>media.removeEventListener?.('change',update);
+  },[theme]);
+
+  const main=[
+    ['/','Dashboard','Home',House],
+    ['/patients','Patients','Patients',Users],
+    ['/balances','Balances','Balances',ReceiptText],
+    ['/monthly','Monthly','Monthly',CalendarDays]
+  ];
+
+  const admin=doctor.role==='admin'
+    ?[['/doctors','Doctors','Doctors',UserRoundCog],['/backup','Backup','Backup',Database],['/notifications','Notifications','Alerts',Bell],['/settings','Settings','Settings',Settings]]
+    :[];
+
+  const nav=[...main,...admin];
+
+  const dockItems=doctor.role==='admin'
+    ?[...main,...admin]
+    :main;
+
+  const isActive=to=>{
+    if(to==='/')return loc.pathname==='/';
+    if(to==='/patients')return loc.pathname==='/patients'||loc.pathname.startsWith('/patients/');
+    return loc.pathname===to;
+  };
+
+  const activeIndex=Math.max(0,dockItems.findIndex(([to])=>isActive(to)));
+  const ActiveIcon=dockItems[activeIndex][3];
+  const activeLabel=dockItems[activeIndex][2];
+
+  useLayoutEffect(()=>{
+    const el=navRef.current;
+    if(!el)return;
+    const items=el.querySelectorAll('.bn-item');
+    const targetEl=items[activeIndex];
+    if(!targetEl)return;
+    const navRect=el.getBoundingClientRect();
+    const rect=targetEl.getBoundingClientRect();
+    const target=rect.left-navRect.left+rect.width/2;
+    const dock=el.parentElement;
+    const from=floatCurrent.current;
+    const start=performance.now();
+    const duration=420;
+    const ease=t=>1-Math.pow(1-t,3);
+    cancelAnimationFrame(floatRaf.current);
+    const step=now=>{
+      const p=Math.min(1,(now-start)/duration);
+      const x=from+(target-from)*ease(p);
+      floatCurrent.current=x;
+      if(dock)dock.style.setProperty('--float-x',`${x}px`);
+      if(p<1)floatRaf.current=requestAnimationFrame(step);
+    };
+    floatRaf.current=requestAnimationFrame(step);
+    return()=>cancelAnimationFrame(floatRaf.current);
+  },[loc.pathname,navTick,doctor.role,activeIndex]);
+
+  useEffect(()=>{
+    const onResize=()=>setNavTick(t=>t+1);
+    window.addEventListener('resize',onResize);
+    return()=>window.removeEventListener('resize',onResize);
+  },[]);
+
+  useEffect(()=>{
+    const on=e=>{
+      if((e.metaKey||e.ctrlKey)&&(e.key||'').toLowerCase()==='k'){
+        e.preventDefault();
+        setCmdOpen(v=>!v);
+      }
+    };
+    window.addEventListener('keydown',on);
+    return()=>window.removeEventListener('keydown',on);
+  },[]);
+
+  const ThemeIcon=theme==='dark'?Moon:theme==='light'?Sun:Monitor;
+  const isMac=typeof navigator!=='undefined'&&/Mac/i.test(navigator.platform||navigator.userAgent||'');
+
+  const crumbLabel=
+    loc.pathname==='/'?'Overview'
+    :loc.pathname==='/patients/new'?'Register patient'
+    :loc.pathname.startsWith('/patients/edit/')?'Edit patient'
+    :loc.pathname.endsWith('/treatment/new')?'New treatment'
+    :loc.pathname.startsWith('/patients')?'Patients'
+    :loc.pathname.startsWith('/balances')?'Balances'
+    :loc.pathname.startsWith('/monthly')?'Monthly'
+    :loc.pathname.startsWith('/doctors')?'Doctors'
+    :loc.pathname.startsWith('/backup')?'Backup'
+    :loc.pathname.startsWith('/notifications')?'Notifications'
+    :loc.pathname.startsWith('/settings')?'Settings':'Overview';
+
+  const signOut=async()=>{
+    setLoggingOut(true);
+    try{
+      await onLogout();
+    }finally{
+      setLoggingOut(false);
+    }
+  };
+
+  return <div className="app-shell">
+    <div className="nav-dock">
+      <nav className="bottom-nav" ref={navRef} aria-label="Primary">
+        {dockItems.map(([to,label,short,I],i)=>
+          <React.Fragment key={to}>
+            <Link
+              to={to}
+              className={'bn-item'+(isActive(to)?' active':'')}
+              aria-label={label}
+              aria-current={isActive(to)?'page':undefined}
+              title={label}
+            >
+              <I size={18}/>
+              <span className="bn-label">{short}</span>
+            </Link>
+            {i===Math.floor(dockItems.length/2)-1&&<Link to="/patients/new" className={'bn-add'+(loc.pathname==='/patients/new'?' selected':'')} aria-label="New patient" title="New patient">
+              <span className="bn-add-disc"><Plus size={22}/></span>
+            </Link>}
+          </React.Fragment>
+        )}
+      </nav>
+      <span className="nav-float" aria-hidden="true">
+        <ActiveIcon size={20}/>
+        <span className="nav-float-label">{activeLabel}</span>
+      </span>
+    </div>
+
+    <main className="main">
+      <header className="topbar">
+        <Link to="/" className="topbar-brand" aria-label="Hakim home">
+          <Stethoscope size={18}/>
+        </Link>
+        <div className="crumb">
+          Workspace <span className="sep">/</span> <b>{crumbLabel}</b>
+        </div>
+        <div className="top-search">
+          <div className="searchbox" role="button" tabIndex={0} onClick={()=>setCmdOpen(true)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();setCmdOpen(true)}}}>
+            <Search size={14}/>
+            <input readOnly placeholder="Search pages and actions…" aria-label="Open search"/>
+            <kbd>{isMac?'⌘K':'Ctrl K'}</kbd>
+          </div>
+        </div>
+        <div className="top-actions">
+          <Dropdown
+            trigger={<button className="icon-btn" aria-label={`Appearance: ${theme}`} title="Change appearance"><ThemeIcon size={18}/></button>}
+          >
+            {close=><>
+              <div className="dd-head"><b>Appearance</b><span>{theme==='system'?'System':theme==='light'?'Light':'Dark'}</span></div>
+              {[['light','Light',Sun],['dark','Dark',Moon],['system','System',Monitor]].map(([key,label,I])=>
+                <button key={key} className={'dd-item'+(theme===key?' active':'')} onClick={()=>{applyTheme(key);close()}}>
+                  <I size={15}/>{label}{theme===key&&<Check size={14} className="dd-check"/>}
+                </button>
+              )}
+            </>}
+          </Dropdown>
+
+          {doctor.role==='admin'&&<Link to="/notifications" className="icon-btn" aria-label="Notifications" title="Notifications"><Bell size={18}/></Link>}
+
+          <Dropdown
+            trigger={<button className="topbar-user" aria-label="Account menu"><Avatar name={doctor.name} size={30}/></button>}
+          >
+            {close=><>
+              <div className="dd-user">
+                <Avatar name={doctor.name} size={44}/>
+                <div><b>{doctor.name}</b><small>{doctor.role==='admin'?'ADMIN ACCESS':'DOCTOR ACCESS'}</small></div>
+              </div>
+              <div className="dd-divider"/>
+              {doctor.role==='admin'&&<button className="dd-item" onClick={()=>{navigate('/settings');close()}}><Settings size={15}/>Clinic settings</button>}
+              <button className="dd-item danger" disabled={loggingOut} onClick={async()=>{close();await signOut()}}>
+                {loggingOut?<Spinner/>:<LogOut size={15}/>}Sign out
+              </button>
+            </>}
+          </Dropdown>
+        </div>
+      </header>
+
+      <div className="content">
+        <div className="page" key={loc.pathname}>
+          {children}
+        </div>
+      </div>
+    </main>
+
+    <CommandPalette open={cmdOpen} onClose={()=>setCmdOpen(false)} nav={nav.map(([to,label,,I])=>[to,label,I])}/>
+  </div>;
+}
 function AuthLayout({title,subtitle,points,clinic,children}){return <div className="auth">
   <aside className="auth-visual">
     <div className="auth-brand">
@@ -639,7 +920,7 @@ function ResetPassword({clinic}){
 ),document.body)}
 </div>});
 PatientTable.displayName='PatientTable';
-function Dashboard({clinic}){
+function LegacyDashboard({clinic}){
   const[d,setD]=useState();
   const[err,setErr]=useState('');
   const[range,setRange]=useState('eth_month');
@@ -920,6 +1201,294 @@ function Dashboard({clinic}){
         : <div className="cal-empty">Loading…</div>}
     </Modal>
   </>
+}
+function Dashboard({clinic}){
+  const[d,setD]=useState();
+  const[err,setErr]=useState('');
+  const[range,setRange]=useState('eth_month');
+  const[months,setMonths]=useState([]);
+  const[cal,setCal]=useState();
+  const[calRef,setCalRef]=useState(null);
+  const[calDay,setCalDay]=useState(null);
+  const[calDayData,setCalDayData]=useState();
+
+  useEffect(()=>{
+    setErr('');
+    api.get('/dashboard?range='+range)
+      .then(setD)
+      .catch(e=>setErr(e.message||'Unable to load dashboard.'));
+  },[range]);
+
+  useEffect(()=>{
+    api.get('/dashboard/monthly')
+      .then(m=>setMonths(m.months||[]))
+      .catch(()=>{});
+  },[]);
+
+  useEffect(()=>{
+    api.get('/dashboard/calendar'+(calRef?`?month=${encodeURIComponent(ETH_MONTHS[calRef.monthIndex-1])}&year=${calRef.year}`:''))
+      .then(setCal).catch(()=>{});
+  },[calRef]);
+
+  useEffect(()=>{
+    if(!cal||!calDay){setCalDayData(undefined);return;}
+    setCalDayData(undefined);
+    api.get(`/dashboard/calendar?month=${encodeURIComponent(cal.month)}&year=${cal.year}&day=${calDay}`)
+      .then(setCalDayData)
+      .catch(()=>setCalDayData(undefined));
+  },[cal,calDay]);
+
+  if(err)return <div className="error">{err}</div>;
+  if(!d)return <Loading/>;
+
+  const recent=d.recent||[];
+  const settled=recent.filter(p=>Number(p.balance||0)<=0).length;
+  const partial=recent.filter(p=>Number(p.balance||0)>0).length;
+  const dueRows=recent.filter(p=>Number(p.balance||0)>0);
+  const pendingClosures=months.filter(m=>m.canClose&&!m.closed);
+  const pendingTotal=pendingClosures.reduce((a,m)=>a+Number(m.payable||0),0);
+  const trend=[...months].reverse().slice(-7);
+  const trendKeys=trend.map(m=>`${m._id.month} ${String(m._id.year).slice(-2)}`);
+  const trendCounts=Object.fromEntries(trend.map((m,i)=>[trendKeys[i],Number(m.count||0)]));
+  const weeklyTotal=trend.reduce((a,m)=>a+Number(m.count||0),0);
+  const busiest=trend.reduce((a,m)=>Number(m.count||0)>Number(a?.count||0)?m:a,trend[0]);
+  const ringTotal=recent.length;
+  const ringConfirmed=settled;
+  const ringAwaiting=partial;
+  const ringProposed=0;
+  const attentionAll=dueRows.length+pendingClosures.length;
+  const attention=[
+    ...dueRows.slice(0,4).map(p=>({
+      key:'p'+(p._id||p.cardNumber),
+      name:p.patientName,
+      meta:`${p.procedure||'Visit'} · ${money(p.balance)} due`,
+      tone:'orange',
+      pill:'Balance due',
+      to:`/patients/edit/${p._id}`
+    })),
+    ...pendingClosures.slice(0,4).map(m=>({
+      key:'m'+m._id.month+m._id.year,
+      name:`${m._id.month} ${m._id.year}`,
+      meta:`${money(m.payable)} ready to close`,
+      tone:'violet',
+      pill:'Close month',
+      to:'/monthly'
+    }))
+  ].slice(0,4);
+  const shortMoney=v=>{
+    const n=Number(v||0);
+    return n>=1e6?`${(n/1e6).toFixed(1)}M`:n>=1e3?`${(n/1e3).toFixed(1)}k`:String(Math.round(n));
+  };
+  const calWeekdays=['እሁድ','ሰኞ','ማክሰ','ረቡዕ','ሐሙስ','ዓርብ','ቅዳሜ'];
+  const calLen=cal?ethMonthLength(cal.year,cal.monthIndex):30;
+  const calStart=cal?ethWeekday(cal.year,cal.monthIndex,1):0;
+  const calVisit=cal?Object.fromEntries(cal.days.map(x=>[x.day,x])):{};
+  const calIsCurrent=!!(cal&&d&&cal.month===d.ethToday.month&&cal.year===d.ethToday.year);
+  const stepCal=n=>{if(!cal)return;setCalDay(null);setCalRef(n<0?ethPrevMonth(cal.monthIndex,cal.year):ethNextMonth(cal.monthIndex,cal.year));};
+  const todayCal=()=>{setCalDay(null);setCalRef(null);};
+  const pickDay=day=>setCalDay(cur=>cur===day?null:day);
+  const rangeLabel={today:'Today',week:'Last 7 days',eth_month:'Ethiopian month',all:'All time'}[range];
+
+  return <div className="dash">
+    <div className="dash-grid">
+      <section className="dash-panel flow-panel">
+        <header className="dash-panel-head">
+          <div>
+            <h2>Recent visits</h2>
+            <p className="dph-sub">Live ledger · {d.ethToday.month} {d.ethToday.day}, {d.ethToday.year}</p>
+          </div>
+          <div className="dph-side">
+            <span className="live-dot">Live</span>
+            <Link className="dash-link" to="/patients">All patients <ArrowUpRight size={13}/></Link>
+            <Link className="primary small" to="/patients/new"><Plus size={14}/> Add patient</Link>
+          </div>
+        </header>
+        <div className="flow-body">
+          <ActivityRing total={ringTotal} confirmed={ringConfirmed} awaiting={ringAwaiting} proposed={ringProposed} label="visits"/>
+          <div className="flow-list">
+            {recent.length?recent.slice(0,4).map(p=>
+              <Link className="flow-row" key={p._id||p.cardNumber} to={`/patients/edit/${p._id}`}>
+                <span className="flow-time">{(p.ethDate||p.gregDate||'').replace(/\s+\d{4}$/,'')}</span>
+                <span className={'flow-dot '+(Number(p.balance||0)>0?'awaiting':'confirmed')}/>
+                <span className="flow-name">
+                  <b>{p.patientName}</b>
+                  <small>{p.cardNumber||'—'} · {p.procedure||'Visit'}</small>
+                </span>
+                <Pill tone={Number(p.balance||0)>0?'amber':'green'}>{Number(p.balance||0)>0?'Partial':'Settled'}</Pill>
+              </Link>
+            ):<div className="empty-state">
+              <div className="es-icon"><CalendarDays size={21}/></div>
+              <b>No visits yet</b>
+              <p>Record your first patient visit to see it here.</p>
+            </div>}
+          </div>
+        </div>
+        <footer className="flow-foot">
+          <span className="flow-stat confirmed"><b>{settled}</b> settled</span>
+          <span className="flow-stat awaiting"><b>{partial}</b> partial</span>
+          <span className="flow-stat proposed"><b>{recent.length}</b> recent visits</span>
+        </footer>
+      </section>
+
+      <section className="dash-panel rhythm-panel">
+        <header className="dash-panel-head">
+          <div>
+            <h2>Monthly rhythm</h2>
+            <p className="dph-sub">Visit load across Ethiopian months</p>
+          </div>
+          <div className="rhythm-total">
+            <strong>{weeklyTotal}</strong>
+            <span>visits</span>
+          </div>
+        </header>
+        {trend.length
+          ?<WeeklyRhythm counts={trendCounts} days={trendKeys}/>
+          :<div className="empty-state"><div className="es-icon"><BarChart3 size={21}/></div><b>No monthly data</b><p>Monthly visits will appear once visits are recorded.</p></div>}
+        <footer className="rhythm-foot">
+          <span className="rhythm-chip"><Sparkles size={13}/> Busiest · {busiest?busiest._id.month:'—'}</span>
+          <Link className="dash-link" to="/monthly">Reports <ArrowUpRight size={13}/></Link>
+        </footer>
+      </section>
+
+      <section className="dash-panel pulse-panel">
+        <header className="dash-panel-head">
+          <div>
+            <h2>Clinic pulse</h2>
+            <p className="dph-sub">Operational health · {rangeLabel}</p>
+          </div>
+          <div className="dph-side">
+            <select className="dash-range" value={range} onChange={e=>setRange(e.target.value)} aria-label="Dashboard range">
+              <option value="today">Today</option>
+              <option value="week">Last 7 days</option>
+              <option value="eth_month">Ethiopian month</option>
+              <option value="all">All time</option>
+            </select>
+            <span className="live-dot">Stable</span>
+          </div>
+        </header>
+        <div className="pulse-wave"><PulseWave/></div>
+        <div className="pulse-metrics">
+          <div className="pulse-metric">
+            <span className="pm-icon blue"><Users size={16}/></span>
+            <b>{d.count}</b>
+            <small>Visits</small>
+          </div>
+          <div className="pulse-metric">
+            <span className="pm-icon cyan"><Timer size={16}/></span>
+            <b>{shortMoney(d.outstanding)}</b>
+            <small>ETB due</small>
+          </div>
+          <div className="pulse-metric">
+            <span className="pm-icon amber"><AlertCircle size={16}/></span>
+            <b>{pendingClosures.length}</b>
+            <small>To close</small>
+          </div>
+        </div>
+      </section>
+
+      <section className="dash-panel attention-panel">
+        <header className="dash-panel-head">
+          <div>
+            <h2>Needs attention</h2>
+            <p className="dph-sub">Balances and monthly closures that need a human touch</p>
+          </div>
+          <div className="dph-side">
+            <span className="attn-count">{attentionAll}</span>
+            <Link className="dash-link" to="/balances">All balances <ArrowUpRight size={13}/></Link>
+          </div>
+        </header>
+        <div className="attention-list">
+          {attention.length?attention.map(item=>
+            <div className="attention-row" key={item.key}>
+              <Avatar name={item.name} size={38}/>
+              <div className="attention-main">
+                <b>{item.name}</b>
+                <small>{item.meta}</small>
+              </div>
+              <Pill tone={item.tone}>{item.pill}</Pill>
+              <div className="attention-actions">
+                <Link className="icon-btn sm" to={item.to} aria-label={`Open ${item.name}`}><ChevronRight size={16}/></Link>
+              </div>
+            </div>
+          ):<div className="empty-state"><div className="es-icon"><ShieldCheck size={21}/></div><b>All clear</b><p>No balances or closures need attention today.</p></div>}
+        </div>
+      </section>
+    </div>
+
+    <div className="dash-lower">
+    <section className="dash-callout">
+      <div className="callout-mesh" aria-hidden="true"/>
+      <div className="callout-copy">
+        <div className="hero-eyebrow">Monthly close</div>
+        <h3>{pendingClosures.length?`Close ${pendingClosures.length} month${pendingClosures.length===1?'':'s'} with confidence.`:'Close the month with confidence.'}</h3>
+        <p>{pendingClosures.length
+          ?`${money(pendingTotal)} is ready to be marked paid across ${pendingClosures.length} month${pendingClosures.length===1?'':'s'}. Review percentages, salary closures and reports in one place.`
+          :'Review clinic income, your percentage and salary closures — everything is up to date.'}</p>
+        <div className="callout-actions">
+          <Link className="primary" to="/monthly"><Sparkles size={15}/> Open monthly report</Link>
+          <Link className="dash-link" to="/monthly">Review closures <ArrowUpRight size={13}/></Link>
+        </div>
+      </div>
+      <div className="callout-art" aria-hidden="true">
+        <IsoClinic className="iso-clinic"/>
+        <span className="callout-chip c1"><ToothMini className="chip-tooth"/> Ethiopian calendar</span>
+        <span className="callout-chip c2"><HeartPulse size={14}/> Live ledger</span>
+      </div>
+    </section>
+
+    <section className="dash-panel dash-calendar-panel">
+      <header className="dash-panel-head">
+        <div>
+          <h2>{cal?`${cal.month} ${cal.year}`:'Ethiopian calendar'}</h2>
+          <p className="dph-sub">Visits per day · tap a day to see payments</p>
+        </div>
+        <div className="dph-side">
+          {calRef&&<button type="button" className="dash-link" onClick={todayCal}>Today</button>}
+          <button type="button" className="icon-btn sm" aria-label="Previous month" onClick={()=>stepCal(-1)} disabled={!cal}><ChevronLeft size={16}/></button>
+          <button type="button" className="icon-btn sm" aria-label="Next month" onClick={()=>stepCal(1)} disabled={!cal}><ChevronRight size={16}/></button>
+        </div>
+      </header>
+      <div className="cal">
+        <div className="cal-week">{calWeekdays.map(w=><span key={w}>{w}</span>)}</div>
+        <div className="cal-grid">
+          {Array.from({length:calStart},(_,i)=><span key={'b'+i} className="cal-cell cal-blank"/>)}
+          {Array.from({length:calLen},(_,i)=>{
+            const day=i+1;
+            const v=calVisit[day];
+            const isToday=calIsCurrent&&d&&d.ethToday.day===day;
+            return <button type="button" key={day}
+              className={'cal-cell'+(isToday?' is-today':'')+(v?' has-visits':'')+(calDay===day?' is-selected':'')}
+              onClick={()=>pickDay(day)}
+              aria-pressed={calDay===day}
+              aria-label={`${cal?cal.month:''} ${day}, ${cal?cal.year:''}${v?` · ${v.count} payment${v.count>1?'s':''}`:' · no payments'}`}>
+              <span className="cal-num">{day}</span>
+              {v&&<i className="cal-dot"/>}
+            </button>;
+          })}
+        </div>
+      </div>
+      <div className="dashboard-finance-summary cal-summary">
+        <div><span>Payments this month</span><b>{cal?cal.totalVisits:0}</b></div>
+        <div><span>Clinic income</span><b>{money(cal?cal.totalIncome:0)}</b></div>
+      </div>
+    </section>
+    </div>
+
+    <Modal open={!!calDay} onClose={()=>setCalDay(null)}
+      title={calDay&&cal?`${cal.month} ${calDay}, ${cal.year}`:'Visits'}
+      subtitle={calDayData?`${calDayData.count} payment${calDayData.count===1?'':'s'} · clinic income ${money(calDayData.income)}`:'Loading…'}>
+      {calDayData
+        ? (calDayData.patients.length
+          ? <ul className="cal-list cal-list-modal">
+              {calDayData.patients.map((p,idx)=><li key={`${p._id||''}|${p.treatmentId||''}|${p.ethDate||''}|${p.amount??''}|${idx}`}>
+                <div className="cal-list-main"><b>{p.patientName}</b><span>{p.procedure||'—'}{p.cardNumber?` · ${p.cardNumber}`:''}</span></div>
+                <div className="cal-list-fig"><b>{money(p.totalFee)}</b><span>{money(p.myEarning)}</span></div>
+              </li>)}
+            </ul>
+          : <div className="cal-empty">No payments recorded on this date.</div>)
+        : <div className="cal-empty">Loading…</div>}
+    </Modal>
+  </div>;
 }
 function Patients(){
   const nav=useNavigate();
