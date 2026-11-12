@@ -1665,7 +1665,7 @@ textarea:focus {
   .crumb { display: none; }
   .topbar { padding: 0 16px; gap: 10px; }
   .nav-dock { --arc-cut: 20px; }
-  .bottom-nav .bn-label { display: none; }
-  .bottom-nav .bn-item { padding: 9px 0; }
+  .bottom-nav .bn-label { display: block; }
+  .bottom-nav .bn-item { padding: 7px 0 5px; gap: 3px; }
   .bottom-nav .bn-item svg { width: 19px; height: 19px; }
 }
