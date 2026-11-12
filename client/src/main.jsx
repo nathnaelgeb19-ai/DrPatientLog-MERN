@@ -423,9 +423,11 @@ function Shell({doctor,onLogout,children,clinic}){
   const[theme,setTheme]=useState(()=>localStorage.getItem('hakim-theme')||'system');
   const[cmdOpen,setCmdOpen]=useState(false);
   const navRef=useRef(null);
+  const dockRef=useRef(null);
   const floatCurrent=useRef(0);
   const floatRaf=useRef(0);
   const[navTick,setNavTick]=useState(0);
+  const[moreOpen,setMoreOpen]=useState(false);
   const toast=useToast();
   const navigate=useNavigate();
   const remindSent=useRef(false);
@@ -513,12 +515,15 @@ function Shell({doctor,onLogout,children,clinic}){
   const dockItems=doctor.role==='admin'
     ?[...main,...admin]
     :main;
+  const mobilePrimaryPaths=['/','/patients','/balances'];
+  const moreItems=nav.filter(([to])=>!mobilePrimaryPaths.includes(to));
 
   const isActive=to=>{
     if(to==='/')return loc.pathname==='/';
     if(to==='/patients')return loc.pathname==='/patients'||loc.pathname.startsWith('/patients/');
     return loc.pathname===to;
   };
+  const moreActive=moreItems.some(([to])=>isActive(to));
 
   const activeIndex=Math.max(0,dockItems.findIndex(([to])=>isActive(to)));
   const ActiveIcon=dockItems[activeIndex][3];
@@ -527,8 +532,10 @@ function Shell({doctor,onLogout,children,clinic}){
   useLayoutEffect(()=>{
     const el=navRef.current;
     if(!el)return;
-    const items=el.querySelectorAll('.bn-item');
-    const targetEl=items[activeIndex];
+    const items=Array.from(el.querySelectorAll('.bn-item'));
+    const targetEl=items.find(item=>item.classList.contains('active')&&getComputedStyle(item).display!=='none')
+      ||el.querySelector('.bn-more.active')
+      ||items[activeIndex];
     if(!targetEl)return;
     const navRect=el.getBoundingClientRect();
     const rect=targetEl.getBoundingClientRect();
@@ -551,10 +558,31 @@ function Shell({doctor,onLogout,children,clinic}){
   },[loc.pathname,navTick,doctor.role,activeIndex]);
 
   useEffect(()=>{
-    const onResize=()=>setNavTick(t=>t+1);
+    const onResize=()=>{
+      setNavTick(t=>t+1);
+      if(window.innerWidth>900)setMoreOpen(false);
+    };
     window.addEventListener('resize',onResize);
     return()=>window.removeEventListener('resize',onResize);
   },[]);
+
+  useEffect(()=>{
+    setMoreOpen(false);
+  },[loc.pathname]);
+
+  useEffect(()=>{
+    if(!moreOpen)return;
+    const onPointerDown=e=>{
+      if(dockRef.current&&!dockRef.current.contains(e.target))setMoreOpen(false);
+    };
+    const onKeyDown=e=>e.key==='Escape'&&setMoreOpen(false);
+    document.addEventListener('pointerdown',onPointerDown);
+    document.addEventListener('keydown',onKeyDown);
+    return()=>{
+      document.removeEventListener('pointerdown',onPointerDown);
+      document.removeEventListener('keydown',onKeyDown);
+    };
+  },[moreOpen]);
 
   useEffect(()=>{
     const on=e=>{
@@ -593,13 +621,20 @@ function Shell({doctor,onLogout,children,clinic}){
   };
 
   return <div className="app-shell">
-    <div className="nav-dock">
+    <div className="nav-dock" ref={dockRef}>
+      {moreOpen&&<div className="mobile-more-menu" id="mobile-more-menu" aria-label="More pages">
+        {moreItems.map(([to,label,,I])=>
+          <Link key={to} to={to} className={isActive(to)?'active':''} aria-current={isActive(to)?'page':undefined} onClick={()=>setMoreOpen(false)}>
+            <I size={17}/><span>{label}</span>
+          </Link>
+        )}
+      </div>}
       <nav className="bottom-nav" ref={navRef} aria-label="Primary">
         {dockItems.map(([to,label,short,I],i)=>
           <React.Fragment key={to}>
             <Link
               to={to}
-              className={'bn-item'+(isActive(to)?' active':'')}
+              className={'bn-item'+(isActive(to)?' active':'')+(to==='/'?' mobile-home':to==='/patients'?' mobile-patients':to==='/balances'?' mobile-balances':' mobile-more-hidden')}
               aria-label={label}
               aria-current={isActive(to)?'page':undefined}
               title={label}
@@ -612,6 +647,10 @@ function Shell({doctor,onLogout,children,clinic}){
             </Link>}
           </React.Fragment>
         )}
+        <button type="button" className={'bn-item bn-more'+(moreActive?' active':'')} onClick={()=>setMoreOpen(open=>!open)} aria-label="More" aria-haspopup="true" aria-expanded={moreOpen} aria-controls="mobile-more-menu" title="More">
+          <MoreVertical size={18}/>
+          <span className="bn-label">More</span>
+        </button>
       </nav>
       <span className="nav-float" aria-hidden="true">
         <ActiveIcon size={20}/>
@@ -1291,6 +1330,7 @@ function Dashboard({clinic}){
 
   return <div className="dash">
     <div className="dash-grid">
+      <div className="dash-primary-row">
       <section className="dash-panel flow-panel">
         <header className="dash-panel-head">
           <div>
@@ -1330,26 +1370,6 @@ function Dashboard({clinic}){
         </footer>
       </section>
 
-      <section className="dash-panel rhythm-panel">
-        <header className="dash-panel-head">
-          <div>
-            <h2>Monthly rhythm</h2>
-            <p className="dph-sub">Visit load across Ethiopian months</p>
-          </div>
-          <div className="rhythm-total">
-            <strong>{weeklyTotal}</strong>
-            <span>visits</span>
-          </div>
-        </header>
-        {trend.length
-          ?<WeeklyRhythm counts={trendCounts} days={trendKeys}/>
-          :<div className="empty-state"><div className="es-icon"><BarChart3 size={21}/></div><b>No monthly data</b><p>Monthly visits will appear once visits are recorded.</p></div>}
-        <footer className="rhythm-foot">
-          <span className="rhythm-chip"><Sparkles size={13}/> Busiest · {busiest?busiest._id.month:'—'}</span>
-          <Link className="dash-link" to="/monthly">Reports <ArrowUpRight size={13}/></Link>
-        </footer>
-      </section>
-
       <section className="dash-panel pulse-panel">
         <header className="dash-panel-head">
           <div>
@@ -1385,6 +1405,28 @@ function Dashboard({clinic}){
           </div>
         </div>
       </section>
+      </div>
+
+      <div className="dash-secondary-row">
+      <section className="dash-panel rhythm-panel">
+        <header className="dash-panel-head">
+          <div>
+            <h2>Monthly rhythm</h2>
+            <p className="dph-sub">Visit load across Ethiopian months</p>
+          </div>
+          <div className="rhythm-total">
+            <strong>{weeklyTotal}</strong>
+            <span>visits</span>
+          </div>
+        </header>
+        {trend.length
+          ?<WeeklyRhythm counts={trendCounts} days={trendKeys}/>
+          :<div className="empty-state"><div className="es-icon"><BarChart3 size={21}/></div><b>No monthly data</b><p>Monthly visits will appear once visits are recorded.</p></div>}
+        <footer className="rhythm-foot">
+          <span className="rhythm-chip"><Sparkles size={13}/> Busiest · {busiest?busiest._id.month:'—'}</span>
+          <Link className="dash-link" to="/monthly">Reports <ArrowUpRight size={13}/></Link>
+        </footer>
+      </section>
 
       <section className="dash-panel attention-panel">
         <header className="dash-panel-head">
@@ -1413,6 +1455,40 @@ function Dashboard({clinic}){
           ):<div className="empty-state"><div className="es-icon"><ShieldCheck size={21}/></div><b>All clear</b><p>No balances or closures need attention today.</p></div>}
         </div>
       </section>
+
+      <section className="dash-panel dash-calendar-panel">
+        <header className="dash-panel-head">
+          <div>
+            <h2>{cal?`${cal.month} ${cal.year}`:'Ethiopian calendar'}</h2>
+            <p className="dph-sub">Visits per day · tap a day to see payments</p>
+          </div>
+          <div className="dph-side">
+            {calRef&&<button type="button" className="dash-link" onClick={todayCal}>Today</button>}
+            <button type="button" className="icon-btn sm" aria-label="Previous month" onClick={()=>stepCal(-1)} disabled={!cal}><ChevronLeft size={16}/></button>
+            <button type="button" className="icon-btn sm" aria-label="Next month" onClick={()=>stepCal(1)} disabled={!cal}><ChevronRight size={16}/></button>
+          </div>
+        </header>
+        <div className="cal">
+          <div className="cal-week">{calWeekdays.map(w=><span key={w}>{w}</span>)}</div>
+          <div className="cal-grid">
+            {Array.from({length:calStart},(_,i)=><span key={'b'+i} className="cal-cell cal-blank"/>)}
+            {Array.from({length:calLen},(_,i)=>{
+              const day=i+1;
+              const v=calVisit[day];
+              const isToday=calIsCurrent&&d&&d.ethToday.day===day;
+              return <button type="button" key={day}
+                className={'cal-cell'+(isToday?' is-today':'')+(v?' has-visits':'')+(calDay===day?' is-selected':'')}
+                onClick={()=>pickDay(day)}
+                aria-pressed={calDay===day}
+                aria-label={`${cal?cal.month:''} ${day}, ${cal?cal.year:''}${v?` · ${v.count} payment${v.count>1?'s':''}`:' · no payments'}`}>
+                <span className="cal-num">{day}</span>
+                {v&&<i className="cal-dot"/>}
+              </button>;
+            })}
+          </div>
+        </div>
+      </section>
+      </div>
     </div>
 
     <div className="dash-lower">
@@ -1436,42 +1512,6 @@ function Dashboard({clinic}){
       </div>
     </section>
 
-    <section className="dash-panel dash-calendar-panel">
-      <header className="dash-panel-head">
-        <div>
-          <h2>{cal?`${cal.month} ${cal.year}`:'Ethiopian calendar'}</h2>
-          <p className="dph-sub">Visits per day · tap a day to see payments</p>
-        </div>
-        <div className="dph-side">
-          {calRef&&<button type="button" className="dash-link" onClick={todayCal}>Today</button>}
-          <button type="button" className="icon-btn sm" aria-label="Previous month" onClick={()=>stepCal(-1)} disabled={!cal}><ChevronLeft size={16}/></button>
-          <button type="button" className="icon-btn sm" aria-label="Next month" onClick={()=>stepCal(1)} disabled={!cal}><ChevronRight size={16}/></button>
-        </div>
-      </header>
-      <div className="cal">
-        <div className="cal-week">{calWeekdays.map(w=><span key={w}>{w}</span>)}</div>
-        <div className="cal-grid">
-          {Array.from({length:calStart},(_,i)=><span key={'b'+i} className="cal-cell cal-blank"/>)}
-          {Array.from({length:calLen},(_,i)=>{
-            const day=i+1;
-            const v=calVisit[day];
-            const isToday=calIsCurrent&&d&&d.ethToday.day===day;
-            return <button type="button" key={day}
-              className={'cal-cell'+(isToday?' is-today':'')+(v?' has-visits':'')+(calDay===day?' is-selected':'')}
-              onClick={()=>pickDay(day)}
-              aria-pressed={calDay===day}
-              aria-label={`${cal?cal.month:''} ${day}, ${cal?cal.year:''}${v?` · ${v.count} payment${v.count>1?'s':''}`:' · no payments'}`}>
-              <span className="cal-num">{day}</span>
-              {v&&<i className="cal-dot"/>}
-            </button>;
-          })}
-        </div>
-      </div>
-      <div className="dashboard-finance-summary cal-summary">
-        <div><span>Payments this month</span><b>{cal?cal.totalVisits:0}</b></div>
-        <div><span>Clinic income</span><b>{money(cal?cal.totalIncome:0)}</b></div>
-      </div>
-    </section>
     </div>
 
     <Modal open={!!calDay} onClose={()=>setCalDay(null)}

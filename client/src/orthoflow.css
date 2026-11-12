@@ -451,6 +451,39 @@ html[data-theme="dark"] .bottom-nav {
   white-space: nowrap;
   transition: opacity var(--t-fast);
 }
+.bottom-nav .bn-item { font: inherit; cursor: pointer; }
+.bottom-nav .bn-more,
+.mobile-more-menu { display: none; }
+.mobile-more-menu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 12px);
+  z-index: 41;
+  width: min(248px, calc(100vw - 24px));
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+  -webkit-backdrop-filter: blur(22px) saturate(170%);
+  backdrop-filter: blur(22px) saturate(170%);
+  box-shadow: var(--shadow-md);
+}
+.mobile-more-menu a {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 42px;
+  padding: 9px 12px;
+  border-radius: 11px;
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.mobile-more-menu a:hover,
+.mobile-more-menu a.active { color: var(--blue); background: var(--surface-2); }
 
 .bottom-nav .bn-add {
   flex: 0 0 68px;
@@ -972,11 +1005,22 @@ html[data-theme="dark"] .live-dot { color: var(--success-text); }
   50% { transform: translateY(-9px); }
 }
 
-.dash-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 18px; }
-.flow-panel { grid-column: span 7; }
-.rhythm-panel { grid-column: span 5; }
-.pulse-panel { grid-column: span 4; }
-.attention-panel { grid-column: span 8; }
+.dash-grid { display: flex; flex-direction: column; gap: 18px; }
+.dash-primary-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 440px;
+  gap: 18px;
+}
+.dash-secondary-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 400px;
+  gap: 18px;
+  align-items: stretch;
+}
+.dash-calendar-panel {
+  width: 400px;
+  max-width: 100%;
+}
 
 .dash-panel {
   position: relative;
@@ -1446,9 +1490,15 @@ html[data-theme="dark"] .ring-center small { color: #74d7ab; }
 
 /* Dashboard responsive */
 @media (max-width: 1180px) {
-  .flow-panel, .rhythm-panel { grid-column: span 12; }
-  .pulse-panel { grid-column: span 5; }
-  .attention-panel { grid-column: span 7; }
+  .dash-primary-row { grid-template-columns: minmax(0, 1fr); }
+  .dash-secondary-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dash-calendar-panel {
+    grid-column: 1 / -1;
+    max-width: 440px;
+    width: 100%;
+    margin: 0 auto;
+    justify-self: center;
+  }
 }
 @media (max-width: 1020px) {
   .dash-callout { grid-template-columns: 1fr; }
@@ -1457,7 +1507,7 @@ html[data-theme="dark"] .ring-center small { color: #74d7ab; }
   .iso-clinic { width: min(330px, 78%); right: 8%; }
 }
 @media (max-width: 860px) {
-  .pulse-panel, .attention-panel { grid-column: span 12; }
+  .dash-secondary-row { grid-template-columns: minmax(0, 1fr); }
   .flow-body { grid-template-columns: 1fr; justify-items: center; }
   .flow-list { width: 100%; }
   .ring-widget { margin: 0 auto; }
@@ -1570,12 +1620,9 @@ textarea:focus {
   box-shadow: 0 0 0 3px rgba(8, 87, 230, 0.14);
 }
 
-/* Callout + compact Ethiopian calendar */
+/* Compact Ethiopian calendar */
 .dash-lower {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 400px;
-  gap: 18px;
-  align-items: start;
+  display: block;
 }
 .dash-lower .dash-callout { height: auto; }
 .dash-calendar-panel { padding-bottom: 16px; }
@@ -1591,11 +1638,6 @@ textarea:focus {
   padding: 12px 16px 0;
 }
 .dash-calendar-panel .dashboard-finance-summary b { font-size: var(--fs-lg); }
-@media (max-width: 1020px) {
-  .dash-lower { grid-template-columns: 1fr; }
-  .dash-calendar-panel { max-width: 440px; width: 100%; margin: 0 auto; }
-}
-
 /* --------------------------------------------------------------------------
    8. Shell responsive
    -------------------------------------------------------------------------- */
@@ -1604,6 +1646,13 @@ textarea:focus {
   .bottom-nav { width: 100%; }
   .bottom-nav .bn-item { flex: 1 1 0; width: auto; }
   .bottom-nav .bn-add { flex: 0 0 56px; width: 56px; }
+  .bottom-nav .mobile-more-hidden { display: none; }
+  .bottom-nav .mobile-home { order: 0; }
+  .bottom-nav .mobile-patients { order: 1; }
+  .bottom-nav .bn-add { order: 2; }
+  .bottom-nav .mobile-balances { order: 3; }
+  .bottom-nav .bn-more { display: grid; order: 4; }
+  .mobile-more-menu { display: flex; }
   .bn-add-disc { width: 40px; height: 40px; }
   .bn-add-disc svg { width: 20px; height: 20px; }
   .nav-dock { left: 12px; right: 12px; transform: none; }
