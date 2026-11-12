@@ -1014,14 +1014,12 @@ html[data-theme="dark"] .dd-menu { background: rgba(19, 22, 29, 0.92); }
   gap: 12px;
   padding: 12px;
   border-radius: var(--r-md);
-  background: linear-gradient(135deg, rgba(13, 43, 87, 0.82) 0%, rgba(16, 51, 106, 0.82) 100%);
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
-  color: #fff;
+  background: transparent;
+  color: var(--ink);
   margin-bottom: 8px;
 }
 .dd-user b { display: block; font-size: var(--fs-md); font-family: var(--font-display); }
-.dd-user small { font-size: var(--fs-xs); color: rgba(255, 255, 255, 0.65); font-weight: 600; letter-spacing: 0.04em; }
+.dd-user small { font-size: var(--fs-xs); color: var(--ink-3); font-weight: 600; letter-spacing: 0.04em; }
 .dd-divider { height: 1px; background: var(--line); margin: 7px 6px; }
 
 .searchbox {
