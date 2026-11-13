@@ -1335,7 +1335,7 @@ function Dashboard({clinic}){
   return <div className="dash">
     <div className="dash-grid">
       <div className="dash-primary-row">
-      <section className="dash-panel flow-panel">
+      <section className="dash-panel flow-panel recent-visits">
         <header className="dash-panel-head">
           <div>
             <h2>Recent visits</h2>
