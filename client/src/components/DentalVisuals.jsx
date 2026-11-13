@@ -142,7 +142,6 @@ export function ActivityRing({ total, confirmed, awaiting, proposed, label = 'ap
   const ratio = total ? Math.max(0.05, confirmed / total) : 0
   const dash = circ
   const off = circ * (1 - ratio)
-  const ticks = Math.min(total, 18)
 
   return (
     <div className="ring-widget">
@@ -168,14 +167,7 @@ export function ActivityRing({ total, confirmed, awaiting, proposed, label = 'ap
           transform={`rotate(-90 ${c} ${c})`}
           style={{ '--dash': dash, '--off': off }}
         />
-        {Array.from({ length: ticks }).map((_, i) => {
-          const angle = (i / ticks) * Math.PI * 2 - Math.PI / 2
-          const x = c + Math.cos(angle) * (r + 17)
-          const y = c + Math.sin(angle) * (r + 17)
-          const tone = i < confirmed ? 'confirmed' : i < confirmed + awaiting ? 'awaiting' : 'proposed'
-          return <circle key={i} className={`ring-tick ${tone}`} cx={x} cy={y} r="3.2" />
-        })}
-      </svg>
+        </svg>
       <div className="ring-center">
         <strong>{total}</strong>
         <span>{label}</span>
