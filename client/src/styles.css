@@ -2111,7 +2111,7 @@ input[type="datetime-local"]::-webkit-datetime-edit {
   color: var(--accent);
   background: var(--accent-soft);
 }
-.monthly-current-text { display: inline-flex; align-items: center; gap: 6px; color: var(--faint); font-weight: 600; }
+.monthly-current-text { display: flex; align-items: center; gap: 6px; color: var(--faint); font-weight: 600; margin-top: 6px; }
 .monthly-live-dot {
   width: 7px;
   height: 7px;
