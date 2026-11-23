@@ -625,27 +625,6 @@ html[data-theme="dark"] .nav-dock::before {
 }
 .bottom-nav .bn-add.selected .bn-add-disc { transform: translateY(-6px); }
 .bottom-nav .bn-add:active .bn-add-disc { transform: scale(0.94); }
-.fab-badge {
-  position: absolute;
-  top: -4px;
-  right: -5px;
-  z-index: 4;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
-  border-radius: 999px;
-  display: grid;
-  place-items: center;
-  background: #f97316;
-  color: #fff;
-  font-family: var(--font-ui);
-  font-size: 9px;
-  font-weight: 800;
-  line-height: 1;
-  border: 2px solid var(--dock-glass);
-  box-shadow: 0 2px 6px rgba(194, 88, 20, 0.42);
-}
-
 .nav-float {
   position: absolute;
   top: calc(var(--notch-y) - var(--bubble-size) / 2);

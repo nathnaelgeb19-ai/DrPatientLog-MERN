@@ -430,7 +430,6 @@ function Shell({doctor,onLogout,children,clinic}){
   const[moreOpen,setMoreOpen]=useState(false);
   const[compact,setCompact]=useState(()=>typeof window!=='undefined'&&window.matchMedia('(max-width:900px)').matches);
   const[alertCount,setAlertCount]=useState(0);
-  const[todayCount,setTodayCount]=useState(0);
   const toast=useToast();
   const navigate=useNavigate();
   const remindSent=useRef(false);
@@ -447,9 +446,6 @@ function Shell({doctor,onLogout,children,clinic}){
     let cancelled=false;
     api.get('/dashboard/monthly').then(m=>{
       if(!cancelled)setAlertCount((m.months||[]).filter(x=>x.canClose&&!x.closed).length);
-    }).catch(()=>{});
-    api.get('/dashboard?range=today').then(d=>{
-      if(!cancelled)setTodayCount(Number(d.count??d.periods?.today?.count??0));
     }).catch(()=>{});
     return()=>{cancelled=true};
   },[]);
@@ -673,7 +669,6 @@ function Shell({doctor,onLogout,children,clinic}){
             {i===Math.floor(dockItems.length/2)-1&&<Link to="/patients/new" className={'bn-add'+(loc.pathname==='/patients/new'?' selected':'')} aria-label="New patient" title="New patient">
               <span className="bn-add-disc">
                 <Plus size={20}/>
-                {todayCount>0&&<span className="fab-badge" aria-hidden="true">{todayCount}</span>}
               </span>
             </Link>}
           </React.Fragment>
@@ -752,7 +747,6 @@ function AuthLayout({title,subtitle,points,clinic,children}){return <div classNa
   <aside className="auth-visual">
     <div className="auth-brand">
       <div className="logo"><Stethoscope size={20}/></div>
-      <div><b>Hakim</b>{clinic?.name&&<span>{clinic.name}</span>}</div>
     </div>
     {title?(
       <div className="auth-hero">
@@ -780,18 +774,17 @@ function AuthLayout({title,subtitle,points,clinic,children}){return <div classNa
         <span className="auth-art-chip c1"><Activity size={18}/></span>
         <span className="auth-art-chip c2"><CalendarDays size={18}/></span>
         <span className="auth-art-chip c3"><Users size={18}/></span>
-        {clinic?.name&&<span className="auth-art-pill"><Stethoscope size={18}/>{clinic.name}</span>}
       </div>
     )}
-    <footer>© {new Date().getFullYear()} Hakim · Secure clinical records</footer>
+    <footer>© {new Date().getFullYear()} · Secure clinical records</footer>
   </aside>
   <main className="auth-main">
     <div className="auth-card">{children}</div>
   </main>
 </div>}
-function Login({onLogin,clinic}){const[f,setF]=useState({username:'',password:''}),[err,setErr]=useState(''),[busy,setBusy]=useState(false),[show,setShow]=useState(false);const nav=useNavigate();const go=async e=>{e.preventDefault();setBusy(true);try{await onLogin((await api.post('/auth/login',f)).doctor);nav('/',{replace:true})}catch(x){setErr(x.message)}finally{setBusy(false)}};return <AuthLayout clinic={clinic}>{(clinic?.short||clinic?.name)&&<p className="eyebrow brand">{clinic?.short||clinic?.name}</p>}<h1>Welcome back</h1><p className="sub">Sign in to your practice workspace.</p>{err&&<div className="error">{err}</div>}<form onSubmit={go}><label>Username<input autoComplete="username" required value={f.username} onChange={e=>setF({...f,username:e.target.value})}/></label><label>Password<span className="password-field"><input type={show?'text':'password'} autoComplete="current-password" required value={f.password} onChange={e=>setF({...f,password:e.target.value})}/><button type="button" className="password-toggle" title={show?'Hide password':'Show password'} aria-label={show?'Hide password':'Show password'} onClick={()=>setShow(!show)}>{show?<EyeOff size={16}/>:<Eye size={16}/>}</button></span></label><Btn className="primary full" loading={busy} loadingText="Signing in…"><LogIn size={17}/> Sign in</Btn></form><p className="auth-foot"><Link className="ghost full" to="/forgot">Forgot password?</Link></p></AuthLayout>}
-function Setup({onLogin,clinic}){const[f,setF]=useState({name:'',username:'',password:'',email:''}),[err,setErr]=useState(''),[busy,setBusy]=useState(false);const nav=useNavigate();const go=async e=>{e.preventDefault();setBusy(true);try{await onLogin((await api.post('/auth/setup',f)).doctor);nav('/',{replace:true})}catch(x){setErr(x.message)}finally{setBusy(false)}};return <AuthLayout clinic={clinic} title="Set up your clinic workspace." subtitle="Create the first administrator account to get started." points={[[Sparkles,'One-time setup','Takes less than a minute.'],[ShieldCheck,'Secure from the start','Your data never leaves your server.'],[Users,'Ready for your team','Add doctors once you are in.']]}><p className="eyebrow">FIRST-TIME SETUP</p><h1>Create administrator</h1><p className="sub">Set up the first Hakim account.</p>{err&&<div className="error">{err}</div>}<form onSubmit={go}>{[['name','Full name'],['username','Username'],['email','Email'],['password','Password']].map(([k,l])=><label key={k}>{l}<input type={k==='password'?'password':'text'} required={k!=='email'} value={f[k]} onChange={e=>setF({...f,[k]:e.target.value})}/></label>)}<Btn className="primary full" loading={busy} loadingText="Creating account…"><UserPlus size={17}/> Create administrator</Btn></form></AuthLayout>}
-function Forgot({clinic}){const[email,setEmail]=useState(''),[msg,setMsg]=useState(''),[busy,setBusy]=useState(false);const go=async e=>{e.preventDefault();setBusy(true);try{const x=await api.post('/auth/forgot',{email});setMsg(x.resetToken?`Development reset token: ${x.resetToken}`:'If the account exists, reset instructions have been prepared.');}finally{setBusy(false)}};return <AuthLayout clinic={clinic}>{(clinic?.short||clinic?.name)&&<p className="eyebrow brand">{clinic?.short||clinic?.name}</p>}<KeyRound size={30}/><h1>Reset password</h1><p className="sub">Enter the account email.</p>{msg&&<div className="note">{msg}</div>}<form onSubmit={go}><label>Email<input type="email" required value={email} onChange={e=>setEmail(e.target.value)}/></label><Btn className="primary full" loading={busy} loadingText="Generating…"><Mail size={17}/> Generate reset</Btn></form><p className="auth-foot"><Link to="/login">Back to sign in</Link></p></AuthLayout>}
+function Login({onLogin,clinic}){const[f,setF]=useState({username:'',password:''}),[err,setErr]=useState(''),[busy,setBusy]=useState(false),[show,setShow]=useState(false);const nav=useNavigate();const go=async e=>{e.preventDefault();setBusy(true);try{await onLogin((await api.post('/auth/login',f)).doctor);nav('/',{replace:true})}catch(x){setErr(x.message)}finally{setBusy(false)}};return <AuthLayout clinic={clinic}><h1>Welcome back</h1><p className="sub">Sign in to your practice workspace.</p>{err&&<div className="error">{err}</div>}<form onSubmit={go}><label>Username<input autoComplete="username" required value={f.username} onChange={e=>setF({...f,username:e.target.value})}/></label><label>Password<span className="password-field"><input type={show?'text':'password'} autoComplete="current-password" required value={f.password} onChange={e=>setF({...f,password:e.target.value})}/><button type="button" className="password-toggle" title={show?'Hide password':'Show password'} aria-label={show?'Hide password':'Show password'} onClick={()=>setShow(!show)}>{show?<EyeOff size={16}/>:<Eye size={16}/>}</button></span></label><Btn className="primary full" loading={busy} loadingText="Signing in…"><LogIn size={17}/> Sign in</Btn></form><p className="auth-foot"><Link className="ghost full" to="/forgot">Forgot password?</Link></p></AuthLayout>}
+function Setup({onLogin,clinic}){const[f,setF]=useState({name:'',username:'',password:'',email:''}),[err,setErr]=useState(''),[busy,setBusy]=useState(false);const nav=useNavigate();const go=async e=>{e.preventDefault();setBusy(true);try{await onLogin((await api.post('/auth/setup',f)).doctor);nav('/',{replace:true})}catch(x){setErr(x.message)}finally{setBusy(false)}};return <AuthLayout clinic={clinic} title="Set up your clinic workspace." subtitle="Create the first administrator account to get started." points={[[Sparkles,'One-time setup','Takes less than a minute.'],[ShieldCheck,'Secure from the start','Your data never leaves your server.'],[Users,'Ready for your team','Add doctors once you are in.']]}><p className="eyebrow">FIRST-TIME SETUP</p><h1>Create administrator</h1><p className="sub">Set up your clinic account.</p>{err&&<div className="error">{err}</div>}<form onSubmit={go}>{[['name','Full name'],['username','Username'],['email','Email'],['password','Password']].map(([k,l])=><label key={k}>{l}<input type={k==='password'?'password':'text'} required={k!=='email'} value={f[k]} onChange={e=>setF({...f,[k]:e.target.value})}/></label>)}<Btn className="primary full" loading={busy} loadingText="Creating account…"><UserPlus size={17}/> Create administrator</Btn></form></AuthLayout>}
+function Forgot({clinic}){const[email,setEmail]=useState(''),[msg,setMsg]=useState(''),[busy,setBusy]=useState(false);const go=async e=>{e.preventDefault();setBusy(true);try{const x=await api.post('/auth/forgot',{email});setMsg(x.resetToken?`Development reset token: ${x.resetToken}`:'If the account exists, reset instructions have been prepared.');}finally{setBusy(false)}};return <AuthLayout clinic={clinic}><KeyRound size={30}/><h1>Reset password</h1><p className="sub">Enter the account email.</p>{msg&&<div className="note">{msg}</div>}<form onSubmit={go}><label>Email<input type="email" required value={email} onChange={e=>setEmail(e.target.value)}/></label><Btn className="primary full" loading={busy} loadingText="Generating…"><Mail size={17}/> Generate reset</Btn></form><p className="auth-foot"><Link to="/login">Back to sign in</Link></p></AuthLayout>}
 function ResetPassword({clinic}){
  const params=new URLSearchParams(window.location.search),
  token=params.get('token')||'',
@@ -835,7 +828,6 @@ function ResetPassword({clinic}){
  };
 
  return <AuthLayout clinic={clinic}>
-     {(clinic?.short||clinic?.name)&&<p className="eyebrow brand">{clinic?.short||clinic?.name}</p>}
      <KeyRound size={30}/>
      <h1>Set new password</h1>
      <p className="sub">Choose a new password for your account.</p>
