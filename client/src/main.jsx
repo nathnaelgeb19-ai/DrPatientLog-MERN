@@ -36,8 +36,8 @@ function Dropdown({trigger,children,menuClass=''}){
     return()=>{document.removeEventListener('mousedown',onDoc);document.removeEventListener('keydown',onKey)};
   },[open]);
   return <div className="dropdown" ref={ref}>
-    {React.cloneElement(trigger,{onClick:()=>setOpen(o=>!o)})}
-    {open&&<div className={'dd-menu '+menuClass}>{typeof children==='function'?children(()=>setOpen(false)):children}</div>}
+    {React.cloneElement(trigger,{onClick:()=>setOpen(o=>!o),'aria-haspopup':'menu','aria-expanded':open?'true':'false'})}
+    {open&&<div className={'dd-menu '+menuClass} role="menu">{typeof children==='function'?children(()=>setOpen(false)):children}</div>}
   </div>;
 }
 function LegacyShell({doctor,onLogout,children,clinic}){
@@ -428,9 +428,31 @@ function Shell({doctor,onLogout,children,clinic}){
   const floatRaf=useRef(0);
   const[navTick,setNavTick]=useState(0);
   const[moreOpen,setMoreOpen]=useState(false);
+  const[compact,setCompact]=useState(()=>typeof window!=='undefined'&&window.matchMedia('(max-width:900px)').matches);
+  const[alertCount,setAlertCount]=useState(0);
+  const[todayCount,setTodayCount]=useState(0);
   const toast=useToast();
   const navigate=useNavigate();
   const remindSent=useRef(false);
+
+  useEffect(()=>{
+    const mq=window.matchMedia('(max-width:900px)');
+    const onChange=()=>setCompact(mq.matches);
+    mq.addEventListener?.('change',onChange);
+    onChange();
+    return()=>mq.removeEventListener?.('change',onChange);
+  },[]);
+
+  useEffect(()=>{
+    let cancelled=false;
+    api.get('/dashboard/monthly').then(m=>{
+      if(!cancelled)setAlertCount((m.months||[]).filter(x=>x.canClose&&!x.closed).length);
+    }).catch(()=>{});
+    api.get('/dashboard?range=today').then(d=>{
+      if(!cancelled)setTodayCount(Number(d.count??d.periods?.today?.count??0));
+    }).catch(()=>{});
+    return()=>{cancelled=true};
+  },[]);
 
   useEffect(()=>{
     if(remindSent.current)return;
@@ -512,11 +534,11 @@ function Shell({doctor,onLogout,children,clinic}){
 
   const nav=[...main,...admin];
 
-  const dockItems=doctor.role==='admin'
-    ?[...main,...admin]
-    :main;
-  const mobilePrimaryPaths=['/','/patients','/balances'];
-  const moreItems=nav.filter(([to])=>!mobilePrimaryPaths.includes(to));
+  const compactHiddenPaths=['/balances','/monthly'];
+  const dockItems=compact
+    ? main.filter(([to])=>!compactHiddenPaths.includes(to))
+    : (doctor.role==='admin'?[...main,...admin]:main);
+  const moreItems=nav.filter(([to])=>!dockItems.some(([itemTo])=>itemTo===to));
 
   const isActive=to=>{
     if(to==='/')return loc.pathname==='/';
@@ -541,6 +563,11 @@ function Shell({doctor,onLogout,children,clinic}){
     const rect=targetEl.getBoundingClientRect();
     const target=rect.left-navRect.left+rect.width/2;
     const dock=el.parentElement;
+    if(dock&&prefersReduced()){
+      floatCurrent.current=target;
+      dock.style.setProperty('--float-x',`${target}px`);
+      return;
+    }
     const from=floatCurrent.current;
     const start=performance.now();
     const duration=420;
@@ -555,7 +582,7 @@ function Shell({doctor,onLogout,children,clinic}){
     };
     floatRaf.current=requestAnimationFrame(step);
     return()=>cancelAnimationFrame(floatRaf.current);
-  },[loc.pathname,navTick,doctor.role,activeIndex]);
+  },[loc.pathname,navTick,compact,doctor.role,activeIndex]);
 
   useEffect(()=>{
     const onResize=()=>{
@@ -641,15 +668,20 @@ function Shell({doctor,onLogout,children,clinic}){
             >
               <I size={18}/>
               <span className="bn-label">{short}</span>
+              {to==='/monthly'&&alertCount>0&&<span className="nav-badge" aria-hidden="true">{alertCount}</span>}
             </Link>
             {i===Math.floor(dockItems.length/2)-1&&<Link to="/patients/new" className={'bn-add'+(loc.pathname==='/patients/new'?' selected':'')} aria-label="New patient" title="New patient">
-              <span className="bn-add-disc"><Plus size={22}/></span>
+              <span className="bn-add-disc">
+                <Plus size={20}/>
+                {todayCount>0&&<span className="fab-badge" aria-hidden="true">{todayCount}</span>}
+              </span>
             </Link>}
           </React.Fragment>
         )}
-        <button type="button" className={'bn-item bn-more'+(moreActive?' active':'')} onClick={()=>setMoreOpen(open=>!open)} aria-label="More" aria-haspopup="true" aria-expanded={moreOpen} aria-controls="mobile-more-menu" title="More">
+        <button type="button" className={'bn-item bn-more'+(moreActive?' active':'')} onClick={()=>setMoreOpen(open=>!open)} aria-label="More" aria-haspopup="true" aria-expanded={moreOpen} aria-pressed={moreOpen} aria-controls="mobile-more-menu" title="More">
           <MoreVertical size={18}/>
           <span className="bn-label">More</span>
+          {compact&&alertCount>0&&<span className="nav-badge" aria-hidden="true">{alertCount}</span>}
         </button>
       </nav>
       <span className="nav-float" aria-hidden="true">
@@ -660,7 +692,7 @@ function Shell({doctor,onLogout,children,clinic}){
 
     <main className="main">
       <header className="topbar">
-        <Link to="/" className="topbar-brand" aria-label="Hakim home">
+        <Link to="/" className="topbar-brand" aria-label="Hakim home" title="Hakim home">
           <Stethoscope size={18}/>
         </Link>
         <div className="crumb">
@@ -670,7 +702,7 @@ function Shell({doctor,onLogout,children,clinic}){
           <div className="searchbox" role="button" tabIndex={0} onClick={()=>setCmdOpen(true)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();setCmdOpen(true)}}}>
             <Search size={14}/>
             <input readOnly placeholder="Search pages and actions…" aria-label="Open search"/>
-            <kbd>{isMac?'⌘K':'Ctrl K'}</kbd>
+            <kbd aria-label="Press Enter to search">↵</kbd>
           </div>
         </div>
         <div className="top-actions">
@@ -680,17 +712,21 @@ function Shell({doctor,onLogout,children,clinic}){
             {close=><>
               <div className="dd-head"><b>Appearance</b><span>{theme==='system'?'System':theme==='light'?'Light':'Dark'}</span></div>
               {[['light','Light',Sun],['dark','Dark',Moon],['system','System',Monitor]].map(([key,label,I])=>
-                <button key={key} className={'dd-item'+(theme===key?' active':'')} onClick={()=>{applyTheme(key);close()}}>
+                <button key={key} type="button" role="menuitemradio" aria-checked={theme===key} aria-pressed={theme===key} className={'dd-item'+(theme===key?' active':'')} onClick={()=>{applyTheme(key);close()}}>
                   <I size={15}/>{label}{theme===key&&<Check size={14} className="dd-check"/>}
                 </button>
               )}
             </>}
           </Dropdown>
 
-          {doctor.role==='admin'&&<Link to="/notifications" className="icon-btn" aria-label="Notifications" title="Notifications"><Bell size={18}/></Link>}
+          <Link to="/notifications" className="icon-btn" aria-label={`Notifications${alertCount?`, ${alertCount} unread`:''}`} title="Notifications">
+            <Bell size={18}/>
+            <span className={'bell-indicator'+(alertCount?' has-count':'')} aria-hidden="true">{alertCount||''}</span>
+          </Link>
 
           <Dropdown
-            trigger={<button className="topbar-user" aria-label="Account menu"><Avatar name={doctor.name} size={30}/></button>}
+            menuClass="profile-menu"
+            trigger={<button className="topbar-user" aria-label="Account menu" title={doctor.name}><Avatar name={doctor.name} size={34}/></button>}
           >
             {close=><>
               <div className="dd-user">
@@ -698,8 +734,8 @@ function Shell({doctor,onLogout,children,clinic}){
                 <div><b>{doctor.name}</b><small>{doctor.role==='admin'?'ADMIN ACCESS':'DOCTOR ACCESS'}</small></div>
               </div>
               <div className="dd-divider"/>
-              {doctor.role==='admin'&&<button className="dd-item" onClick={()=>{navigate('/settings');close()}}><Settings size={15}/>Clinic settings</button>}
-              <button className="dd-item danger" disabled={loggingOut} onClick={async()=>{close();await signOut()}}>
+              <button type="button" role="menuitem" className="dd-item" onClick={()=>{navigate('/settings');close()}}><Settings size={15}/>Settings</button>
+              <button type="button" role="menuitem" className="dd-item danger" disabled={loggingOut} onClick={async()=>{close();await signOut()}}>
                 {loggingOut?<Spinner/>:<LogOut size={15}/>}Sign out
               </button>
             </>}
@@ -1301,7 +1337,7 @@ function Dashboard({clinic}){
       key:'p'+(p._id||p.cardNumber),
       name:p.patientName,
       meta:`${p.procedure||'Visit'} · ${money(p.balance)} due`,
-      tone:'orange',
+      tone:'muted',
       pill:'Balance due',
       to:`/patients/edit/${p._id}`
     })),
@@ -1309,7 +1345,7 @@ function Dashboard({clinic}){
       key:'m'+m._id.month+m._id.year,
       name:`${m._id.month} ${m._id.year}`,
       meta:`${money(m.payable)} ready to close`,
-      tone:'violet',
+      tone:'muted',
       pill:'Close month',
       to:'/monthly'
     }))
@@ -1357,7 +1393,7 @@ function Dashboard({clinic}){
                   <b>{p.patientName}</b>
                   <small>{p.cardNumber||'—'} · {p.procedure||'Visit'}</small>
                 </span>
-                <Pill tone={Number(p.balance||0)>0?'amber':'green'}>{Number(p.balance||0)>0?'Partial':'Settled'}</Pill>
+                <Pill tone="muted">{Number(p.balance||0)>0?'Partial':'Settled'}</Pill>
               </Link>
             ):<div className="empty-state">
               <div className="es-icon"><CalendarDays size={21}/></div>
