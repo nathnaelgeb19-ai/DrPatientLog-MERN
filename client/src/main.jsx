@@ -534,7 +534,7 @@ function Shell({doctor,onLogout,children,clinic}){
 
   const nav=[...main,...admin];
 
-  const compactHiddenPaths=['/balances','/monthly'];
+  const compactHiddenPaths=['/monthly'];
   const dockItems=compact
     ? main.filter(([to])=>!compactHiddenPaths.includes(to))
     : (doctor.role==='admin'?[...main,...admin]:main);
@@ -718,11 +718,6 @@ function Shell({doctor,onLogout,children,clinic}){
               )}
             </>}
           </Dropdown>
-
-          <Link to="/notifications" className="icon-btn" aria-label={`Notifications${alertCount?`, ${alertCount} unread`:''}`} title="Notifications">
-            <Bell size={18}/>
-            <span className={'bell-indicator'+(alertCount?' has-count':'')} aria-hidden="true">{alertCount||''}</span>
-          </Link>
 
           <Dropdown
             menuClass="profile-menu"
@@ -3442,7 +3437,7 @@ function Doctors(){
     }
   };
 
-  return <>
+  return <div className="doctors-page settings-page">
     <PageHead
       title="Doctors"
       subtitle="Manage accounts, roles and secure account switching."
@@ -3522,7 +3517,7 @@ function Doctors(){
         </div>
       </form>
     </Modal>
-  </>
+  </div>
 }
 function Backup(){
   const [status,setStatus]=useState(null);
@@ -3914,8 +3909,8 @@ setF({
    }
  };
 
- return <>
-   <PageHead title="Notifications" subtitle="Telegram connection and scheduled clinic reports."/>
+  return <div className="alerts-page settings-page">
+    <PageHead title="Notifications" subtitle="Telegram connection and scheduled clinic reports."/>
 
    <div className="tabs" role="tablist" aria-label="Notification sections">
      {[['telegram','Telegram'],['schedule','Schedules & reports']].map(([k,l])=>
@@ -4044,9 +4039,9 @@ setF({
            </Btn>
          </div>
        </section>
-     </div>
-   )}
- </>;
+      </div>
+    )}
+  </div>;
 }
 
 function SettingsPage(){
@@ -4138,8 +4133,8 @@ function SettingsPage(){
    }
  };
 
- return <>
-   <PageHead title="Settings"/>
+  return <div className="settings-page">
+    <PageHead title="Settings"/>
 
    <div className="tabs" role="tablist" aria-label="Settings sections">
      {[['profile','Profile'],['login','Login credentials'],['clinic','Appearance & clinic']].map(([k,l])=>
@@ -4262,9 +4257,9 @@ function SettingsPage(){
            {saved&&<span className="pill success">Saved</span>}
          </div>
        </section>
-     </div>
-   )}
- </>;
+      </div>
+    )}
+  </div>;
 }function App(){
   const[doctor,setDoctor]=useState(undefined),[setup,setSetup]=useState(false),[clinic,setClinic]=useState({});
   const lastActivity=useRef(Date.now());

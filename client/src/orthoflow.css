@@ -2445,3 +2445,362 @@ html[data-theme="dark"] body:has(.dash) .nav-dock {
 html[data-theme="dark"] .nav-float {
   background: linear-gradient(to bottom, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0));
 }
+.balances-workspace,
+.patient-form-layout,
+.page:has(.doctor-grid),
+.page:has(.tab-panel) {
+  --surface: rgba(255, 255, 255, 0.16);
+  --surface-2: rgba(255, 255, 255, 0.12);
+  --surface-3: rgba(255, 255, 255, 0.15);
+  --surface-glass: rgba(255, 255, 255, 0.14);
+  --surface-input: rgba(255, 255, 255, 0.22);
+  --glass: rgba(255, 255, 255, 0.16);
+  --glass-pop: rgba(255, 255, 255, 0.26);
+  --line: rgba(255, 255, 255, 0.30);
+  --line-2: rgba(255, 255, 255, 0.22);
+}
+html[data-theme="dark"] .balances-workspace,
+html[data-theme="dark"] .patient-form-layout,
+html[data-theme="dark"] .page:has(.doctor-grid),
+html[data-theme="dark"] .page:has(.tab-panel) {
+  --surface: rgba(12, 15, 22, 0.20);
+  --surface-2: rgba(255, 255, 255, 0.06);
+  --surface-3: rgba(255, 255, 255, 0.10);
+  --surface-glass: rgba(10, 12, 18, 0.18);
+  --surface-input: rgba(10, 12, 18, 0.30);
+  --glass: rgba(14, 17, 24, 0.20);
+  --glass-pop: rgba(18, 21, 29, 0.34);
+  --line: rgba(255, 255, 255, 0.16);
+  --line-2: rgba(255, 255, 255, 0.10);
+}
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme]) .balances-workspace,
+  html:not([data-theme]) .patient-form-layout,
+  html:not([data-theme]) .page:has(.doctor-grid),
+  html:not([data-theme]) .page:has(.tab-panel) {
+    --surface: rgba(12, 15, 22, 0.20);
+    --surface-2: rgba(255, 255, 255, 0.06);
+    --surface-3: rgba(255, 255, 255, 0.10);
+    --surface-glass: rgba(10, 12, 18, 0.18);
+    --surface-input: rgba(10, 12, 18, 0.30);
+    --glass: rgba(14, 17, 24, 0.20);
+    --glass-pop: rgba(18, 21, 29, 0.34);
+    --line: rgba(255, 255, 255, 0.16);
+    --line-2: rgba(255, 255, 255, 0.10);
+  }
+}
+.balances-workspace .stat-card,
+.balances-workspace .balance-patient-card,
+.balances-workspace .card,
+.balances-workspace .patients-toolbar,
+.balances-workspace .patients-search,
+.balances-workspace .patients-date input,
+.balances-workspace .patients-date select,
+.balances-workspace .patients-clear-button,
+.patient-form-layout .patient-form-card,
+.patient-form-layout .patient-summary,
+.patient-form-layout .card,
+.patient-form-layout .patient-existing-treatments,
+.patient-form-layout .patient-breakdown-item,
+.patient-form-layout .payment-summary-box,
+.patient-form-layout .patient-summary-badge,
+.page:has(.doctor-grid) .doctor-card,
+.page:has(.doctor-grid) .card,
+.page:has(.tab-panel) .tabs,
+.page:has(.tab-panel) .card {
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(160%);
+}
+html[data-theme="light"] .dd-menu.profile-menu,
+html[data-theme="light"] body:has(.dash) .dd-menu.profile-menu {
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.62);
+  border-color: rgba(255, 255, 255, 0.58);
+  box-shadow: 0 24px 54px -20px rgba(13, 43, 87, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+html[data-theme="light"] .dd-menu.profile-menu .dd-user b,
+html[data-theme="light"] body:has(.dash) .dd-menu.profile-menu .dd-user b {
+  color: var(--ink);
+}
+html[data-theme="light"] .dd-menu.profile-menu .dd-user small,
+html[data-theme="light"] body:has(.dash) .dd-menu.profile-menu .dd-user small {
+  color: var(--muted);
+}
+html[data-theme="light"] .dd-menu.profile-menu .dd-divider,
+html[data-theme="light"] body:has(.dash) .dd-menu.profile-menu .dd-divider {
+  background: var(--line);
+}
+html[data-theme="light"] .dd-menu.profile-menu .dd-item,
+html[data-theme="light"] body:has(.dash) .dd-menu.profile-menu .dd-item {
+  color: var(--ink-2);
+}
+html[data-theme="light"] .dd-menu.profile-menu .dd-item svg,
+html[data-theme="light"] body:has(.dash) .dd-menu.profile-menu .dd-item svg {
+  color: var(--muted);
+}
+html[data-theme="light"] .dd-menu.profile-menu .dd-item:hover,
+html[data-theme="light"] body:has(.dash) .dd-menu.profile-menu .dd-item:hover {
+  background: rgba(255, 255, 255, 0.52);
+  color: var(--ink);
+}
+html[data-theme="light"] .dd-menu.profile-menu .dd-item.danger,
+html[data-theme="light"] body:has(.dash) .dd-menu.profile-menu .dd-item.danger,
+html[data-theme="light"] .dd-menu.profile-menu .dd-item.danger svg,
+html[data-theme="light"] body:has(.dash) .dd-menu.profile-menu .dd-item.danger svg {
+  color: var(--danger-text);
+}
+@media (prefers-color-scheme: light) {
+  html:not([data-theme]) .dd-menu.profile-menu,
+  html:not([data-theme]) body:has(.dash) .dd-menu.profile-menu {
+    color: var(--ink);
+    background: rgba(255, 255, 255, 0.62);
+    border-color: rgba(255, 255, 255, 0.58);
+    box-shadow: 0 24px 54px -20px rgba(13, 43, 87, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  }
+  html:not([data-theme]) .dd-menu.profile-menu .dd-user b,
+  html:not([data-theme]) body:has(.dash) .dd-menu.profile-menu .dd-user b {
+    color: var(--ink);
+  }
+  html:not([data-theme]) .dd-menu.profile-menu .dd-user small,
+  html:not([data-theme]) body:has(.dash) .dd-menu.profile-menu .dd-user small {
+    color: var(--muted);
+  }
+  html:not([data-theme]) .dd-menu.profile-menu .dd-divider,
+  html:not([data-theme]) body:has(.dash) .dd-menu.profile-menu .dd-divider {
+    background: var(--line);
+  }
+  html:not([data-theme]) .dd-menu.profile-menu .dd-item,
+  html:not([data-theme]) body:has(.dash) .dd-menu.profile-menu .dd-item {
+    color: var(--ink-2);
+  }
+  html:not([data-theme]) .dd-menu.profile-menu .dd-item svg,
+  html:not([data-theme]) body:has(.dash) .dd-menu.profile-menu .dd-item svg {
+    color: var(--muted);
+  }
+  html:not([data-theme]) .dd-menu.profile-menu .dd-item:hover,
+  html:not([data-theme]) body:has(.dash) .dd-menu.profile-menu .dd-item:hover {
+    background: rgba(255, 255, 255, 0.52);
+    color: var(--ink);
+  }
+  html:not([data-theme]) .dd-menu.profile-menu .dd-item.danger,
+  html:not([data-theme]) body:has(.dash) .dd-menu.profile-menu .dd-item.danger,
+  html:not([data-theme]) .dd-menu.profile-menu .dd-item.danger svg,
+  html:not([data-theme]) body:has(.dash) .dd-menu.profile-menu .dd-item.danger svg {
+    color: var(--danger-text);
+  }
+}
+.settings-page {
+  --surface: rgba(255, 255, 255, 0.14);
+  --surface-2: rgba(255, 255, 255, 0.10);
+  --surface-3: rgba(255, 255, 255, 0.13);
+  --surface-glass: rgba(255, 255, 255, 0.12);
+  --surface-input: rgba(255, 255, 255, 0.20);
+  --glass: rgba(255, 255, 255, 0.14);
+  --glass-pop: rgba(255, 255, 255, 0.24);
+  --line: rgba(255, 255, 255, 0.30);
+  --line-2: rgba(255, 255, 255, 0.22);
+}
+html[data-theme="dark"] .settings-page {
+  --surface: rgba(12, 15, 22, 0.20);
+  --surface-2: rgba(255, 255, 255, 0.06);
+  --surface-3: rgba(255, 255, 255, 0.10);
+  --surface-glass: rgba(10, 12, 18, 0.18);
+  --surface-input: rgba(10, 12, 18, 0.30);
+  --glass: rgba(14, 17, 24, 0.20);
+  --glass-pop: rgba(18, 21, 29, 0.34);
+  --line: rgba(255, 255, 255, 0.16);
+  --line-2: rgba(255, 255, 255, 0.10);
+}
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme]) .settings-page {
+    --surface: rgba(12, 15, 22, 0.20);
+    --surface-2: rgba(255, 255, 255, 0.06);
+    --surface-3: rgba(255, 255, 255, 0.10);
+    --surface-glass: rgba(10, 12, 18, 0.18);
+    --surface-input: rgba(10, 12, 18, 0.30);
+    --glass: rgba(14, 17, 24, 0.20);
+    --glass-pop: rgba(18, 21, 29, 0.34);
+    --line: rgba(255, 255, 255, 0.16);
+    --line-2: rgba(255, 255, 255, 0.10);
+  }
+}
+.settings-page .card,
+.settings-page .tabs {
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  backdrop-filter: blur(20px) saturate(160%);
+}
+.settings-page {
+  padding: 18px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  box-shadow: 0 24px 60px -40px rgba(13, 43, 87, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(160%);
+}
+.settings-page .card {
+  background: rgba(255, 255, 255, 0.10);
+}
+.settings-page .tabs {
+  background: rgba(255, 255, 255, 0.12);
+}
+html[data-theme="dark"] .settings-page {
+  background: rgba(12, 15, 22, 0.22);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 24px 60px -40px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+html[data-theme="dark"] .settings-page .card {
+  background: rgba(12, 15, 22, 0.18);
+}
+html[data-theme="dark"] .settings-page .tabs {
+  background: rgba(12, 15, 22, 0.20);
+}
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme]) .settings-page {
+    background: rgba(12, 15, 22, 0.22);
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 24px 60px -40px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+  html:not([data-theme]) .settings-page .card {
+    background: rgba(12, 15, 22, 0.18);
+  }
+  html:not([data-theme]) .settings-page .tabs {
+    background: rgba(12, 15, 22, 0.20);
+  }
+}
+.doctors-page .doctor-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.doctors-page .doctor-card {
+  flex-direction: row;
+  align-items: center;
+  gap: 20px;
+  padding: 16px 20px;
+}
+.doctors-page .doctor-card:hover {
+  transform: none;
+}
+.doctors-page .doctor-card-head {
+  flex: 1 1 320px;
+}
+.doctors-page .doctor-card-body {
+  flex: 1 1 320px;
+  display: block;
+}
+.doctors-page .doctor-card-body .summary-rows {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+}
+.doctors-page .doctor-card-body .summary-row {
+  justify-content: flex-start;
+  min-width: 160px;
+}
+.doctors-page .doctor-card-actions {
+  flex: none;
+  padding-top: 0;
+  border-top: 0;
+}
+@media (max-width: 900px) {
+  .doctors-page .doctor-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .doctors-page .doctor-card-body .summary-rows {
+    display: grid;
+  }
+  .doctors-page .doctor-card-actions {
+    padding-top: 14px;
+    border-top: 1px solid var(--line-2);
+  }
+}
+@media (max-width: 900px) {
+  .nav-dock {
+    --dock-glass: rgba(255, 255, 255, 0.26);
+    --pill-line: rgba(255, 255, 255, 0.38);
+  }
+  html[data-theme="dark"] .nav-dock {
+    --dock-glass: rgba(12, 15, 22, 0.38);
+    --pill-line: rgba(255, 255, 255, 0.16);
+  }
+  .bn-add-disc,
+  .bottom-nav .bn-add.selected .bn-add-disc {
+    transform: none;
+  }
+  .bottom-nav .bn-add:active .bn-add-disc {
+    transform: scale(0.94);
+  }
+}
+@media (max-width: 900px) and (prefers-color-scheme: dark) {
+  html:not([data-theme]) .nav-dock {
+    --dock-glass: rgba(12, 15, 22, 0.38);
+    --pill-line: rgba(255, 255, 255, 0.16);
+  }
+}
+@media (max-width: 900px) {
+  .nav-dock {
+    overflow: visible;
+  }
+  .bottom-nav .bn-more {
+    display: grid !important;
+    order: 4;
+  }
+  .mobile-more-menu {
+    display: flex !important;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: min(290px, calc(100vw - 24px));
+    z-index: 60;
+    pointer-events: auto;
+    background: rgba(255, 255, 255, 0.94);
+    border-color: rgba(255, 255, 255, 0.72);
+    box-shadow: 0 22px 48px -18px rgba(13, 43, 87, 0.45);
+  }
+  .mobile-more-menu a {
+    color: #050505;
+    opacity: 1;
+  }
+  .mobile-more-menu a svg {
+    color: #0d2b57;
+    opacity: 1;
+  }
+  .mobile-more-menu a:hover,
+  .mobile-more-menu a.active {
+    background: rgba(13, 43, 87, 0.08);
+    color: #050505;
+  }
+}
+@media (max-width: 900px) {
+  html[data-theme="dark"] .mobile-more-menu {
+    background: rgba(16, 20, 28, 0.96);
+    border-color: rgba(255, 255, 255, 0.18);
+    box-shadow: 0 22px 48px -18px rgba(0, 0, 0, 0.8);
+  }
+  html[data-theme="dark"] .mobile-more-menu a {
+    color: #f6f8fb;
+  }
+  html[data-theme="dark"] .mobile-more-menu a svg {
+    color: #f6f8fb;
+  }
+  html[data-theme="dark"] .mobile-more-menu a:hover,
+  html[data-theme="dark"] .mobile-more-menu a.active {
+    background: rgba(255, 255, 255, 0.1);
+    color: #f6f8fb;
+  }
+}
+@media (max-width: 900px) and (prefers-color-scheme: dark) {
+  html:not([data-theme]) .mobile-more-menu {
+    background: rgba(16, 20, 28, 0.96);
+    border-color: rgba(255, 255, 255, 0.18);
+    box-shadow: 0 22px 48px -18px rgba(0, 0, 0, 0.8);
+  }
+  html:not([data-theme]) .mobile-more-menu a {
+    color: #f6f8fb;
+  }
+  html:not([data-theme]) .mobile-more-menu a svg {
+    color: #f6f8fb;
+  }
+}
