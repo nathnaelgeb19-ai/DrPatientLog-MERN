@@ -1273,12 +1273,12 @@ html[data-theme="dark"] .dd-menu { background: rgba(24, 27, 35, 0.92); }
 .dash-grid { display: flex; flex-direction: column; gap: 18px; }
 .dash-primary-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 440px;
+  grid-template-columns: minmax(0, 1fr) 380px 400px;
   gap: 18px;
 }
 .dash-secondary-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 400px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
   align-items: stretch;
 }
@@ -1869,11 +1869,9 @@ html[data-theme="dark"] .ring-center small { color: #74d7ab; }
 .dash .ring-tick.proposed { fill: var(--ink-3); }
 
 /* Dashboard responsive */
-@media (max-width: 1180px) {
+@media (max-width: 1400px) {
   .dash-primary-row { grid-template-columns: minmax(0, 1fr); }
-  .dash-secondary-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .dash-calendar-panel {
-    grid-column: 1 / -1;
     max-width: 440px;
     width: 100%;
     margin: 0 auto;

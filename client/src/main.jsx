@@ -1444,6 +1444,39 @@ function Dashboard({clinic}){
           </div>
         </div>
       </section>
+
+      <section className="dash-panel dash-calendar-panel">
+        <header className="dash-panel-head">
+          <div>
+            <h2>{cal?`${cal.month} ${cal.year}`:'Ethiopian calendar'}</h2>
+            <p className="dph-sub">Visits per day · tap a day to see payments</p>
+          </div>
+          <div className="dph-side">
+            {calRef&&<button type="button" className="dash-link" onClick={todayCal}>Today</button>}
+            <button type="button" className="icon-btn sm" aria-label="Previous month" onClick={()=>stepCal(-1)} disabled={!cal}><ChevronLeft size={16}/></button>
+            <button type="button" className="icon-btn sm" aria-label="Next month" onClick={()=>stepCal(1)} disabled={!cal}><ChevronRight size={16}/></button>
+          </div>
+        </header>
+        <div className="cal">
+          <div className="cal-week">{calWeekdays.map(w=><span key={w}>{w}</span>)}</div>
+          <div className="cal-grid">
+            {Array.from({length:calStart},(_,i)=><span key={'b'+i} className="cal-cell cal-blank"/>)}
+            {Array.from({length:calLen},(_,i)=>{
+              const day=i+1;
+              const v=calVisit[day];
+              const isToday=calIsCurrent&&d&&d.ethToday.day===day;
+              return <button type="button" key={day}
+                className={'cal-cell'+(isToday?' is-today':'')+(v?' has-visits':'')+(calDay===day?' is-selected':'')}
+                onClick={()=>pickDay(day)}
+                aria-pressed={calDay===day}
+                aria-label={`${cal?cal.month:''} ${day}, ${cal?cal.year:''}${v?` · ${v.count} payment${v.count>1?'s':''}`:' · no payments'}`}>
+                <span className="cal-num">{day}</span>
+                {v&&<i className="cal-dot"/>}
+              </button>;
+            })}
+          </div>
+        </div>
+      </section>
       </div>
 
       <div className="dash-secondary-row">
@@ -1487,39 +1520,6 @@ function Dashboard({clinic}){
               <Pill tone={item.tone}>{item.pill}</Pill>
             </div>
           ):<div className="empty-state"><div className="es-icon"><ShieldCheck size={21}/></div><b>All clear</b><p>No balances or closures need attention today.</p></div>}
-        </div>
-      </section>
-
-      <section className="dash-panel dash-calendar-panel">
-        <header className="dash-panel-head">
-          <div>
-            <h2>{cal?`${cal.month} ${cal.year}`:'Ethiopian calendar'}</h2>
-            <p className="dph-sub">Visits per day · tap a day to see payments</p>
-          </div>
-          <div className="dph-side">
-            {calRef&&<button type="button" className="dash-link" onClick={todayCal}>Today</button>}
-            <button type="button" className="icon-btn sm" aria-label="Previous month" onClick={()=>stepCal(-1)} disabled={!cal}><ChevronLeft size={16}/></button>
-            <button type="button" className="icon-btn sm" aria-label="Next month" onClick={()=>stepCal(1)} disabled={!cal}><ChevronRight size={16}/></button>
-          </div>
-        </header>
-        <div className="cal">
-          <div className="cal-week">{calWeekdays.map(w=><span key={w}>{w}</span>)}</div>
-          <div className="cal-grid">
-            {Array.from({length:calStart},(_,i)=><span key={'b'+i} className="cal-cell cal-blank"/>)}
-            {Array.from({length:calLen},(_,i)=>{
-              const day=i+1;
-              const v=calVisit[day];
-              const isToday=calIsCurrent&&d&&d.ethToday.day===day;
-              return <button type="button" key={day}
-                className={'cal-cell'+(isToday?' is-today':'')+(v?' has-visits':'')+(calDay===day?' is-selected':'')}
-                onClick={()=>pickDay(day)}
-                aria-pressed={calDay===day}
-                aria-label={`${cal?cal.month:''} ${day}, ${cal?cal.year:''}${v?` · ${v.count} payment${v.count>1?'s':''}`:' · no payments'}`}>
-                <span className="cal-num">{day}</span>
-                {v&&<i className="cal-dot"/>}
-              </button>;
-            })}
-          </div>
         </div>
       </section>
       </div>
